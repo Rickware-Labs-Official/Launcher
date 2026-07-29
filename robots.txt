@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://dev-rick-c137.github.io/Launcher/sitemap.xml
+Sitemap: https://rickware-labs-official.github.io/sitemap.xml
