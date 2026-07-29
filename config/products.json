@@ -1,0 +1,1434 @@
+{
+    "categorys": [
+    {
+      "discord_tools": "Discord Tools",
+      "discord_bots": "Discord Bots",
+      "advertising_tools": "Advertising Tools",
+      "websites": "Websites",
+      "fraud": "Fraud"
+    }
+  ],
+
+
+
+
+ 
+    "license_categories": [
+    {
+        "one_time_trial": "One Time Trial",
+        "free": "Free",
+        "1_day": "1 Day - (24 Hours)",
+        "1_week": "1 Week - (7 Days)",
+        "1_month": "1 Month - (4 Weeks)",
+        "6_months": "6 Months - (24 Weeks)",
+        "1_year": "1 Year - (48 Weeks)",
+        "lifetime": "Lifetime - (Forever :3)",
+        "source_code": "Source Code"
+    }
+  ],
+
+
+
+
+ 
+  "products": [
+      {
+        "id": 0,
+        "category": "Discord Tools",
+        "version": "V3",
+        "product_id": "84173260392018491748",
+        "title": "• Quest Solver",
+        "license_categories": [
+        {
+          "source_code": "Source Code"
+        }
+      ],
+      "license_categorie_prices": [
+        {
+        "source_code": "4,99",
+        "source_code_original": "9,99"
+        }
+      ],
+      "description": "",
+      "full_description": "",
+      "banner": "Top Automation Tool",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/discord_quest_solver_orbs.webp",
+      "image_url_1": "discord_tools/discord_quest_solver_main_3.webp",
+      "image_url_2": "discord_tools/discord_quest_solver_main.webp",
+      "image_url_3": "discord_tools/discord_quest_solver_main_2.webp",
+      "image_url_4": "discord_tools/discord_quest_solver_settings.webp",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "https://vm.tiktok.com/ZGdxRWLvQ/",
+      "published:": "07.29.2026",
+      "last_update": "06.26.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": ""
+    },
+
+
+
+
+      
+      {
+        "id": 0,
+        "category": "Discord Tools",
+        "version": "V2",
+        "product_id": "84173260392929669526",
+        "title": "• AI Responder / Self-Bot",
+        "license_categories": [
+        {
+          "one_time_trial": "One Time Trial",
+          "1_day": "1 Day - (24 Hours)",
+          "1_week": "1 Week - (7 Days)",
+          "1_month": "1 Month - (4 Weeks)",
+          "6_months": "6 Months - (24 Weeks)",
+          "1_year": "1 Year - (48 Weeks)",
+          "lifetime": "Lifetime - (Forever :3)",
+          "source_code": "Source Code"
+        }
+      ],
+      "license_categorie_prices": [
+        {
+        "1_day": "0,99",
+        "1_day_original": "1,10",
+        "1_week": "2,99",
+        "1_week_original": "7,70",
+        "1_month": "4,99",
+        "1_month_original": "30,80",
+        "6_months": "9,99",
+        "6_months_original": "184,80",
+        "1_year": "14,99",
+        "1_year_original": "369,60",
+        "lifetime": "19,99",
+        "lifetime_original": "137,99",
+        "source_code": "29,99",
+        "source_code_original": "99,99"
+        }
+      ],
+      "description": "Advanced Discord AI Responder — Automate responses across multiple accounts simultaneously with individually customizable prompts, channels, and a delay system. Perfect for efficient community management and auto-engagement.",
+      "full_description": "AI Responder V2 is a powerful automation tool designed to handle Discord interactions intelligently and at scale. Built for users managing multiple accounts, it provides a stable and efficient system for sending automated, AI-generated responses across selected channels.\n\nWith multi-token support, you can run multiple sender accounts simultaneously while assigning specific channel IDs and custom configurations per account. The integrated AI system generates dynamic, human-like replies, making interactions appear natural and engaging.\n\nKey Features:\n- Multi-account support with parallel message sending\n- Channel-based targeting and control\n- Custom AI prompts and behavior per account\n- Optional proxy support for enhanced security\n- Sticky and rotating proxy modes\n- Lightweight performance with minimal resource usage\n- Clean and intuitive interface with real-time logs\n\nPerfect for community management, automation workflows, testing environments, or scaling Discord engagement efficiently.",
+      "banner": "Top AI Automation Tool",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/ai_responder_main.webp",
+      "image_url_1": "discord_tools/ai_responder_main_settings.webp",
+      "image_url_2": "discord_tools/ai_responder_account_manager.webp",
+      "image_url_3": "discord_tools/ai_responder_channel_settings.webp",
+      "image_url_4": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "https://vm.tiktok.com/ZGdxRnKtC/",
+      "published:": "04.01.2026",
+      "last_update": "04.01.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": false,
+      "change_log": "- V2: *Features:*\n--------------------Updated--------------------\n+ AI Responder Finshed\n+ Better GUI Settings\n+ Better AI Settings\n+ Better AI Configs + More API Keys\n+ Modify AI System Promt\n+ Channel / Message Monitor Optimized\n+ Response Time Optimized    \n\n\n\n- V1: *Features:*\n------------------------------------------------\n+ Code Base & Structure\n+ GUI (Interface)\n+ config Stuff\n+ Settings Stuff\n+ Discord APIs & Message Monitor\n\n\n*Files & Folders*\n------------------------------------------------\n+ main.py\n+ requirements.txt\n+ ./config/tool_saves.json\n+ ./Config/ai_responder.json\n+ ./config/app_Settings.json\n+ ./config/user_agent.json\n+ ./images/logo.png\n+ ./input/main_token.txt\n+ ./input/tokens.txt\n+ ./input/proxies.txt\n+ ./utils/ai_responder.json\n"
+    },
+
+
+
+
+
+      {
+        "id": 1,
+        "category": "Discord Tools",
+        "version": "V1",
+        "product_id": "84173260393122568711",
+        "title": "• Account Onliner",
+        "license_categories": [
+        {
+          "one_time_trial": "One Time Trial",
+          "1_day": "1 Day - (24 Hours)",
+          "1_week": "1 Week - (7 Days)",
+          "1_month": "1 Month - (4 Weeks)",
+          "6_months": "6 Months - (24 Weeks)",
+          "1_year": "1 Year - (48 Weeks)",
+          "lifetime": "Lifetime - (Forever :3)",
+          "source_code": "Source Code"
+        }
+      ],
+      "license_categorie_prices": [
+        {
+        "1_day": "0,99",
+        "1_day_original": "1,10",
+        "1_week": "2,99",
+        "1_week_original": "7,70",
+        "1_month": "4,99",
+        "1_month_original": "30,80",
+        "6_months": "9,99",
+        "6_months_original": "184,80",
+        "1_year": "14,99",
+        "1_year_original": "369,60",
+        "lifetime": "19,99",
+        "lifetime_original": "137,99",
+        "source_code": "29,99",
+        "source_code_original": "99,99"
+        }
+      ],
+      "description": "Cross-platform Discord Account Onliner that keeps tokens online 24/7 using a real client host — full presence simulation with custom status, activity spoofing, and multi-account support.",
+      "full_description": "Cross-platform Discord Account Onliner built on a real client host engine that keeps your Discord accounts permanently online with a fully authentic presence. Unlike simple HTTP-ping solutions, this tool launches a real Discord client session per token, ensuring accurate online status, proper activity display, and full resistance to Discord's bot detection. Supports custom status messages, activity spoofing (playing, streaming, watching, listening), and simultaneous operation across unlimited accounts. Each account runs in an isolated session to prevent cross-contamination, and proxy assignment is supported per account. The launcher handles deployment, keeps all sessions alive after crashes, and applies updates automatically. Runs on Windows, macOS, and Linux.",
+      "banner": "Top #3",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/account_onliner_main.webp",
+      "image_url_1": "discord_tools/account_onliner_main_2.webp",
+      "image_url_2": "discord_tools/account_onliner_account_manager.webp",
+      "image_url_3": "",
+      "image_url_4": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "https://vm.tiktok.com/ZGdx82Das/",
+      "published:": "04.04.2026",
+      "last_update": "04.04.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+
+{
+        "id": 2,
+        "category": "Discord Tools",
+        "version": "V1",
+        "product_id": "84173260397946377612",
+        "title": "• Server Backup / Cloner Tool",
+        "license_categories": [
+        {
+          "one_time_trial": "One Time Trial",
+          "1_day": "1 Day - (24 Hours)",
+          "1_week": "1 Week - (7 Days)",
+          "1_month": "1 Month - (4 Weeks)",
+          "6_months": "6 Months - (24 Weeks)",
+          "1_year": "1 Year - (48 Weeks)",
+          "lifetime": "Lifetime - (Forever :3)",
+          "source_code": "Source Code"
+        }
+      ],
+      "license_categorie_prices": [
+        {
+        "1_day": "0,99",
+        "1_day_original": "1,10",
+        "1_week": "2,99",
+        "1_week_original": "7,70",
+        "1_month": "4,99",
+        "1_month_original": "30,80",
+        "6_months": "9,99",
+        "6_months_original": "184,80",
+        "1_year": "14,99",
+        "1_year_original": "369,60",
+        "lifetime": "19,99",
+        "lifetime_original": "137,99",
+        "source_code": "29,99",
+        "source_code_original": "99,99"
+        }
+      ],
+      "description": "Cross-platform high-end Discord Server Backup & Cloner Tool (User Token without any permissions)",
+      "full_description": "Cross-platform high-end Discord Server Backup & Cloner that operates using a standard user token — no admin permissions, no bot required. The tool creates a perfect structural copy of any Discord server you have access to, including all channels, categories, roles, permission overwrites, and server settings. The cloning process is fully automated and runs at high speed, with configurable delays to stay within Discord's rate limits without manual intervention. Supports both full clones to a brand new server and partial clones to merge structure into an existing one. The launcher manages updates and initial setup automatically, ensuring you always have the latest version running on Windows, macOS, and Linux.",
+      "banner": "Top #4",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/backup_tool_backup_main.webp",
+      "image_url_1": "discord_tools/backup_tool_backup_main_2.webp",
+      "image_url_2": "discord_tools/backup_tool_backup_main_3.webp",
+      "image_url_3": "discord_tools/backup_tool_restore_main.webp",
+      "image_url_4": "discord_tools/backup_tool_restore_main_2.webp",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "https://vm.tiktok.com/ZGdx8eEEd/",
+      "published:": "04.04.2026",
+      "last_update": "04.04.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+
+{
+        "id": 3,
+        "category": "Discord Tools",
+        "version": "V1",
+        "product_id": "84173260391847428533",
+        "title": "• Message Bomber",
+        "license_categories": [
+        {
+          "one_time_trial": "One Time Trial",
+          "1_day": "1 Day - (24 Hours)",
+          "1_week": "1 Week - (7 Days)",
+          "1_month": "1 Month - (4 Weeks)",
+          "6_months": "6 Months - (24 Weeks)",
+          "1_year": "1 Year - (48 Weeks)",
+          "lifetime": "Lifetime - (Forever :3)",
+          "source_code": "Source Code"
+        }
+      ],
+      "license_categorie_prices": [
+        {
+        "1_day": "0,99",
+        "1_day_original": "1,10",
+        "1_week": "2,99",
+        "1_week_original": "7,70",
+        "1_month": "4,99",
+        "1_month_original": "30,80",
+        "6_months": "9,99",
+        "6_months_original": "184,80",
+        "1_year": "14,99",
+        "1_year_original": "369,60",
+        "lifetime": "19,99",
+        "lifetime_original": "137,99",
+        "source_code": "29,99",
+        "source_code_original": "99,99"
+        }
+      ],
+      "description": "",
+      "full_description": "",
+      "banner": "Most Popular",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/message_bomber_main.webp",
+      "image_url_1": "discord_tools/",
+      "image_url_2": "discord_tools/",
+      "image_url_3": "discord_tools/",
+      "image_url_4": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "04.04.2026",
+      "last_update": "04.04.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+
+    {
+      "id": 4,
+      "category": "Discord Tools",
+      "version": "V5",
+      "product_id": "84173260398007862039",
+      "title": "• Status Rotator",
+      "license_categories": [
+      {
+        "free": "Free"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "free": "Free"
+      }
+    ],
+      "description": "Cross-platform Discord Status Rotator — rotate your account status across unlimited messages and accounts simultaneously with fully customizable delays, presets per account, and a uniform or individual rotation mode. Zero setup required.",
+      "full_description": "Cross-platform Discord Status Rotator built for power users who want complete control over their Discord presence. Run the tool across Windows, macOS, and Linux with no additional dependencies. Set up as many unique status messages as you want, assign custom delays between each rotation, and manage multiple accounts at once — all from a single intuitive interface. Assign dedicated presets to individual accounts or apply a global rotation across all of them simultaneously. The tool runs silently in the background with minimal resource usage, ensuring your accounts stay active and dynamic at all times. An Onliner and full account client host integration is already in development and will be added in a future update.",
+      "banner": "Top #1 Free Tool",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/discord_status_rotator_main.webp",
+      "image_url_1": "discord_tools/discord_status_rotator_account_manager.webp",
+      "image_url_2": "discord_tools/discord_status_rotator_settings.webp",
+      "image_url_3": "",
+      "image_url_4": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "https://vm.tiktok.com/ZGdx8Jb1n/",
+      "published:": "02.21.2026",
+      "last_update": "06.14.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+    {
+      "id": 5,
+      "category": "Discord Tools",
+      "version": "V4",
+      "product_id": "84173260394584802547",
+      "title": "• Nexus Account / Token Generator - (Terminal Based)",
+      "license_categories": [
+      {
+        "free": "Free"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "free": "Free"
+      }
+    ],
+      "description": "High-quality Discord account and token generator with browser-based HCaptcha solving, account verification via mail API, and built-in account humanization — completely free and open source.",
+      "full_description": "The Nexus Account / Token Generator is a powerful, free and open-source tool developed in collaboration between Rickware - Labs and Nexus. It generates high-quality, fully unlocked Discord tokens using a sophisticated pipeline that includes browser-based HCaptcha solving via a custom HTML file, Discord account verification through a dedicated mail API, and a humanization layer that makes generated accounts behave like real users to avoid detection. Built with Python and JavaScript, the tool is actively maintained and supports proxy usage — NullProxies is the recommended provider for the most seamless experience. The generator is completely free and available directly on GitHub.",
+      "banner": "Nexus X Rickware - Labs",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/Rickware-Labs_X_Nexus_Discord_Token_Gen_Main.webp",
+      "image_url_1": "discord_tools/token_gen_main.webp",
+      "image_url_2": "discord_tools/token_gen_main_2.webp",
+      "image_url_3": "discord_tools/token_gen_main_3.webp",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".VatosV2 X .rick.c137",
+      "discord_url": "https://discord.gg/Wk7d8mJgyN",
+      "github_url": "https://github.com/VatosV2/token-gen",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": false,
+      "change_log": "*Changelog:*\n-------------\n\n\n*Proxies:*\n---------\n- We recommend https://nullproxies.com for the most seemless expierence.\n\n*Features:*\n---------\n- **#Broswer Based Hcaptcha Solving# - Browser Based Hcaptcha Solving on own html file**\n-**#Verifying Discord Accounts# - Verifies Discord Accounts By Mail API**\n- **#Humanizing Discord Accounts# - Humanizes Discord Tokens**\n- **#Token Generation# - Unlocked, High Quality Discord token**\n\n*Tech Stack:*\n---------\n- **Python**\n- **Javascript**\n*Contributers:*\n-----------\n- **#VatosV2# - Head Developer**\n- **#zkamo# - Hes js here**\n- **#.rick.c137# - Rebrand & Program Updater**"
+    },
+
+
+
+
+ 
+    {
+      "id": 6,
+      "category": "Discord Tools",
+      "version": "V4",
+      "product_id": "84173260395500498399",
+      "title": "• Nexus Account / Token Server Joiner",
+      "license_categories": [
+      {
+        "free": "Free"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "free": "Free"
+      }
+    ],
+      "description": "Automated Discord server joiner that mass-joins servers using token lists with proxy support, rate limit handling, and built-in error recovery — free and open source.",
+      "full_description": "The Nexus Account / Token Server Joiner is a free, open-source automation tool developed in collaboration between Rickware - Labs and Nexus. It allows you to mass-join Discord servers using lists of user tokens, with full proxy support to distribute requests and avoid rate limiting. The tool handles errors gracefully, retries failed joins automatically, and provides detailed output logs for every operation. Whether you need to populate a server quickly or manage multiple account joins in bulk, this tool streamlines the entire process with minimal configuration. Built with Python, it is lightweight, fast, and easy to run on any system. Available directly on GitHub at no cost.",
+      "banner": "Nexus X Rickware - Labs",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/Rickware-Labs_X_Nexus_Discord_Server_Joiner_Main.webp",
+      "image_url_1": "discord_tools/joiner_1.webp",
+      "image_url_2": "discord_tools/joiner_2.webp",
+      "image_url_3": "discord_tools/joiner_3.webp",
+      "image_url_4": "discord_tools/joiner_4.webp",
+      "image_url_5": "discord_tools/joiner_5.webp",
+      "image_url_6": "discord_tools/joiner_6.webp",
+      "image_url_7": "discord_tools/joiner_7.webp",
+      "image_url_8": "",
+      "owner_name": ".VatosV2 X .rick.c137",
+      "discord_url": "https://discord.gg/Wk7d8mJgyN",
+      "github_url": "https://github.com/VatosV2/Nexus-Token-Joiner",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": false,
+      "change_log": ""
+    },
+
+
+
+
+ 
+    {
+      "id": 7,
+      "category": "Discord Tools",
+      "version": "V1",
+      "product_id": "84173260399547383244",
+      "title": "• Account / Token Checker - (Verified)",
+      "license_categories": [
+      {
+        "free": "Free"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "free": "Free"
+      }
+    ],
+      "description": "Fast and reliable Discord token checker that validates account status, flags locked or disabled tokens, and exports clean results — completely free and verified.",
+      "full_description": "The Account / Token Checker is a fast, free, and open-source utility for validating Discord tokens in bulk. Simply paste or import a list of tokens and the tool will check each one against Discord's API, identifying which accounts are valid and active, which are locked, phone-verified, or email-verified, and which have been disabled or banned. Results are sorted and exportable, making it easy to filter your token pool for high-quality accounts. The tool runs with minimal dependencies, supports proxy input to avoid rate limiting on large batches, and provides a clean visual summary of results. Verified and trusted by the community, with the full source code available on GitHub.",
+      "banner": "Top Verified Software",
+      "banner_color": "#63008a",
+      "preview_image_url": "https://user-images.githubusercontent.com/37373560/73079022-6b3d0d80-3efe-11ea-9dd3-64b23dd78555.png",
+      "image_url_1": "https://camo.githubusercontent.com/b440fd2284ee8472c2612852650adfb7927979ecca16774770c502f79dd5fa79/68747470733a2f2f692e696d6775722e636f6d2f304d535649626a2e676966",
+      "image_url_2": "https://camo.githubusercontent.com/dcf02aed3e8535879d9de695438596eb72768caf8799e6d539dbd4935ebb0983/68747470733a2f2f692e696d6775722e636f6d2f67696f365239672e706e67",
+      "image_url_3": "https://camo.githubusercontent.com/52cdd6f4e2016998bdbd1b45a46e4de7cd612de9f32ce8db4825a0ae2f8ffb85/68747470733a2f2f692e696d6775722e636f6d2f43625237494a542e706e67",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": "RANKTW",
+      "discord_url": "",
+      "github_url": "https://github.com/RANKTW/Discord-Token-Checker",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": false,
+      "auto_update": false,
+      "enabled_update": true,
+      "auto_setup": false,
+      "enabled_setup": true,
+      "coupon_codes": false,
+      "change_log": ""
+    },
+
+
+
+
+ 
+    {
+      "id": 8,
+      "category": "Discord Tools",
+      "version": "V3",
+      "product_id": "84173260398469472116",
+      "title": "• Account / Token Login Chrome Extension",
+      "license_categories": [
+      {
+        "free": "Free"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "free": "Free"
+      }
+    ],
+      "description": "Cross-platform Chrome extension for instant one-click Discord account switching using tokens — no manual copy-paste, no re-login required.",
+      "full_description": "Cross-platform Chrome extension that lets you log into any Discord account instantly using a user token — directly from your browser toolbar with a single click. Store multiple tokens in a secure local list and switch between Discord accounts in seconds without ever touching the login form. The extension injects the token seamlessly into the Discord web client, making multi-account management faster and more comfortable than any other method. Works on all Chromium-based browsers including Chrome, Brave, Edge, and Opera. Designed with a clean, minimal popup interface and full keyboard support. No external servers, no data collection — everything runs locally in your browser.",
+      "banner": "Chrome Extension",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/Rickware-Labs_Token_Login_Chrome_Extension_Main.webp",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+    {
+      "id": 9,
+      "category": "Discord Tools",
+      "version": "V3.8.3",
+      "product_id": "84173260392540383958",
+      "title": "• Bot Client - (Vencord Built-In)",
+      "license_categories": [
+      {
+        "free": "Free"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "free": "Free"
+      }
+    ],
+      "description": "Use a Discord bot token like a normal user account — a fully functional Discord client built for bot tokens with Vencord already integrated out of the box.",
+      "full_description": "The Bot Client with built-in Vencord allows you to run a Discord bot token as if it were a regular user account inside a fully featured Discord client. This open-source project, originally developed by aiko-chan-ai, provides a complete browser-based Discord experience for bot tokens — including message reading, server navigation, and channel interaction — without the usual restrictions that come with bot-only API access. Vencord is pre-integrated, giving you access to a wide range of client-side plugins, themes, and quality-of-life improvements right out of the box. Ideal for developers, selfbot experimenters, and advanced Discord users who need a clean and functional interface for their bot accounts.",
+      "banner": "Top Verified Software",
+      "banner_color": "#63008a",
+      "preview_image_url": "https://camo.githubusercontent.com/29d4b9cf0f8a668a79834c2915b6e6107a273cd2cb63318c3beec1ed17dc32e6/68747470733a2f2f692e696d6775722e636f6d2f4c526a323557322e706e67",
+      "image_url_1": "https://camo.githubusercontent.com/50434333eb1401e750d926528a2bae3b1f425cf59122befc489a6327abc189ac/68747470733a2f2f692e696d6775722e636f6d2f5a474c45325a382e706e67",
+      "image_url_2": "https://camo.githubusercontent.com/23df4134a463e46fa62b0083ec1e8ed521e59bcdc1b4d8d14193fc426a9cae57/68747470733a2f2f692e696d6775722e636f6d2f56454e4d4231552e706e67",
+      "image_url_3": "https://camo.githubusercontent.com/82b2fa3679ee1c43360f8f98c09ea0bbd79ae9c36e03cf7082e46c7417b8e995/68747470733a2f2f6170692e737461722d686973746f72792e636f6d2f7376673f7265706f733d61696b6f2d6368616e2d61692f446973636f7264426f74436c69656e7426747970653d44617465",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": "aiko-chan-ai",
+      "discord_url": "",
+      "github_url": "https://github.com/aiko-chan-ai/DiscordBotClient",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": false,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": ""
+    },
+
+
+
+
+ 
+
+    {
+      "id": 10,
+      "category": "Discord Tools",
+      "version": "V1.0.0b0",
+      "product_id": "84173260390637947339",
+      "title": "• Requestcord API Wrapper - (For Developer)",
+      "license_categories": [
+      {
+        "free": "Free"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "free": "Free"
+      }
+    ],
+      "description": "Advanced Discord API wrapper with modern features",
+      "full_description": "A modern, lightweight Discord API wrapper for Python focused on speed, simplicity, and clean request handling. RequestCord is built for developers who want direct access to Discord's REST API without heavy abstractions or browser automation.",
+      "banner": "Top Verified Software",
+      "banner_color": "#63008a",
+      "preview_image_url": "github/rickware_labs_requestcord_main.webp",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": "Zkamo & VatosV2",
+      "discord_url": "",
+      "github_url": "https://github.com/Zkamo/requestcord",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": false,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": ""
+    },
+
+
+
+
+ 
+    {
+      "id": 11,
+      "category": "Discord Tools",
+      "version": "V1",
+      "product_id": "84173260398703587868",
+      "title": "• Server Raid Tool - (BOT)",
+      "license_categories": [
+      {
+        "one_time_trial": "One Time Trial",
+        "1_day": "1 Day - (24 Hours)",
+        "1_week": "1 Week - (7 Days)",
+        "1_month": "1 Month - (4 Weeks)",
+        "6_months": "6 Months - (24 Weeks)",
+        "1_year": "1 Year - (48 Weeks)",
+        "lifetime": "Lifetime - (Forever :3)",
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "1_day": "1,99",
+        "1_day_original": "4,99",
+        "1_week": "4,99",
+        "1_week_original": "34,93",
+        "1_month": "7,99",
+        "1_month_original": "139,72",
+        "6_months": "9,99",
+        "6_months_original": "838,32",
+        "1_year": "14,99",
+        "1_year_original": "1676,64",
+        "lifetime": "19,99",
+        "lifetime_original": "137,99",
+        "source_code": "29,99",
+        "source_code_original": "39,99"
+      }
+    ],
+      "description": "Cross-platform Discord Server Raid Tool powered by a dedicated bot — mass-join, spam, and disrupt target servers with configurable payloads, multi-account support, and full automation.",
+      "full_description": "Cross-platform Discord Server Raid Tool that operates through a dedicated bot for maximum speed and control. The tool supports mass channel spamming, mass role and channel deletion, nickname flooding, and member mention attacks — all configurable through a clean command interface. Run multiple bot tokens in parallel to amplify the impact and complete operations in seconds. Custom payload templates let you define exactly what messages, emojis, or content get sent during each action. Built-in rate limit management keeps the operation running smoothly without interruption. The launcher handles deployment, updates, and token management automatically across Windows, macOS, and Linux.",
+      "banner": "Popular",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/Rickware-Labs_Discord_Server_Raider_Main.webp",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": true,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+    {
+      "id": 12,
+      "category": "Discord Tools",
+      "version": "V1",
+      "product_id": "84173260396663893746",
+      "title": "• Server Boost Tool",
+      "license_categories": [
+      {
+        "one_time_trial": "One Time Trial",
+        "1_day": "1 Day - (24 Hours)",
+        "1_week": "1 Week - (7 Days)",
+        "1_month": "1 Month - (4 Weeks)",
+        "6_months": "6 Months - (24 Weeks)",
+        "1_year": "1 Year - (48 Weeks)",
+        "lifetime": "Lifetime - (Forever :3)",
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "1_day": "0,99",
+        "1_day_original": "4,99",
+        "1_week": "1,99",
+        "1_week_original": "34,93",
+        "1_month": "2,99",
+        "1_month_original": "139,72",
+        "6_months": "3,99",
+        "6_months_original": "838,32",
+        "1_year": "5,99",
+        "1_year_original": "1676,64",
+        "lifetime": "6,99",
+        "lifetime_original": "137,99",
+        "source_code": "7,99",
+        "source_code_original": "9,99"
+      }
+    ],
+      "description": "Cross-platform Discord Server Boost Tool — automatically boost any server using multiple accounts with configurable delays, proxy support, and full automation through the launcher.",
+      "full_description": "Cross-platform Discord Server Boost Tool designed to apply Nitro boosts to any target server using multiple accounts simultaneously. The tool manages the entire boost process automatically — selecting accounts, applying boosts, handling token rotation, and retrying on failure — all with configurable delays to stay under Discord's detection threshold. Proxy support is fully integrated to distribute traffic across different IPs and minimize ban risk. The launcher keeps the tool updated automatically and handles setup without any manual configuration needed. Whether you need to push a server to Level 2 or Level 3 quickly or maintain a permanent boost count, this tool gives you complete control across Windows, macOS, and Linux.",
+      "banner": "Top #5",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_tools/Rickware-Labs_Discord_Boost_Tool_Main.webp",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": true,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+    
+
+    {
+      "id": 1,
+      "category": "Discord Bots",
+      "version": "V4",
+      "product_id": "05754621444101068974",
+      "title": "• Ticket & AI Support System",
+      "license_categories": [
+      {
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "source_code": "9,99",
+        "source_code_original": "19,99"
+      }
+    ],
+      "description": "Discord Ticket & AI Support System bot — create, manage, and resolve support tickets automatically with an integrated AI assistant that answers questions directly inside tickets.",
+      "full_description": "Discord Ticket & AI Support System that brings a complete, production-ready support infrastructure to your Discord server. Users can open tickets through a panel with category selection, and the AI assistant immediately responds to common questions inside each ticket thread — reducing the workload on your staff dramatically. Staff members can claim tickets, add internal notes, set priorities, and close or archive them with a single click. The system logs all ticket activity and exports transcripts automatically. Fully configurable panel messages, button styles, ticket categories, and auto-close timers. Built with discord.py and deployable on any VPS or server running Windows, macOS, or Linux. Source code is clean, well-structured, and easy to extend.",
+      "banner": "Moderation & Support",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_bots/Rickware-Labs_Ticket__AI_Support_System_Main.webp",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": "9,99",
+      "original_price": "19,99",
+      "file_product": true,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+    {
+      "id": 2,
+      "category": "Discord Bots",
+      "version": "V3",
+      "product_id": "05754621441286534681",
+      "title": "• Only DM Captcha Verify System",
+      "license_categories": [
+      {
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "source_code": "4,99",
+        "source_code_original": "9,99"
+      }
+    ],
+      "description": "Discord DM Captcha Verify System — protect your server from bots and self-bots by sending a captcha challenge directly via DM before granting access.",
+      "full_description": "Discord DM Captcha Verify System that adds a robust, bot-resistant verification layer to your server by sending each new member a captcha challenge directly in their DMs. Only users who solve the challenge correctly receive the verified role and gain access to server channels — filtering out automated accounts, selfbots, and raiding tools effectively. The captcha engine generates unique image-based challenges each time, making automated solving significantly harder. Fully configurable welcome messages, verification timeout, role assignment, kick-on-failure behavior, and logging channel. Supports both slash commands and traditional prefix commands. The source code is clean and fully documented, making it easy to deploy on any hosting environment running Windows, macOS, or Linux.",
+      "banner": "Moderation & Server Security",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_bots/",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": "4,99",
+      "original_price": "9,99",
+      "file_product": true,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+    {
+      "id": 3,
+      "category": "Discord Bots",
+      "version": "V2",
+      "product_id": "05754621441402263155",
+      "title": "• Auto Payment System",
+      "license_categories": [
+      {
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "source_code": "9,99",
+        "source_code_original": "19,99"
+      }
+    ],
+      "description": "Discord Auto Payment System bot — automate product delivery, license checks, and payment confirmations directly inside your Discord server without any manual processing.",
+      "full_description": "Discord Auto Payment System that fully automates your product sales and delivery workflow inside Discord. Once a payment is confirmed through your configured payment provider, the bot instantly delivers the purchased product, assigns the corresponding role, sends a DM receipt to the buyer, and logs the transaction — all without any staff involvement. Supports multiple payment gateways and product types including digital downloads, license keys, and role assignments. The admin panel lets you manage your product catalog, set prices, create discount codes, and view sales statistics through clean slash commands. Built for reliability and ease of use, the source code is well-documented and deployable on any server or VPS running Windows, macOS, or Linux.",
+      "banner": "Automation & Support",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_bots/Rickware-Labs_Auto_Payment_System_Main.webp",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": "9,99",
+      "original_price": "19,99",
+      "file_product": true,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+
+    {
+      "id": 4,
+      "category": "Discord Bots",
+      "version": "V2",
+      "product_id": "05754621440790040748",
+      "title": "• Bank & XP System",
+      "license_categories": [
+      {
+        "lifetime": "Lifetime - (Forever :3)",
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "source_code": "4,99",
+        "source_code_original": "9,99"
+      }
+    ],
+      "description": "Discord Bank & XP System bot — reward your community with an in-server economy, virtual currency, leveling system, and leaderboard to drive long-term engagement.",
+      "full_description": "Discord Bank & XP System that adds a full in-server economy and leveling infrastructure to your community. Members earn XP automatically through activity, level up with configurable multipliers, and unlock special roles at milestone thresholds. The bank system gives every member a virtual wallet where they can earn, spend, transfer, and gamble currency through a set of economy commands. Server admins can set custom XP rates, assign level-up rewards, manage user balances, and create custom shop items. A live leaderboard tracks top earners and highest-level members. Built with modularity in mind, the source code is clean, easy to extend, and deployable on any hosting environment running Windows, macOS, or Linux.",
+      "banner": "Server & Finance",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_bots/Rickware-Labs_Bank__XP_System_Main.webp",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": "4,99",
+      "original_price": "9,99",
+      "file_product": true,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+
+    {
+      "id": 5,
+      "category": "Discord Bots",
+      "version": "V3",
+      "product_id": "05754621441976958341",
+      "title": "• Vouch / Ratings System",
+      "license_categories": [
+      {
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "source_code": "3,99",
+        "source_code_original": "7,99"
+      }
+    ],
+      "description": "Discord Vouch & Ratings System bot — collect and display verified customer reviews, star ratings, and seller feedback directly inside your Discord server.",
+      "full_description": "Discord Vouch & Ratings System that brings verified customer feedback and reputation management to your Discord community. Buyers can submit vouches and star ratings directly through a clean slash command interface, and all reviews are displayed in a dedicated vouch channel with automatic formatting. Sellers and service providers get a public profile that aggregates their total rating, review count, and recent feedback — building trust and credibility with potential customers. Admins can configure who can submit vouches, set review cooldowns, and manage or remove entries when needed. The system also supports anonymous reporting of fake or suspicious vouches. Lightweight, reliable, and fully customizable source code ready to deploy on any server running Windows, macOS, or Linux.",
+      "banner": "Support & User Experience",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_bots/",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": "3,99",
+      "original_price": "7,99",
+      "file_product": true,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+
+    {
+      "id": 6,
+      "category": "Discord Bots",
+      "version": "V4",
+      "product_id": "05754621447429517294",
+      "title": "• Anti Raid Protection System",
+      "license_categories": [
+      {
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "source_code": "14,99",
+        "source_code_original": "24,99"
+      }
+    ],
+      "description": "Discord Anti Raid Protection System bot — detect and neutralize raids, mass-joins, and coordinated attacks in real time to keep your server safe and your community protected.",
+      "full_description": "Discord Anti Raid Protection System that provides real-time defense against mass-join raids, coordinated spam attacks, mention floods, and automated account invasions. The bot monitors join rates, message patterns, and account age thresholds continuously, and automatically triggers lockdown mode when suspicious activity is detected — banning, kicking, or quarantining flagged accounts instantly. Admins receive detailed alert notifications in a private log channel with full action summaries. Configurable detection sensitivity, whitelist system for trusted members, and automatic lockdown release once the threat has cleared. The system also includes a manual raid-mode toggle for proactive protection during events or announcements. Source code is structured for easy extension and deployment on any environment running Windows, macOS, or Linux.",
+      "banner": "Moderation & Server Security",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_bots/",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": "14,99",
+      "original_price": "24,99",
+      "file_product": true,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+    {
+      "id": 7,
+      "category": "Discord Bots",
+      "version": "V1",
+      "product_id": "05754621446625417448",
+      "title": "• Message & Embed System",
+      "license_categories": [
+      {
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "source_code": "7,99",
+        "source_code_original": "14,99"
+      }
+    ],
+      "description": "Discord Message & Embed System bot — create, schedule, and send richly formatted embeds and announcements to any channel with a simple command-based editor.",
+      "full_description": "Discord Message & Embed System that gives server admins and moderators a powerful tool for creating and managing richly formatted embeds without writing a single line of JSON. Use clean slash commands to build embeds with custom titles, descriptions, colors, thumbnails, images, author fields, footers, and multiple field rows — all through an interactive command flow. Schedule messages to be sent at a specific time, set recurring announcements, and edit or delete previously sent embeds at any time. Supports both single-channel targeting and multi-channel broadcasting for announcements that need to reach the entire server at once. The source code is lightweight, well-commented, and ready to deploy on any server or VPS running Windows, macOS, or Linux.",
+      "banner": "Moderation & Support",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_bots/",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": "7,99",
+      "original_price": "14,99",
+      "file_product": true,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+    {
+      "id": 8,
+      "category": "Discord Bots",
+      "version": "V2",
+      "product_id": "05754621448070866641",
+      "title": "• All In One System",
+      "license_categories": [
+      {
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "source_code": "34,99",
+        "source_code_original": "49,99"
+      }
+    ],
+      "description": "Discord All-In-One System bot — the complete server management solution combining tickets, verification, auto payment, bank & XP, anti-raid, vouches, embeds, and more in a single powerful bot.",
+      "full_description": "Discord All-In-One System — the ultimate server management bot that bundles every essential system into a single, cohesive package. This bot combines the full Ticket & AI Support System, DM Captcha Verify System, Auto Payment System, Bank & XP System, Anti Raid Protection System, Vouch & Ratings System, and Message & Embed System into one unified deployment. Instead of running and maintaining multiple separate bots, you get a single bot with a unified configuration, shared database, and consistent command structure. Every module is individually toggleable so you can enable only what your server needs. Regular updates add new features and improvements across all modules simultaneously. Built for performance and long-term use, the source code is cleanly organized and documented for easy customization. Deployable on any server or VPS running Windows, macOS, or Linux.",
+      "banner": "Moderation • Server Security • User Experience",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_bots/",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": "34,99",
+      "original_price": "49,99",
+      "file_product": true,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+    {
+      "id": 9,
+      "category": "Discord Bots",
+      "version": "V3",
+      "product_id": "05754621448602882374",
+      "title": "• Only Ticket System",
+      "license_categories": [
+      {
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "source_code": "1,99",
+        "source_code_original": "4,99"
+      }
+    ],
+      "description": "Discord Ticket System bot — a lightweight, focused support ticket solution with panel buttons, category routing, staff controls, and full transcript logging.",
+      "full_description": "Discord Ticket System designed for server owners who want a clean, focused support solution without the overhead of a larger multi-module bot. Users open tickets via a panel button in any channel, select a category if configured, and get a private thread or channel instantly. Staff members can claim tickets, leave internal notes visible only to the team, and close or archive tickets with a single button click. Transcripts are automatically generated and sent to a log channel and optionally to the user via DM when a ticket closes. Fully configurable panel messages, button labels and colors, category options, role assignments, auto-close timers, and log channels. Minimal resource usage, easy to self-host, and deployable on any server or VPS running Windows, macOS, or Linux.",
+      "banner": "Moderation & Support",
+      "banner_color": "#63008a",
+      "preview_image_url": "discord_bots/",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.27.2026",
+      "last_update": "02.27.2026",
+      "Stock": "∞",
+      "price": "1,99",
+      "original_price": "4,99",
+      "file_product": true,
+      "auto_update": false,
+      "enabled_update": false,
+      "auto_setup": false,
+      "enabled_setup": false,
+      "coupon_codes": false,
+      "change_log": "Soon"
+    },
+
+
+
+
+ 
+    {
+      "id": 1,
+      "category": "Advertising Tools",
+      "version": "V3",
+      "product_id": "69713383923252338580",
+      "title": "• WhatsApp Mass DM Tool",
+      "license_categories": [
+      {
+        "one_time_trial": "One Time Trial",
+        "1_day": "1 Day - (24 Hours)",
+        "1_week": "1 Week - (7 Days)",
+        "1_month": "1 Month - (4 Weeks)",
+        "6_months": "6 Months - (24 Weeks)",
+        "1_year": "1 Year - (48 Weeks)",
+        "lifetime": "Lifetime - (Forever :3)",
+        "source_code": "Source Code"
+      }
+    ],
+      "license_categorie_prices": [
+      {
+        "1_day": "9,99",
+        "1_day_original": "14,99",
+        "1_week": "29,99",
+        "1_week_original": "104,93",
+        "1_month": "49,99",
+        "1_month_original": "419,72",
+        "6_months": "99,99",
+        "6_months_original": "2518.32",
+        "1_year": "149,99",
+        "1_year_original": "5036,64",
+        "lifetime": "249,99",
+        "lifetime_original": "599,99",
+        "source_code": "349,99",
+        "source_code_original": "799,99"
+      }
+    ],
+      "description": "Cross-platform Next Level WhatsApp Mass DM Tool with high-end anti-bot protection bypasses and advanced mechanisms to mimic the user behavior of the WhatsApp account holder 1:1. Ban risk = 0",
+      "full_description": "Cross-platform Next Level WhatsApp Mass DM Tool engineered from the ground up to deliver bulk messaging at scale without any ban risk. The tool features a proprietary behavior mimicry engine that replicates the exact interaction patterns of the account holder — including typing speeds, read delays, session timing, and device fingerprinting — making every sent message indistinguishable from a real human action. Advanced anti-bot protection bypasses are built directly into the core, neutralizing WhatsApp's detection layers before they can flag or suspend the account. Load your contact lists, define custom message templates with dynamic variable injection, schedule send windows, and run multiple accounts simultaneously from a single dashboard. Automatic updates and full setup are handled by the launcher on Windows, macOS, and Linux.",
+      "banner": "Top #1 Advertising Tool",
+      "banner_color": "#63008a",
+      "preview_image_url": "advertising_tools/whatsapp_mass_dm_tool_main.webp",
+      "image_url_1": "",
+      "image_url_2": "",
+      "image_url_3": "",
+      "image_url_4": "",
+      "image_url_5": "",
+      "image_url_6": "",
+      "image_url_7": "",
+      "image_url_8": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "02.21.2026",
+      "last_update": "02.21.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": true,
+      "change_log": "Soon"
+    },
+
+
+
+
+
+    {
+        "id": 0,
+        "category": "Websites",
+        "version": "V1",
+        "product_id": "39915809271586396208",
+        "title": "• NexusTools Online Shop - v2024",
+        "license_categories": [
+        {
+          "source_code": "Source Code"
+        }
+      ],
+      "license_categorie_prices": [
+        {
+        "source_code": "4,99",
+        "source_code_original": "19,99"
+        }
+      ],
+      "description": "",
+      "full_description": "",
+      "banner": "Nexus X Rickware - Labs",
+      "banner_color": "#63008a",
+      "preview_image_url": "websites/nexus_x_rickware-labs_2024_main_1.webp",
+      "image_url_1": "websites/nexus_x_rickware-labs_2024_main_2.webp",
+      "image_url_2": "websites/nexus_x_rickware-labs_2024_main_3.webp",
+      "image_url_3": "",
+      "image_url_4": "",
+      "owner_name": ".rick.c137",
+      "discord_url": "",
+      "github_url": "",
+      "website_url": "",
+      "published:": "04.10.2026",
+      "last_update": "04.10.2026",
+      "Stock": "∞",
+      "price": null,
+      "original_price": null,
+      "file_product": true,
+      "auto_update": true,
+      "enabled_update": true,
+      "auto_setup": true,
+      "enabled_setup": true,
+      "coupon_codes": false,
+      "change_log": "R.I.P NexusTools... 2021 - 2025"
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "partners": [
+    {
+      "id": 1,
+      "title": "• Alt Reality",
+      "description": "• Run the Reality Shop • Meet Alien Civilizations • Time Travel to Infinite Dimensionsㅤㅤㅤㅤㅤㅤ • Ally or Attack • Full VR Support • Multiplayer • Controller Support • Kernel-Level Anti-Cheat",
+      "banner": "Steam Game",
+      "preview_image_url": "alt_reality_banner.webp",
+      "owner_name": "drakko5.56 & .rick.c137",
+      "discord_url": "https://discord.gg/eX2SavTNZN",
+      "discord_url_2": "",
+      "website_url": "https://quantumstudiosinc.github.io/alt-reality-official/",
+      "github_url": "",
+      "tiktok_url": "",
+      "instagram_url": ""
+    },
+    {
+      "id": 2,
+      "title": "• ByteBunny Self-Bot  -  (BETA)",
+      "description": "• Cross-platform Next Level Discord Self-Bot including its own AI & 300+ features",
+      "banner": "Our Discord Self-Bot",
+      "preview_image_url": "bytebunny_animated_banner.webp",
+      "owner_name": "drakko5.56  &  .rick.c137",
+      "discord_url": "https://discord.gg/Bu72nAR7QU",
+      "discord_url_2": "",
+      "website_url": "https://bytebunnyselfbot.com/",
+      "github_url": "",
+      "tiktok_url": "",
+      "instagram_url": ""
+    },
+    {
+      "id": 3,
+      "title": "• Quantum Hub",
+      "description": "• Professional Cheats • Automated Software",
+      "banner": "Top #1 PARTNER",
+      "preview_image_url": "quantum_hub_animated_banner.webp",
+      "owner_name": "drakko5.56",
+      "discord_url": "https://discord.gg/6jpHJ8bEKP",
+      "discord_url_2": "https://discord.gg/QaUA5fmcCM",
+      "website_url": "https://driizzyy.github.io/quantum-hub/",
+      "github_url": "https://github.com/driizzyy",
+      "tiktok_url": "",
+      "instagram_url": ""
+    },
+    {
+      "id": 4,
+      "title": "• QuantumMC+ Client",
+      "description": "• Custom Minecraft Java Edition Client",
+      "banner": "Top #1 PARTNER",
+      "preview_image_url": "quantummc+_animated_banner.webp",
+      "owner_name": "drakko5.56",
+      "discord_url": "https://discord.gg/rpqmVp3FgG",
+      "discord_url_2": "",
+      "website_url": "",
+      "github_url": "https://github.com/driizzyy/quantumMC-plus",
+      "tiktok_url": "",
+      "instagram_url": ""
+    }
+  ],
+  "partners_list": [
+    {
+      "id": 0,
+      "preview_image_url": "rick.c137_profile_picture.webp",
+      "owner_name": ".rick.c137",
+      "discord_url": "https://discord.gg/Wk7d8mJgyN"
+    },
+    {
+      "id": 1,
+      "preview_image_url": "alt_reality_logo.webp",
+      "owner_name": "Alt Reality",
+      "discord_url": "https://discord.gg/eX2SavTNZN"
+    },
+    {
+      "id": 2,
+      "preview_image_url": "drakko5.56_profile_picture.webp",
+      "owner_name": "drakko5.56",
+      "discord_url": "https://discord.gg/6jpHJ8bEKP"
+    },
+    {
+      "id": 3,
+      "preview_image_url": "bytebunny_profile_picture.png",
+      "owner_name": "ByteBunny",
+      "discord_url": "https://discord.gg/Bu72nAR7QU"
+    },
+    {
+      "id": 4,
+      "preview_image_url": "cittycat_profile_picture.png",
+      "owner_name": "kittycat187",
+      "discord_url": "https://discord.gg/Wk7d8mJgyN"
+    }
+  ]
+}

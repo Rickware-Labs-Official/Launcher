@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rickware - Labs© - Lab Pass</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/lab-pass.css">
+    <link rel="icon" type="image/webp" href="../images/main/logo.webp">
+</head>
+<body>
+    <a href="../index.html" class="lp-back-btn" title="Back to Store">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+    </a>
+    <div class="lp-page-wrap">
+
+        <div class="lp-top-row">
+
+            <div class="lp-left-column">
+
+            <div class="lp-header-section">
+                <div class="lp-header-left">
+                    <div class="lp-flask-wrap">
+                        <svg class="lp-flask-icon" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="url(#flaskGrad)" stroke-width="1.5">
+                            <defs>
+                                <linearGradient id="flaskGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#c97eff"/>
+                                    <stop offset="100%" stop-color="#6a00b8"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M9 3h6M9 3v7L5 17a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3L15 10V3"/>
+                            <circle cx="9.5" cy="16" r="1" fill="#c97eff" stroke="none"/>
+                            <circle cx="13" cy="18" r="0.7" fill="#9b40ff" stroke="none"/>
+                            <circle cx="11" cy="14.5" r="0.5" fill="#c97eff" stroke="none"/>
+                        </svg>
+                    </div>
+                    <div class="lp-title-block">
+                        <h1 class="lp-main-title">LAB-PASS</h1>
+                        <div class="lp-season-label">SEASON 1: REACTOR</div>
+                        <div class="lp-time-left">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span id="lpTimeLeft">Coming Soon</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lp-xp-block">
+                    <div class="lp-level-row">
+                        <div class="lp-level-badge" id="lpCurrentLevel">1</div>
+                        <div class="lp-xp-bar-wrap">
+                            <div class="lp-xp-bar-track">
+                                <div class="lp-xp-bar-fill" id="lpXpBar" style="width: 56%;"></div>
+                            </div>
+                            <div class="lp-xp-text" id="lpXpText">50 / 250 XP</div>
+                        </div>
+                        <div class="lp-level-badge lp-level-next" id="lpNextLevel">2</div>
+                    </div>
+                </div>
+
+                <div class="lp-cta-block">
+                    <div class="lp-chest-placeholder" id="lpHeroChest">
+                        <div class="lp-chest-placeholder-inner">
+                            <img src="../images/assets/lab_pass/rickware-labs_chest.webp" alt="Season Chest" style="width:100%;height:100%;object-fit:contain;">
+                            <span style="margin-top:-10px;color: rgb(157, 157, 157);font-family: Arial, Helvetica, sans-serif;">Season Chest</span>
+                        </div>
+                    </div>
+                    <div class="lp-cta-buttons">
+                        <button class="lp-activate-btn" id="lpActivateBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            Activate Lab-Pass
+                        </button>
+                        <button class="lp-price-btn" id="lpPriceBtn">
+                            <img src="../images/main/Rickware-Labs_Labs_Coin_LC_Galaxy_Main.png" alt="LC" class="lp-coin-icon" onerror="this.style.display='none'">
+                            <span id="lpPassPrice">39 LC</span>
+                        </button>
+                    </div>
+                    <p class="lp-cta-desc">Contains Premium Rewards and supports the Launcher!</p>
+                </div>
+            </div>
+
+            <div class="lp-rewards-section">
+                <div class="lp-rewards-slider-wrap">
+                    <div class="lp-rewards-grid-outer" id="lpRewardsScroll">
+                        <div id="lpRewardsTrack"></div>
+                    </div>
+                    <div class="lp-slider-controls">
+                        <button class="lp-slider-btn" id="lpSliderLeft" aria-label="Scroll left">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+                        </button>
+                        <div class="lp-slider-track-wrap" id="lpSliderTrack">
+                            <div class="lp-slider-track-fill" id="lpSliderFill" style="width: 0%;"></div>
+                        </div>
+                        <button class="lp-slider-btn" id="lpSliderRight" aria-label="Scroll right">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="lp-rewards-hint">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                    Play, earn XP and unlock exclusive rewards!
+                </div>
+            </div>
+
+            </div>
+
+            <div class="lp-top-right">
+                <div class="lp-bundle-card glass-card">
+                    <div class="lp-bundle-discount">-20%</div>
+                    <div class="lp-bundle-header">
+                        <div class="lp-card-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                            Lab-Pass Bundle
+                        </div>
+                        <div class="lp-bundle-desc">Pass + 10 Levels</div>
+                    </div>
+                    <div class="lp-bundle-bottom">
+                        <div class="lp-bundle-chest-placeholder">
+                            <img src="../images/assets/lab_pass/rickware-labs_chest.webp" alt="Season Chest" style="width:68px;height:68px;object-fit:contain;" onerror="this.style.display='none'">
+                        </div>
+                        <div class="lp-bundle-price-block">
+                            <div class="lp-bundle-price-row">
+                                <span class="lp-bundle-price-new">69 LC</span>
+                                <span class="lp-bundle-price-old">80 LC</span>
+                            </div>
+                            <button class="lp-bundle-btn" id="lpBundleBtn">Buy Bundle</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lp-challenges-card glass-card">
+                    <div class="lp-card-header">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        Daily Challenges
+                        <span class="lp-timer-badge" id="lpChallengeTimer">15h 42m 18s</span>
+                    </div>
+                    <div class="lp-challenges-list" id="lpChallengesList">
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Open Launcher</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:100%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">1/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <svg class="lp-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span class="lp-xp-reward">50 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Use a Tool</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">100 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Rate a Product</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">75 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Launch 3 Tools</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/3</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">120 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Visit the Store</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">40 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Update Launcher</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">60 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Share a Product</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">80 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Check for Updates</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">35 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Earn 100 XP</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:50%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">50/100</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">150 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Customize Profile</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">90 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Open Lab-Pass</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:100%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">1/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <svg class="lp-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span class="lp-xp-reward">25 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Unlock a Reward</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">200 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Browse All Tools</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/5</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">110 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Join Discord</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">175 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Refer a Friend</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">250 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Use 2 Features</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/2</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">85 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Level Up</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">300 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Win a Match</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">130 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Complete 5 Challenges</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:20%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">1/5</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">500 XP</span>
+                            </div>
+                        </div>
+                        <div class="lp-challenge-item">
+                            <div class="lp-challenge-info">
+                                <span class="lp-challenge-name">Apply a Theme</span>
+                                <div class="lp-challenge-bar-wrap">
+                                    <div class="lp-challenge-bar-track">
+                                        <div class="lp-challenge-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span class="lp-challenge-prog">0/1</span>
+                                </div>
+                            </div>
+                            <div class="lp-challenge-reward">
+                                <span class="lp-xp-reward">65 XP</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="lp-all-challenges-btn" id="lpAllChallengesBtn">All Challenges</button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/lab-pass.js"></script>
+</body>
+</html>

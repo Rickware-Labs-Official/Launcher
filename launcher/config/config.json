@@ -1,0 +1,15 @@
+{
+  "launcher_url": "https://dev-rick-c137.github.io/Launcher/",
+  "api_url": "http://prem-eu4.bot-hosting.net:20940",
+  "version": "1.0.0",
+  "build": "2026.01",
+
+  "window": {
+    "width": 1600,
+    "height": 800,
+    "min_width": 1600,
+    "min_height": 800,
+    "title": "Rickware - Labs Launcher V1.0.0 - Beta",
+    "zoom_factor": 0.86
+  }
+}

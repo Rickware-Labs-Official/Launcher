@@ -1,0 +1,6100 @@
+{
+  "meta": {
+    "name": "Rickware Labs - Main Theme",
+    "description": "Complete color definition for all CSS files in the Rickware Labs application. Every color specified as a hex or RGBA value within the CSS files is represented here exactly (hex + alpha). Objective: The CSS files load all colors from this JSON instead of hardcoding them. No estimates—every entry corresponds precisely to the original value from the respective CSS file.",
+    "version": "1.0.0",
+    "color_format": "Each color is an object { hex: #rrggbb, alpha: 0.0-1.0 }. For fully opaque colors, alpha = 1.0. From this, CSS should generate, for example, rgba(r, g, b, alpha) or #hex when alpha is 1.",
+    "source_files": [
+      "main.css",
+      "login_register.css",
+      "preferences.css",
+      "account_settings.css",
+      "order_history.css",
+      "help_and_support.css",
+      "inventory.css",
+      "lab-pass.css"
+    ]
+  },
+  "global": {
+    "description": "Root variables (e.g., `--bg-primary`) that recur—either identically or with slight variations—across multiple files. Nevertheless, each file section below contains its own complete set of values ​​so that each file can load independently from `main_theme.json`.",
+    "main_css_root": {
+      "comment": "main.css :root Block",
+      "bg_primary": {
+        "hex": "#0f0f0f",
+        "alpha": 1.0
+      },
+      "bg_secondary": {
+        "hex": "#1a1a1a",
+        "alpha": 1.0
+      },
+      "bg_tertiary": {
+        "hex": "#242424",
+        "alpha": 1.0
+      },
+      "bg_hover": {
+        "hex": "#2a2a2a",
+        "alpha": 1.0
+      },
+      "text_primary": {
+        "hex": "#ffffff",
+        "alpha": 1.0
+      },
+      "text_secondary": {
+        "hex": "#b3b3b3",
+        "alpha": 1.0
+      },
+      "text_tertiary": {
+        "hex": "#808080",
+        "alpha": 1.0
+      },
+      "accent_primary": {
+        "hex": "#0078f2",
+        "alpha": 1.0
+      },
+      "border_color": {
+        "hex": "#2a2a2a",
+        "alpha": 1.0
+      },
+      "success": {
+        "hex": "#4caf50",
+        "alpha": 1.0
+      },
+      "warning": {
+        "hex": "#ff9800",
+        "alpha": 1.0
+      },
+      "danger": {
+        "hex": "#f44336",
+        "alpha": 1.0
+      },
+      "red": {
+        "hex": "#6a0080",
+        "alpha": 1.0
+      },
+      "red_hover": {
+        "hex": "#8b00a8",
+        "alpha": 1.0
+      },
+      "sidebar_width_px": 240,
+      "topbar_height_px": 70
+    },
+    "settings_pages_root": {
+      "comment": "Root-Block identisch in preferences.css, account_settings.css, help_and_support.css, order_history.css",
+      "bg_primary": {
+        "hex": "#0a0010",
+        "alpha": 1.0
+      },
+      "bg_secondary": {
+        "hex": "#110020",
+        "alpha": 1.0
+      },
+      "bg_tertiary": {
+        "hex": "#1a0030",
+        "alpha": 1.0
+      },
+      "bg_hover": {
+        "hex": "#220040",
+        "alpha": 1.0
+      },
+      "bg_glass": {
+        "hex": "#63008a",
+        "alpha": 0.1
+      },
+      "bg_glass_hover": {
+        "hex": "#63008a",
+        "alpha": 0.18
+      },
+      "text_primary": {
+        "hex": "#ffffff",
+        "alpha": 1.0
+      },
+      "text_secondary": {
+        "hex": "#c9a8e0",
+        "alpha": 1.0
+      },
+      "text_tertiary": {
+        "hex": "#8060a0",
+        "alpha": 1.0
+      },
+      "accent_primary": {
+        "hex": "#9b00cc",
+        "alpha": 1.0
+      },
+      "accent_hover": {
+        "hex": "#b500ee",
+        "alpha": 1.0
+      },
+      "border_color": {
+        "hex": "#9b00cc",
+        "alpha": 0.2
+      },
+      "border_bright": {
+        "hex": "#9b00cc",
+        "alpha": 0.45
+      },
+      "success": {
+        "hex": "#4caf50",
+        "alpha": 1.0
+      },
+      "warning": {
+        "hex": "#ff9800",
+        "alpha": 1.0
+      },
+      "danger": {
+        "hex": "#f44336",
+        "alpha": 1.0
+      }
+    },
+    "login_register_root": {
+      "comment": "login_register.css :root Block",
+      "bg_primary": {
+        "hex": "#0f0f0f",
+        "alpha": 1.0
+      },
+      "bg_secondary": {
+        "hex": "#1a1a1a",
+        "alpha": 1.0
+      },
+      "bg_tertiary": {
+        "hex": "#242424",
+        "alpha": 1.0
+      },
+      "bg_hover": {
+        "hex": "#2a2a2a",
+        "alpha": 1.0
+      },
+      "text_primary": {
+        "hex": "#ffffff",
+        "alpha": 1.0
+      },
+      "text_secondary": {
+        "hex": "#b3b3b3",
+        "alpha": 1.0
+      },
+      "text_tertiary": {
+        "hex": "#808080",
+        "alpha": 1.0
+      },
+      "accent_primary": {
+        "hex": "#9b00cc",
+        "alpha": 1.0
+      },
+      "accent_hover": {
+        "hex": "#b500ee",
+        "alpha": 1.0
+      },
+      "border_color": {
+        "hex": "#2a2a2a",
+        "alpha": 1.0
+      },
+      "success": {
+        "hex": "#4caf50",
+        "alpha": 1.0
+      },
+      "warning": {
+        "hex": "#ff9800",
+        "alpha": 1.0
+      },
+      "danger": {
+        "hex": "#f44336",
+        "alpha": 1.0
+      },
+      "sidebar_width_px": 240,
+      "topbar_height_px": 70
+    },
+    "inventory_root": {
+      "comment": "inventory.css :root Block",
+      "inv_bg_primary": {
+        "hex": "#0f0f0f",
+        "alpha": 1.0
+      },
+      "inv_accent": {
+        "hex": "#9b00cc",
+        "alpha": 1.0
+      },
+      "inv_accent_light": {
+        "hex": "#c97eff",
+        "alpha": 1.0
+      },
+      "inv_accent_hover": {
+        "hex": "#b500ee",
+        "alpha": 1.0
+      },
+      "inv_text_primary": {
+        "hex": "#ffffff",
+        "alpha": 1.0
+      },
+      "inv_text_secondary": {
+        "hex": "#ffffff",
+        "alpha": 0.6
+      },
+      "inv_text_tertiary": {
+        "hex": "#ffffff",
+        "alpha": 0.4
+      }
+    },
+    "lab_pass_root_fallbacks": {
+      "comment": "lab-pass.css nutzt var(--bg-primary, #0f0f0f) und var(--text-primary, #fff) als CSS-Fallback ohne eigenen :root Block - erbt von main.css Variablen, Fallback-Werte hier dokumentiert",
+      "bg_primary_fallback": {
+        "hex": "#0f0f0f",
+        "alpha": 1.0
+      },
+      "text_primary_fallback": {
+        "hex": "#ffffff",
+        "alpha": 1.0
+      }
+    },
+    "shared_brand_colors": {
+      "comment": "Wiederkehrende Markenfarben (Lila-Familie) quer durch alle Dateien, zur Referenz gesammelt",
+      "brand_purple_darkest": {
+        "hex": "#100090",
+        "alpha": 1.0
+      },
+      "brand_purple_dark": {
+        "hex": "#200080",
+        "alpha": 1.0
+      },
+      "brand_purple_deep": {
+        "hex": "#380060",
+        "alpha": 1.0
+      },
+      "brand_purple_deeper": {
+        "hex": "#520070",
+        "alpha": 1.0
+      },
+      "brand_purple_mid": {
+        "hex": "#5e0070",
+        "alpha": 1.0
+      },
+      "brand_purple_core": {
+        "hex": "#6a0080",
+        "alpha": 1.0
+      },
+      "brand_purple_core_alt": {
+        "hex": "#63008a",
+        "alpha": 1.0
+      },
+      "brand_purple_bright": {
+        "hex": "#7b00a0",
+        "alpha": 1.0
+      },
+      "brand_purple_brighter": {
+        "hex": "#7800aa",
+        "alpha": 1.0
+      },
+      "brand_purple_vivid": {
+        "hex": "#8b00a8",
+        "alpha": 1.0
+      },
+      "brand_purple_accent": {
+        "hex": "#9b00cc",
+        "alpha": 1.0
+      },
+      "brand_purple_accent_hover": {
+        "hex": "#b500ee",
+        "alpha": 1.0
+      },
+      "brand_purple_light": {
+        "hex": "#c97eff",
+        "alpha": 1.0
+      },
+      "brand_purple_pale_text": {
+        "hex": "#d4a0ff",
+        "alpha": 1.0
+      },
+      "brand_purple_pale_text_alt": {
+        "hex": "#daaaff",
+        "alpha": 1.0
+      },
+      "brand_lavender_text": {
+        "hex": "#c9a8e0",
+        "alpha": 1.0
+      }
+    },
+    "global_scrollbar_main_css": {
+      "comment": "::-webkit-scrollbar Regeln am Anfang von main.css",
+      "track_background": "transparent",
+      "thumb_background": {
+        "hex": "#3a3a3a",
+        "alpha": 1.0
+      },
+      "thumb_hover_background": {
+        "hex": "#6a0080",
+        "alpha": 1.0
+      },
+      "firefox_scrollbar_color_thumb": {
+        "hex": "#3a3a3a",
+        "alpha": 1.0
+      },
+      "firefox_scrollbar_color_track": "transparent"
+    }
+  },
+  "main_css": {
+    "_file": "main.css",
+    "_description": "Hauptanwendung: Sidebar, Top-Bar, Produkt-/Partner-/News-Grids, Modals, Bank-Seite, Forum, Reviews, Customer-Panel usw.",
+    "selectors": {
+      "body": {
+        "background_color": "var(global.main_css_root.bg_primary)",
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "sidebar": {
+        "_selector": ".sidebar",
+        "background_color": "var(global.main_css_root.bg_secondary)",
+        "border_right_color": "var(global.main_css_root.border_color)"
+      },
+      "sidebar_header": {
+        "_selector": ".sidebar-header",
+        "border_bottom_color": "var(global.main_css_root.border_color)"
+      },
+      "nav_item": {
+        "_selector": ".nav-item",
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": {
+            "hex": "#6a0080",
+            "alpha": 0.18
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          "box_shadow_color": {
+            "hex": "#a000c8",
+            "alpha": 0.5
+          }
+        },
+        "active": {
+          "background": {
+            "hex": "#6a0080",
+            "alpha": 0.28
+          },
+          "color": {
+            "hex": "#d4a0ff",
+            "alpha": 1.0
+          },
+          "border_left_color": {
+            "hex": "#9900cc",
+            "alpha": 1.0
+          },
+          "box_shadow_color": {
+            "hex": "#9600dc",
+            "alpha": 0.12
+          }
+        },
+        "svg_color": {
+          "hex": "#63008a",
+          "alpha": 1.0
+        },
+        "svg_hover_or_active_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "discord_join_btn": {
+        "_selector": ".discord-join-btn",
+        "background_gradient": [
+          {
+            "hex": "#63008a",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#4a0068",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "box_shadow_color": {
+          "hex": "#63008a",
+          "alpha": 0.4
+        },
+        "shine_overlay_color": {
+          "hex": "#ffffff",
+          "alpha": 0.18
+        },
+        "svg_color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background_gradient": [
+            {
+              "hex": "#5865f2",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#4752c4",
+              "alpha": 1.0
+            }
+          ],
+          "box_shadow_ring_color": {
+            "hex": "#5865f2",
+            "alpha": 0.5
+          },
+          "box_shadow_glow_color": {
+            "hex": "#5865f2",
+            "alpha": 0.35
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "sidebar_footer": {
+        "_selector": ".sidebar-footer",
+        "border_top_color": "var(global.main_css_root.border_color)"
+      },
+      "download_status": {
+        "_selector": ".download-status",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "top_bar": {
+        "_selector": ".top-bar",
+        "background_color": "var(global.main_css_root.bg_secondary)",
+        "border_bottom_color": "var(global.main_css_root.border_color)"
+      },
+      "back_btn": {
+        "_selector": ".back-btn",
+        "color": "var(global.main_css_root.text_secondary)",
+        "hover": {
+          "background_color": "var(global.main_css_root.bg_hover)",
+          "color": "var(global.main_css_root.text_primary)"
+        }
+      },
+      "search_container": {
+        "_selector": ".search-container",
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.18
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.35
+        },
+        "focus_within_border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.65
+        },
+        "focus_within_box_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "svg_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "input_color": "var(global.main_css_root.text_primary)",
+        "input_placeholder_color": "var(global.main_css_root.text_tertiary)"
+      },
+      "top_tab": {
+        "_selector": ".top-tab",
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": {
+            "hex": "#6a0080",
+            "alpha": 0.18
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          "box_shadow_color": {
+            "hex": "#a000c8",
+            "alpha": 0.5
+          }
+        },
+        "active": {
+          "background": {
+            "hex": "#6a0080",
+            "alpha": 0.28
+          },
+          "color": {
+            "hex": "#d4a0ff",
+            "alpha": 1.0
+          },
+          "box_shadow_inset_color": {
+            "hex": "#9900cc",
+            "alpha": 1.0
+          },
+          "box_shadow_glow_color": {
+            "hex": "#9600dc",
+            "alpha": 0.1
+          }
+        }
+      },
+      "icon_action_btn": {
+        "_selector": ".icon-action-btn",
+        "color": "var(global.main_css_root.text_secondary)",
+        "svg_color": {
+          "hex": "#63008a",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background_color": "var(global.main_css_root.bg_hover)",
+          "color": "var(global.main_css_root.text_primary)",
+          "box_shadow_inset_color": {
+            "hex": "#ffffff",
+            "alpha": 0.07
+          },
+          "box_shadow_glow_color": {
+            "hex": "#ffffff",
+            "alpha": 0.03
+          },
+          "svg_color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "badge": {
+        "_selector": ".badge",
+        "background_color": "var(global.main_css_root.danger)",
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "auth_btn_login": {
+        "_selector": ".login-btn",
+        "background": {
+          "hex": "#63008a",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_background": {
+          "hex": "#7a00aa",
+          "alpha": 1.0
+        }
+      },
+      "auth_btn_register": {
+        "_selector": ".register-btn",
+        "background": {
+          "hex": "#63008a",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "border_color": {
+          "hex": "#9600c8",
+          "alpha": 0.4
+        },
+        "hover_background": {
+          "hex": "#7a00aa",
+          "alpha": 1.0
+        }
+      },
+      "user_profile_btn": {
+        "_selector": ".user-profile-btn",
+        "color": "var(global.main_css_root.text_primary)",
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.4
+        },
+        "hover": {
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.65
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.25
+          }
+        }
+      },
+      "nameplate_lc_small": {
+        "_selector": ".nameplate-lc small",
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "styled_select": {
+        "_selector": ".styled-select",
+        "background_color": "var(global.main_css_root.bg_secondary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_primary)",
+        "chevron_svg_stroke_color": {
+          "hex": "#808080",
+          "alpha": 1.0
+        },
+        "hover_or_focus_border_color": {
+          "hex": "#6a0080",
+          "alpha": 1.0
+        },
+        "option_background_color": "var(global.main_css_root.bg_secondary)"
+      },
+      "product_card": {
+        "_selector": ".product-card",
+        "background": {
+          "hex": "#140523",
+          "alpha": 0.5
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.18
+        },
+        "box_shadow_outer_color": {
+          "hex": "#000000",
+          "alpha": 0.35
+        },
+        "box_shadow_inset1_color": {
+          "hex": "#64008c",
+          "alpha": 0.12
+        },
+        "box_shadow_inset2_color": {
+          "hex": "#6400a0",
+          "alpha": 0.07
+        },
+        "hover": {
+          "box_shadow_color": {
+            "hex": "#6a0080",
+            "alpha": 0.42
+          },
+          "box_shadow_inset1_color": {
+            "hex": "#a000c8",
+            "alpha": 0.55
+          },
+          "box_shadow_inset2_color": {
+            "hex": "#7800b4",
+            "alpha": 0.18
+          },
+          "border_color": {
+            "hex": "#a000b4",
+            "alpha": 0.6
+          }
+        },
+        "image_area_background_gradient": [
+          {
+            "hex": "#6a0080",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#5e0070",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#300060",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#100090",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "product_image": {
+        "_selector": ".product-image",
+        "background_color": "var(global.main_css_root.bg_tertiary)"
+      },
+      "product_description": {
+        "_selector": ".product-description",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "price_original": {
+        "_selector": ".price-original",
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "btn_primary_main": {
+        "_selector": ".btn-primary (main.css)",
+        "background_gradient": [
+          {
+            "hex": "#6a0080",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#5e0070",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#520040",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#380060",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#200080",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#100090",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_background_gradient": [
+          {
+            "hex": "#8b00a8",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#7a0090",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#63004e",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#460075",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#2d009e",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#1800ab",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "btn_secondary_main": {
+        "_selector": ".btn-secondary (main.css)",
+        "background_color": "var(global.main_css_root.bg_tertiary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_primary)",
+        "hover": {
+          "background_color": "var(global.main_css_root.bg_hover)",
+          "box_shadow_inset_color": {
+            "hex": "#ffffff",
+            "alpha": 0.08
+          },
+          "box_shadow_glow_color": {
+            "hex": "#ffffff",
+            "alpha": 0.04
+          }
+        }
+      },
+      "profile_sidebar": {
+        "_selector": ".profile-sidebar",
+        "background_color": {
+          "hex": "#500078",
+          "alpha": 0.15
+        },
+        "box_shadow_color": {
+          "hex": "#000000",
+          "alpha": 0.5
+        }
+      },
+      "profile_header": {
+        "_selector": ".profile-header",
+        "border_bottom_color": "var(global.main_css_root.border_color)"
+      },
+      "profile_img_large": {
+        "_selector": ".profile-img-large",
+        "background_color": "var(global.main_css_root.bg_tertiary)"
+      },
+      "user_type_badge": {
+        "_selector": ".user-type-badge",
+        "background_color": "var(global.main_css_root.bg_tertiary)",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "user_perms_badge": {
+        "_selector": ".user-perms-badge",
+        "background": {
+          "hex": "#00bcd4",
+          "alpha": 0.12
+        },
+        "border_color": {
+          "hex": "#00bcd4",
+          "alpha": 0.3
+        },
+        "color": {
+          "hex": "#00bcd4",
+          "alpha": 1.0
+        }
+      },
+      "profile_nav_item": {
+        "_selector": ".profile-nav-item",
+        "color": "var(global.main_css_root.text_primary)",
+        "hover": {
+          "background_color": "var(global.main_css_root.bg_hover)",
+          "box_shadow_inset_color": {
+            "hex": "#ffffff",
+            "alpha": 0.04
+          }
+        }
+      },
+      "profile_divider": {
+        "_selector": ".profile-divider",
+        "background_color": "var(global.main_css_root.border_color)"
+      },
+      "logout_btn": {
+        "_selector": ".logout-btn",
+        "color": "var(global.main_css_root.danger)",
+        "hover_background": {
+          "hex": "#f44336",
+          "alpha": 0.1
+        }
+      },
+      "overlay_main": {
+        "_selector": ".overlay (main.css)",
+        "background_color": {
+          "hex": "#000000",
+          "alpha": 0.7
+        }
+      },
+      "empty_state_main": {
+        "_selector": ".empty-state (main.css)",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "partner_news_page_header_p": {
+        "_selector": ".partner-page-header p, .news-page-header p",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "partner_card": {
+        "_selector": ".partner-card",
+        "background": {
+          "hex": "#140523",
+          "alpha": 0.5
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.18
+        },
+        "box_shadow_outer_color": {
+          "hex": "#000000",
+          "alpha": 0.35
+        },
+        "box_shadow_inset1_color": {
+          "hex": "#64008c",
+          "alpha": 0.12
+        },
+        "box_shadow_inset2_color": {
+          "hex": "#6400a0",
+          "alpha": 0.07
+        },
+        "hover": {
+          "box_shadow_color": {
+            "hex": "#6a0080",
+            "alpha": 0.42
+          },
+          "box_shadow_inset1_color": {
+            "hex": "#a000c8",
+            "alpha": 0.55
+          },
+          "box_shadow_inset2_color": {
+            "hex": "#7800b4",
+            "alpha": 0.18
+          },
+          "border_color": {
+            "hex": "#a000b4",
+            "alpha": 0.6
+          }
+        }
+      },
+      "partner_image_area": {
+        "_selector": ".partner-image-area",
+        "background_gradient": [
+          {
+            "hex": "#6a0080",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#5e0070",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#300060",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#100090",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "partner_banner_label": {
+        "_selector": ".partner-banner-label",
+        "background_color": {
+          "hex": "#6a0080",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "box_shadow_color": {
+          "hex": "#000000",
+          "alpha": 0.4
+        }
+      },
+      "partner_owner_label": {
+        "_selector": ".partner-owner-label",
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.9
+        },
+        "background_color": {
+          "hex": "#000000",
+          "alpha": 0.55
+        }
+      },
+      "partner_discord_counter": {
+        "_selector": ".partner-discord-counter",
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "background_color": {
+          "hex": "#000000",
+          "alpha": 0.6
+        }
+      },
+      "partner_discord_dot": {
+        "_selector": ".partner-discord-dot",
+        "background_color": {
+          "hex": "#4caf50",
+          "alpha": 1.0
+        }
+      },
+      "partner_description": {
+        "_selector": ".partner-description",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "partner_btn_hover": {
+        "_selector": ".partner-btn:hover",
+        "box_shadow_ring_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        },
+        "box_shadow_drop_color": {
+          "hex": "#000000",
+          "alpha": 0.3
+        }
+      },
+      "partner_btn_variants": {
+        "discord": {
+          "background_color": {
+            "hex": "#5865f2",
+            "alpha": 1.0
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          }
+        },
+        "website": {
+          "background_color": "var(global.main_css_root.bg_tertiary)",
+          "color": "var(global.main_css_root.text_primary)",
+          "border_color": "var(global.main_css_root.border_color)"
+        },
+        "github": {
+          "background_color": {
+            "hex": "#24292e",
+            "alpha": 1.0
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          }
+        },
+        "tiktok": {
+          "background_color": {
+            "hex": "#010101",
+            "alpha": 1.0
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          },
+          "border_color": {
+            "hex": "#3a3a3a",
+            "alpha": 1.0
+          }
+        },
+        "instagram": {
+          "background_gradient": [
+            {
+              "hex": "#f09433",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#e6683c",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#dc2743",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#cc2366",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#bc1888",
+              "alpha": 1.0
+            }
+          ],
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "news_card": {
+        "_selector": ".news-card",
+        "background": {
+          "hex": "#0f0f0f",
+          "alpha": 0.55
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.08
+        },
+        "hover": {
+          "box_shadow_color": {
+            "hex": "#000000",
+            "alpha": 0.45
+          },
+          "border_color": {
+            "hex": "#6a0080",
+            "alpha": 0.4
+          }
+        }
+      },
+      "news_card_featured": {
+        "_selector": ".news-card-featured",
+        "background_gradient": [
+          {
+            "hex": "#1a1a1a",
+            "alpha": 0.7
+          },
+          {
+            "hex": "#200030",
+            "alpha": 0.7
+          }
+        ],
+        "border_color": {
+          "hex": "#6a0080",
+          "alpha": 0.5
+        }
+      },
+      "news_badges": {
+        "badge_new": {
+          "background_color": {
+            "hex": "#6a0080",
+            "alpha": 1.0
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          }
+        },
+        "badge_update": {
+          "background_color": {
+            "hex": "#1565c0",
+            "alpha": 1.0
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          }
+        },
+        "badge_info": {
+          "background_color": {
+            "hex": "#2e7d32",
+            "alpha": 1.0
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          }
+        },
+        "badge_maintenance": {
+          "background_color": {
+            "hex": "#e65100",
+            "alpha": 1.0
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "news_date": {
+        "_selector": ".news-date",
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "news_category": {
+        "_selector": ".news-category",
+        "color": "var(global.main_css_root.text_secondary)",
+        "background_color": "var(global.main_css_root.bg_tertiary)"
+      },
+      "news_card_title": {
+        "_selector": ".news-card-title",
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "news_card_body": {
+        "_selector": ".news-card-body",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "news_card_footer": {
+        "_selector": ".news-card-footer",
+        "border_top_color": "var(global.main_css_root.border_color)"
+      },
+      "news_author": {
+        "_selector": ".news-author",
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "dropdown_panel": {
+        "_selector": ".dropdown-panel",
+        "background": {
+          "hex": "#0a0514",
+          "alpha": 0.35
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.25
+        },
+        "box_shadow_color": {
+          "hex": "#000000",
+          "alpha": 0.5
+        },
+        "box_shadow_inset_color": {
+          "hex": "#ffffff",
+          "alpha": 0.05
+        }
+      },
+      "dropdown_header": {
+        "_selector": ".dropdown-header",
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.5
+        },
+        "border_bottom_color": {
+          "hex": "#ffffff",
+          "alpha": 0.07
+        },
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.03
+        }
+      },
+      "dropdown_empty": {
+        "_selector": ".dropdown-empty",
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "dropdown_item": {
+        "_selector": ".dropdown-item",
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.85
+        },
+        "hover_background": {
+          "hex": "#ffffff",
+          "alpha": 0.07
+        }
+      },
+      "dropdown_item_price": {
+        "_selector": ".dropdown-item-price",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "category_tabs_bar": {
+        "_selector": ".category-tabs-bar",
+        "border_bottom_color": "var(global.main_css_root.border_color)"
+      },
+      "category_slider_arrow": {
+        "_selector": ".category-slider-arrow",
+        "background": "var(global.main_css_root.bg_secondary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_secondary)",
+        "hover": {
+          "background": "var(global.main_css_root.bg_hover)",
+          "color": "var(global.main_css_root.text_primary)",
+          "box_shadow1_color": {
+            "hex": "#ffffff",
+            "alpha": 0.08
+          },
+          "box_shadow2_color": {
+            "hex": "#ffffff",
+            "alpha": 0.04
+          }
+        }
+      },
+      "category_tab": {
+        "_selector": ".category-tab",
+        "background": "var(global.main_css_root.bg_secondary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": "var(global.main_css_root.bg_hover)",
+          "color": "var(global.main_css_root.text_primary)",
+          "box_shadow_color": {
+            "hex": "#8b008b",
+            "alpha": 0.25
+          },
+          "box_shadow_glow_color": {
+            "hex": "#8b008b",
+            "alpha": 0.1
+          }
+        },
+        "active": {
+          "background": {
+            "hex": "#6a0080",
+            "alpha": 1.0
+          },
+          "border_color": {
+            "hex": "#8b00a8",
+            "alpha": 1.0
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          },
+          "box_shadow_color": {
+            "hex": "#8b00a0",
+            "alpha": 0.35
+          }
+        }
+      },
+      "product_price_free": {
+        "_selector": ".product-price-free",
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "product_price_free_tag": {
+        "_selector": ".product-price-free-tag",
+        "color": {
+          "hex": "#4caf50",
+          "alpha": 1.0
+        }
+      },
+      "product_price_range": {
+        "_selector": ".product-price-range",
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "product_price_original": {
+        "_selector": ".product-price-original",
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "product_stock": {
+        "_selector": ".product-stock",
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "product_price": {
+        "_selector": ".product-price",
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "product_title": {
+        "_selector": ".product-title",
+        "color": "inherit (no explicit color set besides default text)"
+      },
+      "product_body_title": {
+        "_selector": ".product-body .product-title",
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "product_btn_discord": {
+        "background_color": {
+          "hex": "#5865f2",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_opacity": 0.85
+      },
+      "product_btn_wishlist": {
+        "background_color": "var(global.main_css_root.bg_tertiary)",
+        "color": "var(global.main_css_root.text_secondary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "hover_or_active_color": {
+          "hex": "#e74c3c",
+          "alpha": 1.0
+        },
+        "hover_or_active_border_color": {
+          "hex": "#e74c3c",
+          "alpha": 1.0
+        }
+      },
+      "product_btn_cart": {
+        "background_color": {
+          "hex": "#6a0080",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_opacity": 0.85,
+        "disabled_background_color": "var(global.main_css_root.bg_tertiary)",
+        "disabled_color": "var(global.main_css_root.text_tertiary)"
+      },
+      "product_btn_download": {
+        "background_color": {
+          "hex": "#2e7d32",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_opacity": 0.85
+      },
+      "product_modal_overlay": {
+        "_selector": ".product-modal-overlay",
+        "background": {
+          "hex": "#000000",
+          "alpha": 0.75
+        }
+      },
+      "product_modal": {
+        "_selector": ".product-modal",
+        "background": {
+          "hex": "#12041e",
+          "alpha": 0.85
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.3
+        },
+        "box_shadow1_color": {
+          "hex": "#000000",
+          "alpha": 0.7
+        },
+        "box_shadow2_color": {
+          "hex": "#6a0080",
+          "alpha": 0.15
+        }
+      },
+      "product_modal_close": {
+        "background": "var(global.main_css_root.bg_tertiary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_secondary)",
+        "hover_color": "var(global.main_css_root.text_primary)",
+        "hover_background": "var(global.main_css_root.bg_hover)"
+      },
+      "modal_image_gallery": {
+        "_selector": ".modal-image-gallery",
+        "background": {
+          "hex": "#111111",
+          "alpha": 1.0
+        }
+      },
+      "modal_gallery_nav": {
+        "background": {
+          "hex": "#000000",
+          "alpha": 0.6
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_background": {
+          "hex": "#000000",
+          "alpha": 0.9
+        }
+      },
+      "modal_gallery_counter": {
+        "background": {
+          "hex": "#000000",
+          "alpha": 0.6
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "modal_title": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "modal_version_badge": {
+        "background": "var(global.main_css_root.bg_tertiary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "modal_category_badge": {
+        "background": {
+          "hex": "#6a0080",
+          "alpha": 0.22
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.4
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "modal_description": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "modal_section_title": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "modal_license_option": {
+        "background": "var(global.main_css_root.bg_tertiary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "hover_border_color": {
+          "hex": "#8b00a8",
+          "alpha": 1.0
+        },
+        "selected_border_color": {
+          "hex": "#8b00a8",
+          "alpha": 1.0
+        },
+        "selected_background": {
+          "hex": "#6a0080",
+          "alpha": 0.15
+        }
+      },
+      "modal_license_name": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "modal_license_price": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "modal_license_original": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "modal_toggle_label": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "modal_coupon_input": {
+        "background": "var(global.main_css_root.bg_tertiary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_primary)",
+        "focus_border_color": "var(global.main_css_root.accent_primary)"
+      },
+      "modal_coupon_btn": {
+        "background": "var(global.main_css_root.bg_tertiary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_primary)",
+        "hover_border_color": "var(global.main_css_root.accent_primary)",
+        "hover_color": "var(global.main_css_root.accent_primary)"
+      },
+      "modal_btn_buy": {
+        "background": {
+          "hex": "#2e7d32",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_background": {
+          "hex": "#388e3c",
+          "alpha": 1.0
+        }
+      },
+      "modal_btn_cart": {
+        "background": {
+          "hex": "#6a0080",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_opacity": 0.85,
+        "disabled_background": "var(global.main_css_root.bg_tertiary)",
+        "disabled_color": "var(global.main_css_root.text_tertiary)"
+      },
+      "modal_btn_wishlist": {
+        "background": "var(global.main_css_root.bg_tertiary)",
+        "color": "var(global.main_css_root.text_secondary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "hover_or_active_color": {
+          "hex": "#e74c3c",
+          "alpha": 1.0
+        },
+        "hover_or_active_border_color": {
+          "hex": "#e74c3c",
+          "alpha": 1.0
+        }
+      },
+      "modal_btn_download": {
+        "background": {
+          "hex": "#2e7d32",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_background": {
+          "hex": "#388e3c",
+          "alpha": 1.0
+        }
+      },
+      "modal_btn_discord": {
+        "background": {
+          "hex": "#5865f2",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_opacity": 0.85
+      },
+      "modal_owner_row": {
+        "border_top_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "dropdown_trash_btn": {
+        "color": "var(global.main_css_root.text_tertiary)",
+        "hover_color": "var(global.main_css_root.danger)",
+        "hover_background": {
+          "hex": "#f44336",
+          "alpha": 0.1
+        }
+      },
+      "partners_list_strip": {
+        "border_bottom_color": "var(global.main_css_root.border_color)"
+      },
+      "partner_list_avatar": {
+        "background_color": {
+          "hex": "#6a0080",
+          "alpha": 1.0
+        },
+        "border_color": "var(global.main_css_root.border_color)",
+        "hover_border_color": {
+          "hex": "#6a0080",
+          "alpha": 1.0
+        }
+      },
+      "partner_list_avatar_placeholder": {
+        "background_color": {
+          "hex": "#6a0080",
+          "alpha": 1.0
+        },
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.7
+        }
+      },
+      "partner_list_name": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "product_card_category_badge": {
+        "background": {
+          "hex": "#6a0080",
+          "alpha": 0.22
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.4
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "modal_changelog_toggle": {
+        "background": "var(global.main_css_root.bg_tertiary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_primary)",
+        "hover_border_color": "var(global.main_css_root.accent_primary)",
+        "hover_color": "var(global.main_css_root.accent_primary)"
+      },
+      "modal_changelog_content": {
+        "background": "var(global.main_css_root.bg_primary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "modal_meta_item": {
+        "color": "var(global.main_css_root.text_tertiary)",
+        "span_color": "var(global.main_css_root.text_secondary)"
+      },
+      "search_suggestions": {
+        "background": {
+          "hex": "#0a0514",
+          "alpha": 0.35
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.25
+        },
+        "box_shadow1_color": {
+          "hex": "#000000",
+          "alpha": 0.5
+        },
+        "box_shadow2_inset_color": {
+          "hex": "#ffffff",
+          "alpha": 0.05
+        }
+      },
+      "search_suggestion_item": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.85
+        },
+        "hover_background": {
+          "hex": "#ffffff",
+          "alpha": 0.07
+        },
+        "svg_color": {
+          "hex": "#ffffff",
+          "alpha": 0.35
+        }
+      },
+      "search_active_indicator": {
+        "background": "var(global.main_css_root.accent_primary)",
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "mobile_menu_btn": {
+        "background": {
+          "hex": "#141414",
+          "alpha": 0.85
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_background": {
+          "hex": "#6a0080",
+          "alpha": 0.7
+        }
+      },
+      "sidebar_close_btn": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.05
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_background": {
+          "hex": "#6a0080",
+          "alpha": 0.5
+        }
+      },
+      "sidebar_overlay": {
+        "background": {
+          "hex": "#000000",
+          "alpha": 0.6
+        }
+      },
+      "per_page_select_label": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "pagination_btn": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.04
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        },
+        "color": "var(global.main_css_root.text_secondary)",
+        "hover_background": {
+          "hex": "#6a0080",
+          "alpha": 0.35
+        },
+        "hover_color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "active_background": "var(global.main_css_root.red)",
+        "active_color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "active_border_color": "var(global.main_css_root.red)"
+      },
+      "qa_item": {
+        "background": {
+          "hex": "#140523",
+          "alpha": 0.55
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.25
+        },
+        "box_shadow_color": {
+          "hex": "#000000",
+          "alpha": 0.3
+        },
+        "open_border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.6
+        },
+        "open_box_shadow_color": {
+          "hex": "#6a0080",
+          "alpha": 0.25
+        }
+      },
+      "qa_toggle": {
+        "color": "var(global.main_css_root.text_primary)",
+        "hover_background": {
+          "hex": "#ffffff",
+          "alpha": 0.03
+        },
+        "svg_color": "var(global.main_css_root.text_tertiary)"
+      },
+      "qa_answer": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "bank_coming_soon": {
+        "color": "var(global.main_css_root.text_tertiary)",
+        "h2_color": "var(global.main_css_root.text_secondary)"
+      },
+      "glass_card_main": {
+        "_selector": ".glass-card (main.css utility)",
+        "background": {
+          "hex": "#160528",
+          "alpha": 0.55
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.22
+        },
+        "box_shadow_color": {
+          "hex": "#000000",
+          "alpha": 0.35
+        }
+      },
+      "lab_coins_display": {
+        "background": {
+          "hex": "#160528",
+          "alpha": 0.65
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.35
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover_border_color": {
+          "hex": "#c800ff",
+          "alpha": 0.55
+        },
+        "hover_box_shadow_color": {
+          "hex": "#9600dc",
+          "alpha": 0.25
+        }
+      },
+      "account_type_badge_widget": {
+        "background": {
+          "hex": "#160528",
+          "alpha": 0.65
+        },
+        "comment": "Farbe abhaengig vom Account-Typ wird per JS/Inline-Style gesetzt, hier nur Basis-Glass-Hintergrund definiert"
+      },
+      "bank_page_header_h1": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "bank_page_header_p": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "bank_balance_card": {
+        "inherits": "glass_card_main"
+      },
+      "bank_balance_label": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "bank_balance_amount": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "bank_balance_usd": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "bank_coin_value_title": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "bank_coin_value_desc": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "bank_section_title": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "bank_coin_pack": {
+        "background": {
+          "hex": "#160528",
+          "alpha": 0.55
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.22
+        },
+        "hover": {
+          "box_shadow_color": {
+            "hex": "#6a0080",
+            "alpha": 0.4
+          },
+          "border_color": {
+            "hex": "#c800ff",
+            "alpha": 0.45
+          }
+        }
+      },
+      "bank_pack_featured": {
+        "border_color": {
+          "hex": "#c800ff",
+          "alpha": 0.5
+        },
+        "box_shadow_color": {
+          "hex": "#9600dc",
+          "alpha": 0.3
+        }
+      },
+      "bank_pack_popular": {
+        "background_gradient": [
+          {
+            "hex": "#6a0080",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9900cc",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "bank_pack_icon": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "opacity": 0.8
+      },
+      "bank_pack_label": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "bank_pack_coins": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "bank_pack_bonus": {
+        "color": {
+          "hex": "#6ddf8a",
+          "alpha": 1.0
+        }
+      },
+      "bank_pack_price": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "bank_pack_btn": {
+        "background_gradient": [
+          {
+            "hex": "#6a0080",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#4a0060",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "coin_checkout_header_h2": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "coin_checkout_row": {
+        "border_bottom_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.15
+        },
+        "color": "var(global.main_css_root.text_secondary)",
+        "strong_color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "coin_bonus_row_strong": {
+        "color": {
+          "hex": "#6ddf8a",
+          "alpha": 1.0
+        }
+      },
+      "coin_total_row_strong": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "coin_price_row_strong": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "coin_checkout_divider": {
+        "background": {
+          "hex": "#8b00a0",
+          "alpha": 0.3
+        }
+      },
+      "coin_checkout_payment_label": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "coin_payment_btn": {
+        "background": {
+          "hex": "#160528",
+          "alpha": 0.65
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.25
+        },
+        "color": "var(global.main_css_root.text_secondary)",
+        "active": {
+          "border_color": {
+            "hex": "#c800ff",
+            "alpha": 0.6
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          "background": {
+            "hex": "#6a0080",
+            "alpha": 0.2
+          }
+        },
+        "hover": {
+          "border_color": {
+            "hex": "#c800ff",
+            "alpha": 0.4
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "coin_checkout_note": {
+        "color": "var(global.main_css_root.text_tertiary)",
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.03
+        },
+        "border_left_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.4
+        }
+      },
+      "coin_checkout_confirm_btn": {
+        "background_gradient": [
+          {
+            "hex": "#6a0080",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#4a0060",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "checkout_modal_overlay": {
+        "background": {
+          "hex": "#000000",
+          "alpha": 0.7
+        }
+      },
+      "checkout_modal": {
+        "background": "var(global.main_css_root.bg_secondary)",
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        }
+      },
+      "checkout_modal_inner_h2": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "checkout_summary_row": {
+        "border_bottom_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "checkout_summary_total": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "checkout_payment_label": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "checkout_payment_option": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.04
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        },
+        "color": "var(global.main_css_root.text_secondary)",
+        "hover_or_selected_border_color": "var(global.main_css_root.red)",
+        "hover_or_selected_background": {
+          "hex": "#6a0080",
+          "alpha": 0.15
+        },
+        "hover_or_selected_color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "checkout_confirm_btn": {
+        "background_gradient": [
+          "var(global.main_css_root.red)",
+          {
+            "hex": "#6b0082",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "dropdown_cart_footer": {
+        "border_top_color": "var(global.main_css_root.border_color)"
+      },
+      "cart_coupon_input": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.05
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "focus_border_color": "var(global.main_css_root.red)"
+      },
+      "cart_coupon_btn": {
+        "background": {
+          "hex": "#6a0080",
+          "alpha": 0.5
+        },
+        "border_color": {
+          "hex": "#6a0080",
+          "alpha": 0.7
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_background": {
+          "hex": "#6a0080",
+          "alpha": 0.8
+        }
+      },
+      "dropdown_checkout_btn": {
+        "background_gradient": [
+          "var(global.main_css_root.red)",
+          {
+            "hex": "#6b0082",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "product_github_stars": {
+        "color": {
+          "hex": "#ffd700",
+          "alpha": 1.0
+        },
+        "background": {
+          "hex": "#000000",
+          "alpha": 0.65
+        }
+      },
+      "fd_highlight": {
+        "background": {
+          "hex": "#8b00c8",
+          "alpha": 0.15
+        },
+        "border_color": {
+          "hex": "#8b00c8",
+          "alpha": 0.3
+        },
+        "color": {
+          "hex": "#c896ff",
+          "alpha": 0.95
+        }
+      },
+      "fd_bold": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "fd_bullet": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "fd_link": {
+        "color": {
+          "hex": "#64a0ff",
+          "alpha": 0.9
+        }
+      },
+      "dropdown_action_btn": {
+        "color": "var(global.main_css_root.text_tertiary)",
+        "hover_color": "var(global.main_css_root.text_primary)",
+        "hover_background": {
+          "hex": "#ffffff",
+          "alpha": 0.08
+        }
+      },
+      "dropdown_order_btn_hover": {
+        "color": {
+          "hex": "#4caf50",
+          "alpha": 1.0
+        },
+        "background": {
+          "hex": "#4caf50",
+          "alpha": 0.12
+        }
+      },
+      "checkout_coupon_input": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.05
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        },
+        "color": "var(global.main_css_root.text_primary)",
+        "focus_border_color": {
+          "hex": "#8b00c8",
+          "alpha": 0.5
+        }
+      },
+      "checkout_coupon_apply": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.06
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        },
+        "color": "var(global.main_css_root.text_primary)",
+        "hover_background": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        }
+      },
+      "checkout_payment_soon_hover": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.03
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        }
+      },
+      "checkout_info_row": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.03
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.07
+        },
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "dropdown_wishlist_footer": {
+        "border_top_color": "var(global.main_css_root.border_color)"
+      },
+      "dropdown_wishlist_checkout_btn": {
+        "background_gradient": [
+          {
+            "hex": "#6a0080",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#4a0060",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "modal_github_dropdown": {
+        "border_color": "var(global.main_css_root.border_color)"
+      },
+      "modal_github_dropdown_toggle": {
+        "background": "var(global.main_css_root.bg_tertiary)",
+        "color": "var(global.main_css_root.text_primary)",
+        "hover_background": "var(global.main_css_root.bg_hover)"
+      },
+      "modal_github_dropdown_content": {
+        "background": "var(global.main_css_root.bg_primary)",
+        "border_top_color": "var(global.main_css_root.border_color)"
+      },
+      "github_repo_section_title": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "github_readme_content": {
+        "background": "var(global.main_css_root.bg_secondary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "github_contributor_item": {
+        "background": "var(global.main_css_root.bg_secondary)",
+        "border_color": "var(global.main_css_root.border_color)",
+        "hover_border_color": {
+          "hex": "#8b00a8",
+          "alpha": 1.0
+        }
+      },
+      "github_contributor_name": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "github_language_name": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "github_language_bar_wrap": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.07
+        }
+      },
+      "github_language_bar": {
+        "comment": "Farbe wird inline per Sprache (z.B. von GitHub-API-Daten) gesetzt, kein fester CSS-Wert"
+      },
+      "github_language_pct": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "modal_license_trial_free": {
+        "color": {
+          "hex": "#4caf50",
+          "alpha": 1.0
+        }
+      },
+      "modal_license_trial_note": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "modal_gallery_banner_label": {
+        "background_color": {
+          "hex": "#6a0080",
+          "alpha": 1.0
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "box_shadow_color": {
+          "hex": "#000000",
+          "alpha": 0.4
+        }
+      },
+      "wishlist_license_picker_overlay": {
+        "background": {
+          "hex": "#000000",
+          "alpha": 0.7
+        }
+      },
+      "wishlist_license_picker": {
+        "background": "var(global.main_css_root.bg_secondary)",
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        }
+      },
+      "category_tab_free": {
+        "background_gradient": [
+          {
+            "hex": "#22c55e",
+            "alpha": 0.18
+          },
+          {
+            "hex": "#10b981",
+            "alpha": 0.18
+          }
+        ],
+        "border_color": {
+          "hex": "#22c55e",
+          "alpha": 0.45
+        },
+        "color": {
+          "hex": "#22c55e",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background_gradient": [
+            {
+              "hex": "#22c55e",
+              "alpha": 0.28
+            },
+            {
+              "hex": "#10b981",
+              "alpha": 0.28
+            }
+          ],
+          "color": {
+            "hex": "#4ade80",
+            "alpha": 1.0
+          },
+          "box_shadow_color": {
+            "hex": "#22c55e",
+            "alpha": 0.3
+          }
+        },
+        "active": {
+          "background_gradient": [
+            {
+              "hex": "#16a34a",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#059669",
+              "alpha": 1.0
+            }
+          ],
+          "border_color": {
+            "hex": "#22c55e",
+            "alpha": 1.0
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          },
+          "box_shadow_color": {
+            "hex": "#22c55e",
+            "alpha": 0.45
+          }
+        }
+      },
+      "status_legend": {
+        "background": {
+          "hex": "#140523",
+          "alpha": 0.5
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.15
+        }
+      },
+      "status_legend_item": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "status_dot_legend": {
+        "comment": "Farbe wird per Status (online/offline/maintenance) inline gesetzt - keine feste CSS-Farbe in dieser Regel"
+      },
+      "status_product_card": {
+        "background": {
+          "hex": "#140523",
+          "alpha": 0.55
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.18
+        },
+        "hover": {
+          "border_color": {
+            "hex": "#8b00a0",
+            "alpha": 0.35
+          },
+          "box_shadow_color": {
+            "hex": "#6a0080",
+            "alpha": 0.18
+          }
+        }
+      },
+      "status_product_title": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "status_product_version": {
+        "color": "var(global.main_css_root.text_tertiary)",
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.06
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        }
+      },
+      "status_changelog_toggle": {
+        "color": {
+          "hex": "#a78bfa",
+          "alpha": 1.0
+        },
+        "background": {
+          "hex": "#8b5cf6",
+          "alpha": 0.1
+        },
+        "border_color": {
+          "hex": "#8b5cf6",
+          "alpha": 0.25
+        },
+        "hover_background": {
+          "hex": "#8b5cf6",
+          "alpha": 0.2
+        },
+        "hover_color": {
+          "hex": "#c4b5fd",
+          "alpha": 1.0
+        }
+      },
+      "status_changelog_body": {
+        "background": {
+          "hex": "#000000",
+          "alpha": 0.25
+        },
+        "border_color": {
+          "hex": "#8b5cf6",
+          "alpha": 0.2
+        },
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "status_empty": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "category_tab_soon": {
+        "background_gradient": [
+          {
+            "hex": "#8b5cf6",
+            "alpha": 0.18
+          },
+          {
+            "hex": "#6d28d9",
+            "alpha": 0.18
+          }
+        ],
+        "border_color": {
+          "hex": "#8b5cf6",
+          "alpha": 0.45
+        },
+        "color": {
+          "hex": "#a78bfa",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background_gradient": [
+            {
+              "hex": "#8b5cf6",
+              "alpha": 0.28
+            },
+            {
+              "hex": "#6d28d9",
+              "alpha": 0.28
+            }
+          ],
+          "color": {
+            "hex": "#c4b5fd",
+            "alpha": 1.0
+          },
+          "box_shadow_color": {
+            "hex": "#8b5cf6",
+            "alpha": 0.3
+          }
+        },
+        "active": {
+          "background_gradient": [
+            {
+              "hex": "#6d28d9",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#7c3aed",
+              "alpha": 1.0
+            }
+          ],
+          "border_color": {
+            "hex": "#a78bfa",
+            "alpha": 1.0
+          },
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          },
+          "box_shadow_color": {
+            "hex": "#8b5cf6",
+            "alpha": 0.45
+          }
+        }
+      },
+      "product_image_area_after_shine": {
+        "gradient_color": {
+          "hex": "#b400ff",
+          "alpha": 0.07
+        }
+      },
+      "partner_image_area_after_shine": {
+        "gradient_color": {
+          "hex": "#b400ff",
+          "alpha": 0.07
+        }
+      },
+      "news_loading": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "bank_xp_exchange_toggle": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.18
+        },
+        "border_color": {
+          "hex": "#63008a",
+          "alpha": 0.45
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": {
+            "hex": "#63008a",
+            "alpha": 0.28
+          },
+          "border_color": {
+            "hex": "#9600c8",
+            "alpha": 0.65
+          }
+        }
+      },
+      "bank_xp_exchange_content": {
+        "background": {
+          "hex": "#0f0519",
+          "alpha": 0.7
+        },
+        "border_color": {
+          "hex": "#63008a",
+          "alpha": 0.3
+        }
+      },
+      "bank_xp_step": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "bank_xp_step_code": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.22
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "bank_xp_step_tip": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.08
+        },
+        "border_color": {
+          "hex": "#63008a",
+          "alpha": 0.25
+        }
+      },
+      "bank_xp_step_num": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.25
+        },
+        "border_color": {
+          "hex": "#9600c8",
+          "alpha": 0.5
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "bank_xp_step_strong": {
+        "color": {
+          "hex": "#d4a0ff",
+          "alpha": 1.0
+        }
+      },
+      "reviews_stats_bar": {
+        "background": {
+          "hex": "#160528",
+          "alpha": 0.65
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.28
+        }
+      },
+      "reviews_stats_big_num": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "reviews_stats_stars_row_svg": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "reviews_stats_total_label": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "reviews_stats_divider": {
+        "background": {
+          "hex": "#8b00a0",
+          "alpha": 0.25
+        }
+      },
+      "reviews_stats_meta_item": {
+        "color": "var(global.main_css_root.text_secondary)",
+        "strong_color": {
+          "hex": "#d4a0ff",
+          "alpha": 1.0
+        }
+      },
+      "reviews_bar_row": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "reviews_bar_track": {
+        "background": {
+          "hex": "#8b00a0",
+          "alpha": 0.15
+        }
+      },
+      "reviews_bar_fill": {
+        "gradient": [
+          {
+            "hex": "#7b00a0",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "reviews_bar_count": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "review_card": {
+        "background": {
+          "hex": "#160528",
+          "alpha": 0.6
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.25
+        },
+        "hover": {
+          "border_color": {
+            "hex": "#c800ff",
+            "alpha": 0.38
+          },
+          "box_shadow_color": {
+            "hex": "#9600dc",
+            "alpha": 0.12
+          }
+        }
+      },
+      "review_product_type": {
+        "color": {
+          "hex": "#d4a0ff",
+          "alpha": 1.0
+        }
+      },
+      "review_body_toggle": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "review_body_preview": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "review_body_full": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "review_read_more": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover_color": {
+          "hex": "#d4a0ff",
+          "alpha": 1.0
+        }
+      },
+      "review_avatar": {
+        "background_gradient": [
+          {
+            "hex": "#6a0080",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9900cc",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "border_color": {
+          "hex": "#c800ff",
+          "alpha": 0.35
+        }
+      },
+      "review_avatar_img": {
+        "border_color": {
+          "hex": "#c800ff",
+          "alpha": 0.35
+        }
+      },
+      "review_username": {
+        "color": {
+          "hex": "#d4a0ff",
+          "alpha": 1.0
+        }
+      },
+      "review_user_badge": {
+        "background": {
+          "hex": "#22c55e",
+          "alpha": 0.18
+        },
+        "color": {
+          "hex": "#22c55e",
+          "alpha": 1.0
+        },
+        "border_color": {
+          "hex": "#22c55e",
+          "alpha": 0.35
+        }
+      },
+      "review_datetime": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "review_card_bottom": {
+        "border_top_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.15
+        }
+      },
+      "review_verified": {
+        "color": {
+          "hex": "#22c55e",
+          "alpha": 1.0
+        }
+      },
+      "review_verified_icon": {
+        "border_color": {
+          "hex": "#22c55e",
+          "alpha": 1.0
+        }
+      },
+      "review_vote_btn": {
+        "background": {
+          "hex": "#8b00a0",
+          "alpha": 0.1
+        },
+        "border_color": {
+          "hex": "#8b00a0",
+          "alpha": 0.22
+        },
+        "color": "var(global.main_css_root.text_tertiary)",
+        "hover": {
+          "background": {
+            "hex": "#8b00a0",
+            "alpha": 0.22
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          "border_color": {
+            "hex": "#c800ff",
+            "alpha": 0.4
+          }
+        },
+        "voted_like": {
+          "background": {
+            "hex": "#22c55e",
+            "alpha": 0.15
+          },
+          "border_color": {
+            "hex": "#22c55e",
+            "alpha": 0.4
+          },
+          "color": {
+            "hex": "#22c55e",
+            "alpha": 1.0
+          }
+        },
+        "voted_dislike": {
+          "background": {
+            "hex": "#ef4444",
+            "alpha": 0.12
+          },
+          "border_color": {
+            "hex": "#ef4444",
+            "alpha": 0.35
+          },
+          "color": {
+            "hex": "#ef4444",
+            "alpha": 1.0
+          }
+        }
+      },
+      "text_type_cursor": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "support_boxes_wave_after": {
+        "gradient_color": {
+          "hex": "#c97eff",
+          "alpha": 0.18
+        }
+      },
+      "cp_page_header": {
+        "background_gradient": [
+          {
+            "hex": "#63008a",
+            "alpha": 0.18
+          },
+          {
+            "hex": "#1e0a32",
+            "alpha": 0.6
+          }
+        ],
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.28
+        }
+      },
+      "cp_page_header_h1": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "cp_page_header_p": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "cp_profile_card": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.1
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.22
+        }
+      },
+      "cp_profile_img": {
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.5
+        },
+        "background": "var(global.main_css_root.bg_tertiary)"
+      },
+      "cp_profile_username": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "cp_profile_meta_span": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "cp_quick_link": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.18
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover_background": {
+          "hex": "#63008a",
+          "alpha": 0.35
+        }
+      },
+      "cp_stat_card": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.1
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        }
+      },
+      "cp_stat_icon": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.25
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.35
+        }
+      },
+      "cp_stat_value": {
+        "color": "var(global.main_css_root.text_primary)"
+      },
+      "cp_stat_label": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "cp_section_title": {
+        "color": "var(global.main_css_root.text_primary)",
+        "border_bottom_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        }
+      },
+      "cp_orders_table": {
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        }
+      },
+      "cp_orders_header": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.2
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "cp_order_row": {
+        "border_top_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.1
+        },
+        "color": "var(global.main_css_root.text_primary)",
+        "hover_background": {
+          "hex": "#63008a",
+          "alpha": 0.1
+        }
+      },
+      "cp_order_date": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "cp_order_amount": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "cp_status_paid": {
+        "background": {
+          "hex": "#4caf50",
+          "alpha": 0.15
+        },
+        "color": {
+          "hex": "#4caf50",
+          "alpha": 1.0
+        },
+        "border_color": {
+          "hex": "#4caf50",
+          "alpha": 0.3
+        }
+      },
+      "cp_status_pending": {
+        "background": {
+          "hex": "#ff9800",
+          "alpha": 0.15
+        },
+        "color": {
+          "hex": "#ff9800",
+          "alpha": 1.0
+        },
+        "border_color": {
+          "hex": "#ff9800",
+          "alpha": 0.3
+        }
+      },
+      "cp_status_cancelled": {
+        "background": {
+          "hex": "#f44336",
+          "alpha": 0.15
+        },
+        "color": {
+          "hex": "#f44336",
+          "alpha": 1.0
+        },
+        "border_color": {
+          "hex": "#f44336",
+          "alpha": 0.3
+        }
+      },
+      "cp_status_unknown": {
+        "background": {
+          "hex": "#808080",
+          "alpha": 0.15
+        },
+        "color": "var(global.main_css_root.text_secondary)",
+        "border_color": {
+          "hex": "#808080",
+          "alpha": 0.2
+        }
+      },
+      "cp_coupon_badge": {
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        }
+      },
+      "cp_saved_inline": {
+        "color": {
+          "hex": "#4caf50",
+          "alpha": 1.0
+        }
+      },
+      "cp_no_coupon": {
+        "color": "var(global.main_css_root.text_tertiary)"
+      },
+      "cp_empty_state": {
+        "color": "var(global.main_css_root.text_tertiary)",
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.05
+        }
+      },
+      "cp_loading": {
+        "color": "var(global.main_css_root.text_secondary)"
+      },
+      "download_launcher_btn": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.15
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "hover": {
+          "background": {
+            "hex": "#63008a",
+            "alpha": 0.28
+          },
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.55
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.25
+          },
+          "color": {
+            "hex": "#d4aaff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "forum_stat_card": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.1
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        },
+        "hover_border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.4
+        }
+      },
+      "forum_stat_num": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "forum_stat_label": {
+        "color": {
+          "hex": "#c9a8e0",
+          "alpha": 1.0
+        }
+      },
+      "forum_new_post_btn": {
+        "background_gradient": [
+          {
+            "hex": "#63008a",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "box_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "hover": {
+          "background_gradient": [
+            {
+              "hex": "#7800a0",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#b500ee",
+              "alpha": 1.0
+            }
+          ],
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.5
+          }
+        }
+      },
+      "forum_login_note": {
+        "color": {
+          "hex": "#8060a0",
+          "alpha": 1.0
+        }
+      },
+      "forum_login_note_small": {
+        "color": {
+          "hex": "#8060a0",
+          "alpha": 1.0
+        }
+      },
+      "forum_empty_state": {
+        "color": {
+          "hex": "#8060a0",
+          "alpha": 1.0
+        }
+      },
+      "forum_post_avatar": {
+        "background_gradient": [
+          {
+            "hex": "#63008a",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "box_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        }
+      },
+      "forum_post_username": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "forum_post_time": {
+        "color": {
+          "hex": "#8060a0",
+          "alpha": 1.0
+        }
+      },
+      "forum_post_title": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "forum_post_body": {
+        "color": {
+          "hex": "#c9a8e0",
+          "alpha": 1.0
+        }
+      },
+      "forum_vote_btn": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.1
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        },
+        "color": {
+          "hex": "#c9a8e0",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": {
+            "hex": "#63008a",
+            "alpha": 0.22
+          },
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.4
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "forum_voted_like": {
+        "background": {
+          "hex": "#4caf50",
+          "alpha": 0.15
+        },
+        "border_color": {
+          "hex": "#4caf50",
+          "alpha": 0.4
+        },
+        "color": {
+          "hex": "#4caf50",
+          "alpha": 1.0
+        }
+      },
+      "forum_voted_dislike": {
+        "background": {
+          "hex": "#f44336",
+          "alpha": 0.12
+        },
+        "border_color": {
+          "hex": "#f44336",
+          "alpha": 0.35
+        },
+        "color": {
+          "hex": "#f44336",
+          "alpha": 1.0
+        }
+      },
+      "forum_comment_toggle_btn": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.1
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        },
+        "color": {
+          "hex": "#c9a8e0",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": {
+            "hex": "#63008a",
+            "alpha": 0.22
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.4
+          }
+        }
+      },
+      "forum_comments_section": {
+        "border_top_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        }
+      },
+      "forum_comment_avatar": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.3
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "forum_comment_user": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "forum_comment_text": {
+        "color": {
+          "hex": "#c9a8e0",
+          "alpha": 1.0
+        }
+      },
+      "forum_comment_time": {
+        "color": {
+          "hex": "#8060a0",
+          "alpha": 1.0
+        }
+      },
+      "forum_comment_input": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.7
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "focus": {
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.5
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.1
+          }
+        }
+      },
+      "forum_comment_submit": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.25
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.35
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": {
+            "hex": "#63008a",
+            "alpha": 0.4
+          },
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.55
+          }
+        }
+      },
+      "write_review_modal_overlay": {
+        "background": {
+          "hex": "#000000",
+          "alpha": 0.75
+        }
+      },
+      "write_review_modal": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.92
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.4
+        },
+        "box_shadow1_color": {
+          "hex": "#000000",
+          "alpha": 0.6
+        },
+        "box_shadow2_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "scrollbar_thumb_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        }
+      },
+      "write_review_title": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "write_review_field_label": {
+        "color": {
+          "hex": "#c9a8e0",
+          "alpha": 1.0
+        }
+      },
+      "review_type_btn": {
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.12
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.25
+        },
+        "color": {
+          "hex": "#c9a8e0",
+          "alpha": 1.0
+        },
+        "hover_or_active": {
+          "background": {
+            "hex": "#63008a",
+            "alpha": 0.3
+          },
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.55
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "write_review_products_scrollbar_thumb": {
+        "color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        }
+      },
+      "review_product_btn": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.6
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.18
+        },
+        "color": {
+          "hex": "#c9a8e0",
+          "alpha": 1.0
+        },
+        "hover_or_active": {
+          "background": {
+            "hex": "#63008a",
+            "alpha": 0.22
+          },
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.45
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "write_review_input": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.7
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "focus": {
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.5
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.1
+          }
+        }
+      },
+      "write_review_textarea": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.7
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "focus": {
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.5
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.1
+          }
+        }
+      },
+      "write_review_char_count": {
+        "color": {
+          "hex": "#8060a0",
+          "alpha": 1.0
+        }
+      },
+      "forum_post_avatar_img": {
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.35
+        }
+      },
+      "forum_user_perms_badge": {
+        "background": {
+          "hex": "#00bcd4",
+          "alpha": 0.12
+        },
+        "border_color": {
+          "hex": "#00bcd4",
+          "alpha": 0.3
+        },
+        "color": {
+          "hex": "#00bcd4",
+          "alpha": 1.0
+        }
+      },
+      "forum_comment_item": {
+        "border_bottom_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.07
+        }
+      },
+      "forum_comment_meta_user": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "forum_comment_meta_text": {
+        "color": {
+          "hex": "#c9a8e0",
+          "alpha": 1.0
+        }
+      },
+      "forum_comment_meta_time": {
+        "color": {
+          "hex": "#8060a0",
+          "alpha": 1.0
+        }
+      },
+      "forum_reply_toggle_btn": {
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        },
+        "color": {
+          "hex": "#8060a0",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": {
+            "hex": "#63008a",
+            "alpha": 0.15
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.4
+          }
+        }
+      },
+      "forum_replies_list": {
+        "border_left_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.18
+        }
+      },
+      "forum_reply_input": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.7
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "focus": {
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.5
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.1
+          }
+        }
+      },
+      "forum_no_comments": {
+        "color": {
+          "hex": "#8060a0",
+          "alpha": 1.0
+        }
+      },
+      "forum_post_submit_btn": {
+        "background_gradient": [
+          {
+            "hex": "#63008a",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "box_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.25
+        },
+        "hover_not_disabled": {
+          "background_gradient": [
+            {
+              "hex": "#7800a0",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#b500ee",
+              "alpha": 1.0
+            }
+          ],
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.45
+          }
+        }
+      },
+      "forum_field_error": {
+        "color": {
+          "hex": "#f44336",
+          "alpha": 1.0
+        }
+      },
+      "forum_char_counter": {
+        "color": {
+          "hex": "#8060a0",
+          "alpha": 1.0
+        }
+      },
+      "product_img_count_badge": {
+        "background": {
+          "hex": "#000000",
+          "alpha": 0.65
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.35
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "svg_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "review_category_label": {
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        }
+      },
+      "review_product_name_label": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.8
+        }
+      }
+    }
+  },
+  "login_register_css": {
+    "_file": "login_register.css",
+    "_description": "Login- und Registrierungsseite mit zweigeteiltem Layout (Branding links, Formular rechts).",
+    "selectors": {
+      "auth_clock": {
+        "_selector": ".auth-clock",
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.25
+        }
+      },
+      "auth_container": {
+        "_selector": ".auth-container",
+        "background": {
+          "hex": "#0f0f0f",
+          "alpha": 0.6
+        },
+        "box_shadow1_color": {
+          "hex": "#000000",
+          "alpha": 0.7
+        },
+        "box_shadow2_inset_color": {
+          "hex": "#ffffff",
+          "alpha": 0.06
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.09
+        }
+      },
+      "auth_left": {
+        "_selector": ".auth-left",
+        "background_gradient": [
+          {
+            "hex": "#3a0060",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#4a0078",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#63008a",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#7800a0",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9000b8",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#a000cc",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#8000b0",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#5a0090",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "auth_logo": {
+        "_selector": ".auth-logo",
+        "outline_color": {
+          "hex": "#a000c8",
+          "alpha": 0.65
+        },
+        "box_shadow1_color": {
+          "hex": "#8c00b4",
+          "alpha": 0.2
+        },
+        "box_shadow2_color": {
+          "hex": "#000000",
+          "alpha": 0.5
+        }
+      },
+      "auth_right": {
+        "_selector": ".auth-right",
+        "background": {
+          "hex": "#141414",
+          "alpha": 0.4
+        }
+      },
+      "auth_tabs": {
+        "_selector": ".auth-tabs",
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.05
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.07
+        }
+      },
+      "auth_tab_indicator": {
+        "_selector": ".auth-tab-indicator",
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.1
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.08
+        }
+      },
+      "auth_tab": {
+        "_selector": ".auth-tab",
+        "color": "var(global.login_register_root.text_tertiary)",
+        "hover_color": "var(global.login_register_root.text_secondary)",
+        "active_color": "var(global.login_register_root.text_primary)"
+      },
+      "auth_description": {
+        "_selector": ".auth-description",
+        "color": "var(global.login_register_root.text_secondary)"
+      },
+      "form_group_label": {
+        "_selector": ".form-group label",
+        "color": "var(global.login_register_root.text_secondary)"
+      },
+      "form_group_input": {
+        "_selector": ".form-group input",
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.05
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.09
+        },
+        "color": "var(global.login_register_root.text_primary)",
+        "focus_border_color": {
+          "hex": "#a000c8",
+          "alpha": 0.5
+        },
+        "focus_background": {
+          "hex": "#ffffff",
+          "alpha": 0.07
+        },
+        "placeholder_color": {
+          "hex": "#ffffff",
+          "alpha": 0.22
+        }
+      },
+      "toggle_password": {
+        "_selector": ".toggle-password (login_register.css)",
+        "color": "var(global.login_register_root.text_tertiary)",
+        "hover_color": "var(global.login_register_root.text_primary)"
+      },
+      "forgot_password": {
+        "_selector": ".forgot-password",
+        "color": "var(global.login_register_root.accent_primary)",
+        "hover_color": "var(global.login_register_root.accent_hover)"
+      },
+      "auth_divider": {
+        "_selector": ".auth-divider",
+        "line_background_color": "var(global.login_register_root.border_color)",
+        "span_background_color": "var(global.login_register_root.bg_secondary)",
+        "span_color": "var(global.login_register_root.text_tertiary)"
+      },
+      "auth_options_a": {
+        "_selector": ".auth-options a",
+        "color": {
+          "hex": "#b450dc",
+          "alpha": 0.9
+        },
+        "hover_color": {
+          "hex": "#c864f0",
+          "alpha": 1.0
+        }
+      },
+      "checkbox_label": {
+        "_selector": ".checkbox-label (login_register.css)",
+        "color": "var(global.login_register_root.text_secondary)",
+        "input_accent_color": {
+          "hex": "#a000c8",
+          "alpha": 1.0
+        }
+      },
+      "auth_separator": {
+        "_selector": ".auth-separator",
+        "color": "var(global.login_register_root.text_tertiary)",
+        "line_background_color": {
+          "hex": "#ffffff",
+          "alpha": 0.07
+        }
+      },
+      "btn_primary_login": {
+        "_selector": ".btn-primary (login_register.css)",
+        "background_gradient": [
+          {
+            "hex": "#63008a",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#7800a0",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#7800a0",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#63008a",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background_gradient": [
+            {
+              "hex": "#7800a0",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#9b00cc",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#b500ee",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#9b00cc",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#7800a0",
+              "alpha": 1.0
+            }
+          ],
+          "box_shadow_ring_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.5
+          },
+          "box_shadow_glow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.35
+          }
+        }
+      },
+      "btn_social": {
+        "_selector": ".btn-social",
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.04
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.09
+        },
+        "color": "var(global.login_register_root.text_primary)",
+        "hover_background": {
+          "hex": "#ffffff",
+          "alpha": 0.07
+        }
+      },
+      "btn_social_google_hover": {
+        "border_color": {
+          "hex": "#4285f4",
+          "alpha": 0.4
+        },
+        "box_shadow1_color": {
+          "hex": "#4285f4",
+          "alpha": 0.2
+        },
+        "box_shadow2_color": {
+          "hex": "#4285f4",
+          "alpha": 0.08
+        }
+      },
+      "btn_social_discord": {
+        "color": {
+          "hex": "#5865f2",
+          "alpha": 1.0
+        },
+        "hover_border_color": {
+          "hex": "#5865f2",
+          "alpha": 0.4
+        },
+        "hover_box_shadow1_color": {
+          "hex": "#5865f2",
+          "alpha": 0.2
+        },
+        "hover_box_shadow2_color": {
+          "hex": "#5865f2",
+          "alpha": 0.08
+        }
+      },
+      "btn_social_apple_hover": {
+        "border_color": {
+          "hex": "#000000",
+          "alpha": 0.4
+        },
+        "box_shadow1_color": {
+          "hex": "#000000",
+          "alpha": 0.2
+        },
+        "box_shadow2_color": {
+          "hex": "#000000",
+          "alpha": 0.1
+        }
+      },
+      "auth_back_btn": {
+        "_selector": ".auth-back-btn",
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.8
+        },
+        "hover": {
+          "background": {
+            "hex": "#9b00cc",
+            "alpha": 0.25
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.5
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        }
+      }
+    }
+  },
+  "preferences_css": {
+    "_file": "preferences.css",
+    "_description": "Einstellungsseite 'Praeferenzen' inkl. Zahlungsmethoden-Sektion. Teilt das gemeinsame Settings-Layout (siehe settings_pages_shared).",
+    "uses_shared_base": "settings_pages_shared",
+    "selectors": {
+      "payment_info_card": {
+        "background": "var(global.settings_pages_root.bg_glass)",
+        "border_color": "var(global.settings_pages_root.border_bright)",
+        "box_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.12
+        },
+        "h3_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "p_color": "var(global.settings_pages_root.text_secondary)"
+      },
+      "payment_method_card": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.5
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "hover": {
+          "border_color": "var(global.settings_pages_root.border_bright)",
+          "background": "var(global.settings_pages_root.bg_glass_hover)",
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.18
+          }
+        },
+        "coming_soon_opacity": 0.55,
+        "coming_soon_hover_opacity": 0.7,
+        "icon_svg_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "h4_color": "var(global.settings_pages_root.text_primary)",
+        "p_color": "var(global.settings_pages_root.text_secondary)",
+        "small_color": "var(global.settings_pages_root.text_tertiary)"
+      },
+      "instructions_card": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.5
+        },
+        "border_color": "var(global.settings_pages_root.border_color)"
+      },
+      "step_number": {
+        "background_gradient": [
+          {
+            "hex": "#63008a",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ],
+        "box_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.35
+        },
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "step_content": {
+        "h4_color": "var(global.settings_pages_root.text_primary)",
+        "p_color": "var(global.settings_pages_root.text_secondary)"
+      }
+    }
+  },
+  "account_settings_css": {
+    "_file": "account_settings.css",
+    "_description": "Account-Einstellungsseite inkl. Profilbild-Sektion. Teilt das gemeinsame Settings-Layout.",
+    "uses_shared_base": "settings_pages_shared",
+    "selectors": {
+      "settings_profile_img": {
+        "border_color": "var(global.settings_pages_root.border_bright)",
+        "box_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.35
+        },
+        "background": "var(global.settings_pages_root.bg_tertiary)"
+      }
+    }
+  },
+  "help_and_support_css": {
+    "_file": "help_and_support.css",
+    "_description": "Hilfe & Support Seite mit Kontakt-Karten (Discord/E-Mail) und FAQ-Akkordeon. Teilt das gemeinsame Settings-Layout.",
+    "uses_shared_base": "settings_pages_shared",
+    "selectors": {
+      "contact_card": {
+        "background": "var(global.settings_pages_root.bg_glass)",
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "hover": {
+          "border_color": "var(global.settings_pages_root.border_bright)",
+          "background": "var(global.settings_pages_root.bg_glass_hover)",
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.18
+          }
+        },
+        "icon_svg_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "h3_color": "var(global.settings_pages_root.text_primary)",
+        "h4_color": "var(global.settings_pages_root.text_primary)",
+        "p_color": "var(global.settings_pages_root.text_secondary)",
+        "small_color": "var(global.settings_pages_root.text_tertiary)",
+        "detail_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "contact_card_discord": {
+        "border_color": {
+          "hex": "#5865f2",
+          "alpha": 0.45
+        },
+        "hover_border_color": {
+          "hex": "#5865f2",
+          "alpha": 1.0
+        },
+        "hover_box_shadow_color": {
+          "hex": "#5865f2",
+          "alpha": 0.2
+        },
+        "icon_svg_color": {
+          "hex": "#5865f2",
+          "alpha": 1.0
+        }
+      },
+      "btn_discord": {
+        "background_gradient": [
+          {
+            "hex": "#4752c4",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#5865f2",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "box_shadow_color": {
+          "hex": "#5865f2",
+          "alpha": 0.3
+        },
+        "hover": {
+          "background_gradient": [
+            {
+              "hex": "#5865f2",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#7289da",
+              "alpha": 1.0
+            }
+          ],
+          "box_shadow_color": {
+            "hex": "#5865f2",
+            "alpha": 0.5
+          }
+        }
+      },
+      "contact_info_item": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.5
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "hover_border_color": "var(global.settings_pages_root.border_bright)",
+        "svg_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "h4_color": "var(global.settings_pages_root.text_primary)",
+        "p_color": "var(global.settings_pages_root.text_secondary)"
+      },
+      "faq_item": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.5
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "hover_border_color": "var(global.settings_pages_root.border_bright)"
+      },
+      "faq_question": {
+        "hover_background": "var(global.settings_pages_root.bg_glass_hover)",
+        "h4_color": "var(global.settings_pages_root.text_primary)",
+        "svg_color": "var(global.settings_pages_root.text_tertiary)",
+        "active_svg_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "faq_answer": {
+        "p_color": "var(global.settings_pages_root.text_secondary)"
+      }
+    }
+  },
+  "order_history_css": {
+    "_file": "order_history.css",
+    "_description": "Bestellverlauf-Seite mit Zusammenfassungs-Karten, Bestelltabelle, Lizenzschluesseln und Tags. Teilt das gemeinsame Settings-Layout.",
+    "uses_shared_base": "settings_pages_shared",
+    "selectors": {
+      "summary_card": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.5
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "hover": {
+          "border_color": "var(global.settings_pages_root.border_bright)",
+          "background": "var(global.settings_pages_root.bg_glass_hover)"
+        }
+      },
+      "summary_icon": {
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "svg_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "summary_info": {
+        "h3_color": "var(global.settings_pages_root.text_primary)",
+        "p_color": "var(global.settings_pages_root.text_secondary)"
+      },
+      "orders_table": {
+        "border_color": "var(global.settings_pages_root.border_color)"
+      },
+      "table_header": {
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.12
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "table_row": {
+        "border_top_color": "var(global.settings_pages_root.border_color)",
+        "color": "var(global.settings_pages_root.text_primary)",
+        "hover_background": "var(global.settings_pages_root.bg_glass_hover)"
+      },
+      "empty_state": {
+        "color": "var(global.settings_pages_root.text_secondary)"
+      },
+      "empty_state_small": {
+        "color": "var(global.settings_pages_root.text_tertiary)",
+        "success_color": "var(global.settings_pages_root.success)"
+      },
+      "license_key_item": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.5
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "hover_border_color": "var(global.settings_pages_root.border_bright)"
+      },
+      "license_key_icon": {
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "svg_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "license_key_text": {
+        "color": "var(global.settings_pages_root.text_primary)"
+      },
+      "btn_copy_key": {
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.12
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": {
+            "hex": "#9b00cc",
+            "alpha": 0.28
+          },
+          "border_color": "var(global.settings_pages_root.border_bright)"
+        }
+      },
+      "tag": {
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.12
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": {
+            "hex": "#9b00cc",
+            "alpha": 0.22
+          },
+          "border_color": "var(global.settings_pages_root.border_bright)"
+        }
+      },
+      "list_item_paused": {
+        "border_left_color": "var(global.settings_pages_root.warning)",
+        "background": {
+          "hex": "#ff9800",
+          "alpha": 0.05
+        }
+      },
+      "list_item_banned": {
+        "border_left_color": "var(global.settings_pages_root.danger)",
+        "background": {
+          "hex": "#f44336",
+          "alpha": 0.05
+        }
+      }
+    }
+  },
+  "settings_pages_shared": {
+    "_files": [
+      "preferences.css",
+      "account_settings.css",
+      "help_and_support.css",
+      "order_history.css"
+    ],
+    "_description": "Identischer Boilerplate-Code (Sidebar, Header, Formularfelder, Buttons, Info-Cards, Status-Badges), der in allen vier Settings-Seiten gleich ist. Wird von preferences_css, account_settings_css, help_and_support_css und order_history_css gemeinsam genutzt.",
+    "selectors": {
+      "body": {
+        "background_color": "var(global.settings_pages_root.bg_primary)",
+        "background_image_radial1_color": {
+          "hex": "#63008a",
+          "alpha": 0.18
+        },
+        "background_image_radial2_color": {
+          "hex": "#3c0064",
+          "alpha": 0.14
+        },
+        "color": "var(global.settings_pages_root.text_primary)"
+      },
+      "settings_sidebar": {
+        "_selector": ".settings-sidebar",
+        "background_gradient": [
+          {
+            "hex": "#140028",
+            "alpha": 0.98
+          },
+          {
+            "hex": "#0c0018",
+            "alpha": 0.98
+          }
+        ],
+        "border_right_color": "var(global.settings_pages_root.border_color)",
+        "scrollbar_thumb_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        }
+      },
+      "settings_logo": {
+        "_selector": ".settings-logo",
+        "border_bottom_color": "var(global.settings_pages_root.border_color)",
+        "img_border_color": "var(global.settings_pages_root.border_bright)",
+        "img_box_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "h2_shiny_gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "settings_nav_item": {
+        "_selector": ".settings-nav-item",
+        "color": "var(global.settings_pages_root.text_secondary)",
+        "hover": {
+          "background": "var(global.settings_pages_root.bg_glass_hover)",
+          "color": "var(global.settings_pages_root.text_primary)",
+          "border_left_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.4
+          }
+        },
+        "active": {
+          "background": {
+            "hex": "#63008a",
+            "alpha": 0.22
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          "border_left_color": "var(global.settings_pages_root.accent_primary)"
+        },
+        "svg_opacity": 0.85,
+        "active_svg_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "settings_header_h1": {
+        "_selector": ".settings-header h1",
+        "shiny_gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "settings_header_p": {
+        "_selector": ".settings-header p",
+        "color": "var(global.settings_pages_root.text_secondary)"
+      },
+      "settings_section": {
+        "_selector": ".settings-section",
+        "background": "var(global.settings_pages_root.bg_glass)",
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "hover_border_color": "var(global.settings_pages_root.border_bright)",
+        "h3_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "form_control": {
+        "_selector": ".form-control",
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.7
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "color": "var(global.settings_pages_root.text_primary)",
+        "focus": {
+          "border_color": "var(global.settings_pages_root.accent_primary)",
+          "background": {
+            "hex": "#1e0037",
+            "alpha": 0.8
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.15
+          }
+        },
+        "disabled_or_readonly_opacity": 0.5
+      },
+      "form_group": {
+        "_selector": ".form-group (settings pages)",
+        "label_color": "var(global.settings_pages_root.text_secondary)",
+        "small_color": "var(global.settings_pages_root.text_tertiary)"
+      },
+      "info_item": {
+        "_selector": ".info-item",
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.5
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "label_color": "var(global.settings_pages_root.text_tertiary)",
+        "span_color": "var(global.settings_pages_root.text_primary)"
+      },
+      "list_item": {
+        "_selector": ".list-item",
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.5
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "color": "var(global.settings_pages_root.text_primary)"
+      },
+      "empty_message": {
+        "_selector": ".empty-message",
+        "color": "var(global.settings_pages_root.text_tertiary)"
+      },
+      "btn_primary_settings": {
+        "_selector": ".btn-primary (settings pages)",
+        "background_gradient": [
+          {
+            "hex": "#63008a",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#7800a0",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#7800a0",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#63008a",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background_gradient": [
+            {
+              "hex": "#7800a0",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#9b00cc",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#b500ee",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#9b00cc",
+              "alpha": 1.0
+            },
+            {
+              "hex": "#7800a0",
+              "alpha": 1.0
+            }
+          ],
+          "box_shadow_ring_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.5
+          },
+          "box_shadow_glow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.4
+          }
+        }
+      },
+      "btn_secondary_settings": {
+        "_selector": ".btn-secondary (settings pages)",
+        "background": {
+          "hex": "#63008a",
+          "alpha": 0.12
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        },
+        "hover": {
+          "background": {
+            "hex": "#63008a",
+            "alpha": 0.25
+          },
+          "border_color": "var(global.settings_pages_root.border_bright)"
+        }
+      },
+      "info_card": {
+        "_selector": ".info-card",
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.5
+        },
+        "border_color": "var(global.settings_pages_root.border_color)",
+        "p_color": "var(global.settings_pages_root.text_secondary)",
+        "strong_color": "var(global.settings_pages_root.text_primary)",
+        "svg_color": "var(global.settings_pages_root.text_primary)",
+        "h4_color": "var(global.settings_pages_root.text_primary)"
+      },
+      "info_card_warning": {
+        "border_left_color": "var(global.settings_pages_root.warning)",
+        "background": {
+          "hex": "#ff9800",
+          "alpha": 0.06
+        }
+      },
+      "info_card_info": {
+        "border_left_color": "var(global.settings_pages_root.accent_primary)",
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.08
+        }
+      },
+      "info_card_success": {
+        "border_left_color": "var(global.settings_pages_root.success)",
+        "background": {
+          "hex": "#4caf50",
+          "alpha": 0.06
+        }
+      },
+      "checkbox_label_settings": {
+        "_selector": ".checkbox-label (settings pages)",
+        "color": "var(global.settings_pages_root.text_secondary)",
+        "input_accent_color": "var(global.settings_pages_root.accent_primary)"
+      },
+      "toggle_password_settings": {
+        "_selector": ".toggle-password (settings pages)",
+        "color": "var(global.settings_pages_root.text_tertiary)",
+        "hover_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "status_badge": {
+        "available": {
+          "background": {
+            "hex": "#4caf50",
+            "alpha": 0.15
+          },
+          "color": {
+            "hex": "#4caf50",
+            "alpha": 1.0
+          },
+          "border_color": {
+            "hex": "#4caf50",
+            "alpha": 0.3
+          }
+        },
+        "coming_soon": {
+          "background": {
+            "hex": "#9b00cc",
+            "alpha": 0.15
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.3
+          }
+        },
+        "paid": {
+          "background": {
+            "hex": "#4caf50",
+            "alpha": 0.15
+          },
+          "color": {
+            "hex": "#4caf50",
+            "alpha": 1.0
+          },
+          "border_color": {
+            "hex": "#4caf50",
+            "alpha": 0.3
+          }
+        },
+        "pending": {
+          "background": {
+            "hex": "#ff9800",
+            "alpha": 0.15
+          },
+          "color": {
+            "hex": "#ff9800",
+            "alpha": 1.0
+          },
+          "border_color": {
+            "hex": "#ff9800",
+            "alpha": 0.3
+          }
+        }
+      }
+    }
+  },
+  "inventory_css": {
+    "_file": "inventory.css",
+    "_description": "Inventar-Seite mit ausgeruesteten Items, Lab-Pass-Promo, Kategorie-Karten und Item-Modal mit Slots-Grid.",
+    "selectors": {
+      "body": {
+        "background_color": "var(global.inventory_root.inv_bg_primary)",
+        "color": "var(global.inventory_root.inv_text_primary)"
+      },
+      "inv_equipped_static": {
+        "background_gradient": [
+          {
+            "hex": "#1e0037",
+            "alpha": 0.96
+          },
+          {
+            "hex": "#0c0018",
+            "alpha": 0.98
+          }
+        ],
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "box_shadow1_color": {
+          "hex": "#000000",
+          "alpha": 0.55
+        },
+        "box_shadow2_inset_color": {
+          "hex": "#ffffff",
+          "alpha": 0.04
+        }
+      },
+      "inv_equipped_panel_title": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.8
+        }
+      },
+      "inv_equipped_row": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.03
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.06
+        },
+        "hover": {
+          "background": {
+            "hex": "#9b00cc",
+            "alpha": 0.09
+          },
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.25
+          }
+        }
+      },
+      "inv_equipped_row_icon": {
+        "background": {
+          "hex": "#6400b4",
+          "alpha": 0.18
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.25
+        }
+      },
+      "inv_equipped_row_label": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.38
+        }
+      },
+      "inv_equipped_row_value": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.85
+        }
+      },
+      "inv_equipped_none": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.32
+        }
+      },
+      "inv_labpass_promo": {
+        "background_gradient": [
+          {
+            "hex": "#1e0037",
+            "alpha": 0.96
+          },
+          {
+            "hex": "#0c0018",
+            "alpha": 0.98
+          }
+        ],
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "box_shadow1_color": {
+          "hex": "#000000",
+          "alpha": 0.55
+        },
+        "box_shadow2_inset_color": {
+          "hex": "#ffffff",
+          "alpha": 0.04
+        }
+      },
+      "inv_labpass_promo_badge": {
+        "background_gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#7b00cc",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "inv_labpass_promo_header": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.9
+        }
+      },
+      "inv_labpass_promo_sub": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.45
+        }
+      },
+      "inv_labpass_chest_img": {
+        "drop_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.5
+        }
+      },
+      "inv_labpass_price_new": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "inv_labpass_price_old": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.35
+        }
+      },
+      "inv_labpass_buy_btn": {
+        "background_gradient": [
+          {
+            "hex": "#b100ff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#5200ff",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "inv_labpass_free_btn": {
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.4
+        },
+        "background": {
+          "hex": "#50008c",
+          "alpha": 0.3
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.9
+        },
+        "hover": {
+          "background": {
+            "hex": "#6400aa",
+            "alpha": 0.4
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.55
+          }
+        }
+      },
+      "inv_back_btn": {
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.8
+        },
+        "hover": {
+          "background": {
+            "hex": "#9b00cc",
+            "alpha": 0.25
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.5
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "inv_glass_card": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.55
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.22
+        }
+      },
+      "inv_page_title": {
+        "gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "inv_loading_state": {
+        "color": "var(global.inventory_root.inv_text_secondary)"
+      },
+      "inv_spinner": {
+        "border_color": {
+          "hex": "#c97eff",
+          "alpha": 0.25
+        },
+        "border_top_color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "inv_section_label": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.85
+        },
+        "after_gradient_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.35
+        }
+      },
+      "inv_category_card": {
+        "background_gradient": [
+          {
+            "hex": "#280046",
+            "alpha": 0.4
+          },
+          {
+            "hex": "#0f001e",
+            "alpha": 0.55
+          }
+        ],
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.28
+        },
+        "before_gradient_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        },
+        "after_shine_color": {
+          "hex": "#ffffff",
+          "alpha": 0.12
+        },
+        "hover": {
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.6
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.3
+          },
+          "background_gradient": [
+            {
+              "hex": "#37005f",
+              "alpha": 0.48
+            },
+            {
+              "hex": "#140028",
+              "alpha": 0.6
+            }
+          ]
+        }
+      },
+      "inv_category_image": {
+        "drop_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.35
+        },
+        "hover_drop_shadow_color": {
+          "hex": "#c97eff",
+          "alpha": 0.55
+        }
+      },
+      "inv_category_count": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.9
+        },
+        "background": {
+          "hex": "#0f0019",
+          "alpha": 0.65
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.4
+        }
+      },
+      "inv_view_all_btn": {
+        "border_color": {
+          "hex": "#c97eff",
+          "alpha": 0.3
+        },
+        "background": {
+          "hex": "#6400b4",
+          "alpha": 0.12
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.95
+        },
+        "hover": {
+          "background": {
+            "hex": "#6400b4",
+            "alpha": 0.22
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.55
+          }
+        }
+      },
+      "inv_overlay": {
+        "background": {
+          "hex": "#05000c",
+          "alpha": 0.78
+        }
+      },
+      "inv_modal": {
+        "background_gradient": [
+          {
+            "hex": "#1e0037",
+            "alpha": 0.92
+          },
+          {
+            "hex": "#0c0018",
+            "alpha": 0.96
+          }
+        ],
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.32
+        },
+        "box_shadow1_color": {
+          "hex": "#000000",
+          "alpha": 0.65
+        },
+        "box_shadow2_inset_color": {
+          "hex": "#ffffff",
+          "alpha": 0.04
+        }
+      },
+      "inv_modal_header": {
+        "border_bottom_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.22
+        }
+      },
+      "inv_modal_icon": {
+        "background": {
+          "hex": "#6400b4",
+          "alpha": 0.2
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.32
+        }
+      },
+      "inv_modal_title": {
+        "color": "var(global.inventory_root.inv_text_primary)"
+      },
+      "inv_modal_subtitle": {
+        "color": "var(global.inventory_root.inv_text_secondary)"
+      },
+      "inv_modal_close": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.05
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.09
+        },
+        "color": "var(global.inventory_root.inv_text_secondary)",
+        "hover": {
+          "background": {
+            "hex": "#f44336",
+            "alpha": 0.15
+          },
+          "border_color": {
+            "hex": "#f44336",
+            "alpha": 0.35
+          },
+          "color": {
+            "hex": "#ff8a80",
+            "alpha": 1.0
+          }
+        }
+      },
+      "inv_modal_tab": {
+        "color": "var(global.inventory_root.inv_text_secondary)",
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.03
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.18
+        },
+        "hover": {
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 0.85
+          },
+          "border_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.35
+          }
+        },
+        "active": {
+          "color": {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          },
+          "background_gradient": [
+            {
+              "hex": "#9b00cc",
+              "alpha": 0.4
+            },
+            {
+              "hex": "#c97eff",
+              "alpha": 0.18
+            }
+          ],
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.55
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.3
+          }
+        }
+      },
+      "inv_slots_viewport": {
+        "background_color": {
+          "hex": "#ffffff",
+          "alpha": 0.015
+        },
+        "radial_dot1": {
+          "hex": "#9b00cc",
+          "alpha": 0.22
+        },
+        "radial_dot2": {
+          "hex": "#c97eff",
+          "alpha": 0.16
+        },
+        "radial_dot3": {
+          "hex": "#9b00cc",
+          "alpha": 0.18
+        },
+        "radial_dot4": {
+          "hex": "#c97eff",
+          "alpha": 0.14
+        },
+        "radial_dot5": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        },
+        "scrollbar_thumb_color": {
+          "hex": "#9b00cc",
+          "alpha": 1.0
+        },
+        "scrollbar_track_color": {
+          "hex": "#ffffff",
+          "alpha": 0.05
+        },
+        "webkit_scrollbar_track": {
+          "hex": "#ffffff",
+          "alpha": 0.03
+        },
+        "webkit_scrollbar_thumb_gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ],
+        "webkit_scrollbar_thumb_hover_gradient": [
+          {
+            "hex": "#d896ff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#b500ee",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "inv_slot": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.03
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.28
+        },
+        "hover": {
+          "background": {
+            "hex": "#9b00cc",
+            "alpha": 0.1
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.5
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.22
+          }
+        },
+        "svg_opacity": 0.25
+      },
+      "inv_slot_chest": {
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.08
+        },
+        "border_color": {
+          "hex": "#c97eff",
+          "alpha": 0.4
+        },
+        "hover": {
+          "background": {
+            "hex": "#9b00cc",
+            "alpha": 0.2
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.8
+          },
+          "box_shadow_color": {
+            "hex": "#9b00cc",
+            "alpha": 0.4
+          }
+        }
+      },
+      "inv_chest_img": {
+        "drop_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.5
+        },
+        "hover_drop_shadow_color": {
+          "hex": "#c97eff",
+          "alpha": 0.7
+        }
+      },
+      "inv_chest_count_badge": {
+        "background_gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#7b00cc",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.15
+        }
+      },
+      "inv_chest_hover_desc": {
+        "background": {
+          "hex": "#0a0014",
+          "alpha": 0.92
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.4
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.95
+        }
+      },
+      "inv_chest_iframe_overlay": {
+        "background": {
+          "hex": "#05050a",
+          "alpha": 1.0
+        }
+      },
+      "inv_modal_close_alt": {
+        "comment": "siehe inv_modal_close - identische Regel doppelt im File"
+      }
+    }
+  },
+  "lab_pass_css": {
+    "_file": "lab-pass.css",
+    "_description": "Lab-Pass (Season Pass) Seite mit XP-Leiste, Belohnungs-Raster, Bundle-Karte und Challenges-Liste.",
+    "selectors": {
+      "lp_back_btn": {
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.8
+        },
+        "hover": {
+          "background": {
+            "hex": "#9b00cc",
+            "alpha": 0.25
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.5
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "glass_card_labpass": {
+        "_selector": ".glass-card (lab-pass.css)",
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.55
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.22
+        }
+      },
+      "lp_header_section": {
+        "background_gradient": [
+          {
+            "hex": "#1e003c",
+            "alpha": 0.7
+          },
+          {
+            "hex": "#0f001e",
+            "alpha": 0.85
+          }
+        ],
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.28
+        },
+        "before_radial_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.18
+        },
+        "after_radial_color": {
+          "hex": "#6400b4",
+          "alpha": 0.12
+        }
+      },
+      "lp_flask_wrap": {
+        "background": {
+          "hex": "#6400b4",
+          "alpha": 0.18
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "box_shadow_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        }
+      },
+      "lp_flask_icon": {
+        "drop_shadow_color": {
+          "hex": "#c97eff",
+          "alpha": 0.5
+        }
+      },
+      "lp_main_title": {
+        "gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#ffffff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "lp_season_label": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.8
+        }
+      },
+      "lp_time_left": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.6
+        }
+      },
+      "lp_level_badge": {
+        "background_gradient": [
+          {
+            "hex": "#9b00cc",
+            "alpha": 0.3
+          },
+          {
+            "hex": "#6400b4",
+            "alpha": 0.2
+          }
+        ],
+        "border_color": {
+          "hex": "#c97eff",
+          "alpha": 0.4
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "lp_xp_bar_track": {
+        "background": {
+          "hex": "#320064",
+          "alpha": 0.4
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.2
+        }
+      },
+      "lp_xp_bar_fill": {
+        "gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "lp_xp_text": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.5
+        }
+      },
+      "lp_chest_placeholder": {
+        "background": {
+          "hex": "#6400b4",
+          "alpha": 0.15
+        },
+        "border_color": {
+          "hex": "#c97eff",
+          "alpha": 0.3
+        },
+        "box_shadow_color": {
+          "hex": "#c97eff",
+          "alpha": 0.2
+        }
+      },
+      "lp_activate_btn": {
+        "background_gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_box_shadow_color": {
+          "hex": "#c97eff",
+          "alpha": 0.35
+        }
+      },
+      "lp_price_btn": {
+        "border_color": {
+          "hex": "#c97eff",
+          "alpha": 0.3
+        },
+        "background": {
+          "hex": "#6400b4",
+          "alpha": 0.1
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.9
+        },
+        "hover": {
+          "background": {
+            "hex": "#6400b4",
+            "alpha": 0.2
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.5
+          }
+        }
+      },
+      "lp_cta_desc": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.5
+        }
+      },
+      "lp_card_header": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.9
+        }
+      },
+      "lp_timer_badge": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.7
+        },
+        "background": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        }
+      },
+      "lp_bundle_discount": {
+        "background_gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        }
+      },
+      "lp_bundle_desc": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.5
+        }
+      },
+      "lp_bundle_price_new": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 1.0
+        }
+      },
+      "lp_bundle_price_old": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.4
+        }
+      },
+      "lp_bundle_btn": {
+        "background_gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ],
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 1.0
+        },
+        "hover_box_shadow_color": {
+          "hex": "#c97eff",
+          "alpha": 0.3
+        }
+      },
+      "lp_rewards_slider_wrap": {
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.22
+        },
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.35
+        }
+      },
+      "lp_rewards_grid_outer_scrollbar": {
+        "thumb_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.4
+        },
+        "track_color": {
+          "hex": "#320064",
+          "alpha": 0.2
+        },
+        "hover_thumb_color": {
+          "hex": "#c97eff",
+          "alpha": 0.5
+        }
+      },
+      "lp_slider_btn": {
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "background": {
+          "hex": "#6400b4",
+          "alpha": 0.15
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.8
+        },
+        "hover": {
+          "background": {
+            "hex": "#6400b4",
+            "alpha": 0.28
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.5
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          }
+        }
+      },
+      "lp_slider_track_wrap": {
+        "background": {
+          "hex": "#320064",
+          "alpha": 0.35
+        }
+      },
+      "lp_slider_track_fill": {
+        "gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "lp_grid_header_row": {
+        "border_bottom_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        }
+      },
+      "lp_grid_level_header": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.4
+        },
+        "active": {
+          "background": {
+            "hex": "#c97eff",
+            "alpha": 0.15
+          },
+          "color": {
+            "hex": "#c97eff",
+            "alpha": 0.9
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.3
+          }
+        }
+      },
+      "lp_grid_row_label": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.7
+        }
+      },
+      "lp_grid_premium_label": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.8
+        }
+      },
+      "lp_grid_cell": {
+        "background": {
+          "hex": "#6400b4",
+          "alpha": 0.1
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        },
+        "hover": {
+          "background": {
+            "hex": "#6400b4",
+            "alpha": 0.15
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.3
+          }
+        },
+        "unlocked": {
+          "background": {
+            "hex": "#326432",
+            "alpha": 0.2
+          },
+          "border_color": {
+            "hex": "#4caf50",
+            "alpha": 0.3
+          }
+        },
+        "active": {
+          "background_gradient": [
+            {
+              "hex": "#c97eff",
+              "alpha": 0.2
+            },
+            {
+              "hex": "#9b00cc",
+              "alpha": 0.15
+            }
+          ],
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.5
+          },
+          "box_shadow_color": {
+            "hex": "#c97eff",
+            "alpha": 0.25
+          }
+        }
+      },
+      "lp_reward_icon_placeholder": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.7
+        }
+      },
+      "lp_reward_lock_icon": {
+        "background": {
+          "hex": "#140028",
+          "alpha": 0.9
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.3
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.5
+        }
+      },
+      "lp_reward_check_icon": {
+        "background": {
+          "hex": "#326432",
+          "alpha": 0.8
+        },
+        "border_color": {
+          "hex": "#4caf50",
+          "alpha": 0.5
+        },
+        "color": {
+          "hex": "#4caf50",
+          "alpha": 1.0
+        }
+      },
+      "lp_reward_name": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.7
+        }
+      },
+      "lp_rewards_hint": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.5
+        }
+      },
+      "lp_challenges_list_scrollbar": {
+        "thumb_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.4
+        },
+        "track_color": {
+          "hex": "#320064",
+          "alpha": 0.2
+        },
+        "hover_thumb_color": {
+          "hex": "#c97eff",
+          "alpha": 0.5
+        }
+      },
+      "lp_challenge_item": {
+        "background": {
+          "hex": "#ffffff",
+          "alpha": 0.03
+        },
+        "border_color": {
+          "hex": "#ffffff",
+          "alpha": 0.05
+        },
+        "hover": {
+          "background": {
+            "hex": "#ffffff",
+            "alpha": 0.05
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.2
+          }
+        }
+      },
+      "lp_challenge_name": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.9
+        }
+      },
+      "lp_challenge_bar_track": {
+        "background": {
+          "hex": "#320064",
+          "alpha": 0.4
+        },
+        "border_color": {
+          "hex": "#9b00cc",
+          "alpha": 0.15
+        }
+      },
+      "lp_challenge_bar_fill": {
+        "gradient": [
+          {
+            "hex": "#c97eff",
+            "alpha": 1.0
+          },
+          {
+            "hex": "#9b00cc",
+            "alpha": 1.0
+          }
+        ]
+      },
+      "lp_challenge_prog": {
+        "color": {
+          "hex": "#ffffff",
+          "alpha": 0.4
+        }
+      },
+      "lp_check_icon": {
+        "color": {
+          "hex": "#4caf50",
+          "alpha": 1.0
+        }
+      },
+      "lp_xp_reward": {
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.8
+        }
+      },
+      "lp_all_challenges_btn": {
+        "border_color": {
+          "hex": "#c97eff",
+          "alpha": 0.2
+        },
+        "background": {
+          "hex": "#6400b4",
+          "alpha": 0.1
+        },
+        "color": {
+          "hex": "#c97eff",
+          "alpha": 0.8
+        },
+        "hover": {
+          "background": {
+            "hex": "#6400b4",
+            "alpha": 0.15
+          },
+          "border_color": {
+            "hex": "#c97eff",
+            "alpha": 0.3
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "partners": [
+
+  ],
+  "partners_list": [
+    {
+      "id": 0,
+      "preview_image_url": "rick.c137_profile_picture.webp",
+      "owner_name": ".rick.c137",
+      "discord_url": "https://discord.gg/Wk7d8mJgyN"
+    },
+    {
+      "id": 1,
+      "preview_image_url": "cittycat_profile_picture.png",
+      "owner_name": "kittycat187",
+      "discord_url": "https://discord.gg/Wk7d8mJgyN"
+    }
+  ]
+}
