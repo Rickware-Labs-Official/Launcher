@@ -1,5 +1,5 @@
 const API_BASE_RAW = 'http://prem-eu4.bot-hosting.net:20940';
-const CF_WORKER = 'https://rickware-labs-launcher.reissdonavan.workers.dev';
+const CF_WORKER = 'https://rickware-labs-launcher.rickware-labs-official.workers.dev';
 function apiUrl(path) {
     if (window.location.protocol === 'https:') {
         return CF_WORKER + path;
