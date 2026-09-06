@@ -4393,15 +4393,19 @@ function showMaintenanceScreen() {
 }
 
 async function loadProducts() {
-    var apiReachable = false;
+    if (config.maintenance_mode === true) {
+        showMaintenanceScreen();
+        return;
+    }
+    var loaded = false;
     try {
-        var res = await fetch(apiUrl('/api/products'));
+        var res = await fetch('./config/products.json');
         if (res.ok) {
             productsData = await res.json();
-            apiReachable = true;
+            loaded = true;
         }
     } catch(e) {}
-    if (!apiReachable || !productsData) {
+    if (!loaded || !productsData) {
         showMaintenanceScreen();
         return;
     }

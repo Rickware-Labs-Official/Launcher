@@ -35,7 +35,7 @@
       {
         "id": 0,
         "category": "Discord Tools",
-        "version": "V3",
+        "version": "V5",
         "product_id": "84173260392018491748",
         "title": "• Quest Solver",
         "license_categories": [
@@ -49,8 +49,8 @@
         "source_code_original": "9,99"
         }
       ],
-      "description": "",
-      "full_description": "",
+      "description": "A powerful cross-platform Discord Quest automation tool designed to work across supported Discord clients and browser environments. Automate and simplify Discord Quests, track progress, and collect rewards with support for multiple quest types and flexible client setups.",
+      "full_description": "Discord Quest Solver is an advanced cross-platform automation tool built to make completing Discord Quests faster, easier, and more convenient. It is designed for use across both Discord clients and browser-based environments, with support for modded clients such as Vencord, BetterDiscord, Discord Canary, BlueCord, and Nightcord. Quest Solver supports a wide range of Discord Quest types, including Video, Game, Stream, Activity, Achievement, Special, and Mobile Quests, allowing you to automate supported progress, monitor quest status, filter quests by type and reward, and claim available rewards. Key features include automatic quest detection, automatic enrollment, real-time progress tracking, configurable delays, video prioritization, customizable hotkeys, a compact interface, built-in logging, and automated reward claiming. The reward system supports Discord Orbs, allowing you to farm available Orb rewards from eligible quests and use your accumulated Orbs toward Discord Shop items, avatar decorations, and other available Shop assets.",
       "banner": "Top Automation Tool",
       "banner_color": "#63008a",
       "preview_image_url": "discord_tools/discord_quest_solver_orbs.webp",
@@ -73,7 +73,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": ""
+      "change_log": "- V5: *Features:*\n--------------------Fixed--------------------\n- Game Quest Solving\n- Video Quest Solving\n\n\n\n- V4: *Features:*\n--------------------Fixed--------------------\n- Video Quest Solving\n\n\n\n- V3: *Features:*\n--------------------Fixed--------------------\n- Game Quest Solving\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Quest Solving Optimized\n+ Game Quest Solving\n+ Vencord Support\n+ Better GUI\n+ More Settings\n\n\n\n- V1: *Features:*\n------------------------------------------------\n+ Code Base & Structure\n+ GUI (Interface)\n+ config Stuff\n+ Settings Stuff\n+ Discord API Stuff\n\n\n*Files & Folders*\n------------------------------------------------\n+ main.js\n+ requirements.txt\n+ ./rickware_labs_quest_solver_relay/rickware_labs_quest_solver_relay.ps1\n+ ./rickware_labs_quest_solver_relay/start-relay.cmd"
     },
 
 
@@ -140,7 +140,7 @@
       "auto_setup": true,
       "enabled_setup": true,
       "coupon_codes": false,
-      "change_log": "- V2: *Features:*\n--------------------Updated--------------------\n+ AI Responder Finshed\n+ Better GUI Settings\n+ Better AI Settings\n+ Better AI Configs + More API Keys\n+ Modify AI System Promt\n+ Channel / Message Monitor Optimized\n+ Response Time Optimized    \n\n\n\n- V1: *Features:*\n------------------------------------------------\n+ Code Base & Structure\n+ GUI (Interface)\n+ config Stuff\n+ Settings Stuff\n+ Discord APIs & Message Monitor\n\n\n*Files & Folders*\n------------------------------------------------\n+ main.py\n+ requirements.txt\n+ ./config/tool_saves.json\n+ ./Config/ai_responder.json\n+ ./config/app_Settings.json\n+ ./config/user_agent.json\n+ ./images/logo.png\n+ ./input/main_token.txt\n+ ./input/tokens.txt\n+ ./input/proxies.txt\n+ ./utils/ai_responder.json\n"
+      "change_log": "- V2: *Features:*\n--------------------Updated--------------------\n+ AI Responder Finshed\n+ Better GUI Settings\n+ Better AI Settings\n+ Better AI Configs + More API Keys\n+ Modify AI System Promt\n+ Channel / Message Monitor Optimized\n+ Response Time Optimized    \n\n\n\n- V1: *Features:*\n------------------------------------------------\n+ Code Base & Structure\n+ GUI (Interface)\n+ config Stuff\n+ Settings Stuff\n+ Discord APIs & Message Monitor\n\n\n*Files & Folders*\n------------------------------------------------\n+ main.py\n+ requirements.txt\n+ ./config/tool_saves.json\n+ ./config/ai_responder.json\n+ ./config/app_Settings.json\n+ ./config/user_agent.json\n+ ./images/logo.png\n+ ./input/main_token.txt\n+ ./input/tokens.txt\n+ ./input/proxies.txt\n+ ./utils/ai_responder.json\n"
     },
 
 
@@ -317,8 +317,8 @@
         "source_code_original": "99,99"
         }
       ],
-      "description": "",
-      "full_description": "",
+      "description": "A powerful cross-platform Discord automation tool built for efficient multi-account message management, featuring fast sending, proxy support, configurable delays, account management, and an intuitive desktop interface.",
+      "full_description": "A powerful cross-platform Discord automation tool designed for efficient and flexible message management across multiple Discord accounts. The tool provides a complete desktop interface with single-account and multi-account modes, allowing users to manage accounts, messages, channel IDs, and proxy configurations from one place. Built-in Fast Mode enables higher concurrency, while configurable delays support both seconds and milliseconds for precise control over sending behavior. Proxy Mode supports proxy pools with optional sticky assignments and automatic failover handling, while the account manager makes it easy to add, activate, remove, and identify multiple accounts. Users can create and manage reusable messages, select target channels, monitor loaded tokens, proxies, and channel IDs, start or stop operations instantly, and view detailed real-time logs and status information. Additional features include automatic input-file monitoring, Windows startup support, adjustable application transparency, a dedicated launcher, and a clean, responsive interface built for convenient everyday use.",
       "banner": "Most Popular",
       "banner_color": "#63008a",
       "preview_image_url": "discord_tools/message_bomber_main.webp",
@@ -1404,8 +1404,8 @@
         "source_code_original": "19,99"
         }
       ],
-      "description": "",
-      "full_description": "",
+      "description": "The original Nexus Tools Shop website from 2024, preserved from the penultimate official version of the Nexus Tools Shop under its owner, Vatos.",
+      "full_description": "The original Nexus Tools Shop website from 2024, preserved from the penultimate official version of the original Nexus Tools Shop under its owner, Vatos. Nexus Tools existed from 2021 until the end of 2025, when Vatos officially closed Nexus Tools. This website is not a recreation or remake, but the original website code from the 2024 Nexus Tools Shop, preserved as part of a partnership and tribute to Vatos and Nexus Tools. The project was created to preserve the original website, design, atmosphere, and legacy of Nexus Tools and to serve as a lasting memorial to the platform and its community.",
       "banner": "Nexus X Rickware - Labs",
       "banner_color": "#63008a",
       "preview_image_url": "websites/nexus_x_rickware-labs_2024_main_1.webp",
@@ -1413,7 +1413,7 @@
       "image_url_2": "websites/nexus_x_rickware-labs_2024_main_3.webp",
       "image_url_3": "",
       "image_url_4": "",
-      "owner_name": ".rick.c137",
+      "owner_name": ".VatosV2 X .rick.c137",
       "discord_url": "",
       "github_url": "",
       "website_url": "",
