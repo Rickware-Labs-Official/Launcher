@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spin Chest Fixed</title>
+<title>Rickware - Labs© - Mystery Chest</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui}
@@ -189,6 +189,79 @@ width:100%;
 height:100%;
 object-fit:cover;
 }
+
+.item video{
+width:100%;
+height:100%;
+object-fit:cover;
+display:block;
+}
+
+.item .swatch,.box .swatch{
+width:100%;
+height:100%;
+display:flex;
+align-items:flex-end;
+justify-content:center;
+padding:10px;
+}
+
+.item .swatch span,.box .caption{
+background:rgba(5,5,10,0.72);
+color:#fff;
+font-size:12px;
+font-weight:700;
+padding:4px 10px;
+border-radius:8px;
+text-align:center;
+max-width:100%;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+}
+
+.item img.contain,.box img.contain{
+object-fit:contain;
+padding:8px;
+}
+
+.box video{
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+.box .result{
+position:relative;
+width:100%;
+height:100%;
+}
+
+.box .caption{
+position:absolute;
+left:50%;
+bottom:14px;
+transform:translateX(-50%);
+display:flex;
+flex-direction:column;
+gap:2px;
+font-size:14px;
+white-space:normal;
+width:max-content;
+max-width:90%;
+}
+
+.box .caption small{
+font-size:11px;
+font-weight:600;
+opacity:0.85;
+}
+
+.spinBtn:disabled{
+cursor:not-allowed;
+opacity:0.75;
+animation:none;
+}
 </style>
 </head>
 
@@ -214,85 +287,198 @@ object-fit:cover;
 <div class="box" id="box"></div>
 </div>
 
+<script src="../js/api_client.js"></script>
 <script>
-const items=[
+(function(){
+const idleImages=[
 "../images/assets/inventory/avatar_decos_main.webp",
 "../images/assets/inventory/nameplates_main.webp",
 "../images/assets/inventory/name_colors_main.webp",
 "../images/assets/inventory/themes_main.webp",
 "../images/assets/inventory/licenses_main.webp"
 ]
+const ITEM_WIDTH=150
+const ITEM_GAP=14
+const TRACK_PADDING=120
+const SPIN_DURATION_MS=6800
 
 const track=document.getElementById("track")
 const spin=document.getElementById("spin")
 const win=document.getElementById("win")
 const box=document.getElementById("box")
+const esc=RWL.escapeHtml
 
 let pos=0
-let speed=6
-let raf
+let raf=null
+let opening=false
+let openedAny=false
 
-function build(){
+function itemVisualHtml(item,large){
+if(!item)return '<img src="'+idleImages[0]+'" alt="">'
+if(item.category==="name_colors"){
+return '<div class="swatch" style="'+esc(RWL.swatchStyle(item))+'"><span>'+esc(item.name)+'</span></div>'
+}
+if(item.category==="nameplates"&&item.asset_url){
+return '<video src="'+esc(item.asset_url)+'" muted loop playsinline preload="'+(large?"auto":"metadata")+'"'+(large?" autoplay":"")+'></video>'
+}
+if(item.asset_url){
+return '<img class="contain" src="'+esc(item.asset_url)+'" alt="">'
+}
+return '<div class="swatch"><span>'+esc(item.name||"Item")+'</span></div>'
+}
+
+function buildIdle(){
 track.innerHTML=""
 for(let i=0;i<50;i++){
-const src=items[Math.floor(Math.random()*items.length)]
 const d=document.createElement("div")
 d.className="item"
-d.innerHTML=`<img src="${src}">`
+d.innerHTML='<img src="'+idleImages[Math.floor(Math.random()*idleImages.length)]+'" alt="">'
 track.appendChild(d)
 }
 }
 
-function loop(){
-pos+=speed
+function idleLoop(){
+pos+=6
 if(pos>2400)pos=0
-track.style.transform=`translateX(${-pos}px)`
-raf=requestAnimationFrame(loop)
+track.style.transform="translateX("+(-pos)+"px)"
+raf=requestAnimationFrame(idleLoop)
 }
 
-build()
-loop()
-
-function spinChest(){
+function startIdle(){
 cancelAnimationFrame(raf)
-
 pos=0
-speed=Math.random()<0.3?48:30
+buildIdle()
+idleLoop()
+}
 
-function run(){
-speed*=0.985
-pos+=speed
+function buildReel(reel){
+track.innerHTML=""
+reel.forEach(function(item){
+const d=document.createElement("div")
+d.className="item"
+d.style.borderColor=RWL.rarityColor(item&&item.rarity)
+d.innerHTML=itemVisualHtml(item,false)
+track.appendChild(d)
+})
+}
 
-track.style.transform=`translateX(${-pos}px)`
+function easeOutQuart(t){
+return 1-Math.pow(1-t,4)
+}
 
-if(speed<0.4){
-finish()
+function animateTo(target,done){
+cancelAnimationFrame(raf)
+const start=performance.now()
+function step(now){
+const progress=Math.min(1,(now-start)/SPIN_DURATION_MS)
+pos=target*easeOutQuart(progress)
+track.style.transform="translateX("+(-pos)+"px)"
+if(progress<1){
+raf=requestAnimationFrame(step)
+}else{
+done()
+}
+}
+raf=requestAnimationFrame(step)
+}
+
+function setButton(text,disabled){
+spin.textContent=text
+spin.disabled=!!disabled
+}
+
+function chestButtonLabel(chests){
+if(!chests)return "SPIN CHEST"
+if(chests.unlimited)return "SPIN CHEST (∞)"
+return chests.balance>0?"SPIN CHEST ("+chests.balance+" LEFT)":"NO CHESTS LEFT"
+}
+
+function finish(result){
+const reward=result.reward||{}
+const notes=[]
+if(reward.duplicate){
+notes.push(reward.compensation_lab_coins?"Duplicate · +"+reward.compensation_lab_coins+" LC":"Duplicate · already owned")
+}
+box.style.borderColor=RWL.rarityColor(reward.rarity)
+box.innerHTML='<div class="result">'+itemVisualHtml(reward,true)+'<div class="caption">'+esc(reward.name||"Item")+'<small style="color:'+esc(RWL.rarityColor(reward.rarity))+';">'+esc((reward.rarity||"")+" "+(reward.category_label||""))+'</small>'+(notes.length?'<small>'+esc(notes.join(" · "))+'</small>':"")+'</div></div>'
+win.classList.add("active")
+const chests=result.chests||{}
+setButton(chestButtonLabel(chests),!chests.unlimited&&!(chests.balance>0))
+opening=false
+}
+
+async function spinChest(){
+if(opening)return
+if(!RWL.getToken()){
+setButton("LOGIN REQUIRED",true)
 return
 }
-
-raf=requestAnimationFrame(run)
+opening=true
+setButton("OPENING...",true)
+let result
+try{
+result=await RWL.apiRequest("/api/chests/open",{method:"POST"})
+}catch(error){
+opening=false
+const noChests=error.status===400
+setButton(noChests?"NO CHESTS LEFT":"TRY AGAIN",noChests)
+if(!noChests)setTimeout(function(){setButton("SPIN CHEST",false)},2500)
+return
 }
-raf=requestAnimationFrame(run)
+openedAny=true
+const reel=Array.isArray(result.reel)&&result.reel.length?result.reel:[result.reward]
+const winIndex=Math.max(0,Math.min(result.win_index||0,reel.length-1))
+buildReel(reel)
+pos=0
+track.style.transform="translateX(0px)"
+const viewport=track.parentElement
+const center=viewport.clientWidth/2
+const jitter=(Math.random()-0.5)*(ITEM_WIDTH*0.6)
+const target=TRACK_PADDING+winIndex*(ITEM_WIDTH+ITEM_GAP)+ITEM_WIDTH/2-center+jitter
+animateTo(Math.max(0,target),function(){finish(result)})
 }
 
-function finish(){
-const r=items[Math.floor(Math.random()*items.length)]
-box.innerHTML=`<img src="${r}">`
-win.classList.add("active")
-}
-
-function closeWin(){
+function backToChest(){
 win.classList.remove("active")
-window.parent.postMessage('chest_opening_done', '*')
+box.innerHTML=""
+if(!spin.disabled)startIdle()
+}
+
+function exitChest(){
+win.classList.remove("active")
+window.parent.postMessage({type:"chest_opening_done",opened:openedAny},window.location.origin)
+}
+
+async function loadSummary(){
+if(!RWL.getToken()){
+setButton("LOGIN REQUIRED",true)
+return
+}
+try{
+const chests=await RWL.apiRequest("/api/chests")
+setButton(chestButtonLabel(chests),!chests.unlimited&&!(chests.balance>0))
+}catch(error){
+setButton("SPIN CHEST",false)
+}
 }
 
 spin.onclick=spinChest
-document.getElementById("close").onclick=closeWin
-document.getElementById("back").onclick=closeWin
-
-win.onclick=(e)=>{
-if(e.target===win) closeWin()
+document.getElementById("close").onclick=exitChest
+document.getElementById("back").onclick=backToChest
+win.onclick=function(e){
+if(e.target===win)backToChest()
 }
+document.addEventListener("keydown",function(e){
+if(e.key==="Escape"){
+if(win.classList.contains("active"))backToChest()
+else exitChest()
+}
+})
+
+RWL.ensureCosmeticStyles()
+startIdle()
+loadSummary()
+})()
 </script>
 
 </body>

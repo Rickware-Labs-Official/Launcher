@@ -1374,8 +1374,55 @@ body {
 
 .product-auto-toggles {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 10px;
     margin-top: 4px;
+    min-height: 18px;
+}
+
+.product-toggles-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.product-stats-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.product-stat-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: default;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.product-stat-item svg {
+    color: var(--accent-primary);
+    transition: filter 0.2s ease;
+}
+
+.product-stat-item:hover {
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.product-stat-item:hover svg {
+    filter: drop-shadow(0 0 4px var(--accent-primary));
+}
+
+.product-stat-value {
+    font-variant-numeric: tabular-nums;
 }
 
 .auto-toggle-label {
@@ -1727,9 +1774,27 @@ body {
 
 .modal-toggles {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 16px;
     margin-bottom: 18px;
     flex-wrap: wrap;
+}
+
+.modal-toggles-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.modal-toggles .product-stats-inline {
+    gap: 14px;
+}
+
+.modal-toggles .product-stat-item {
+    font-size: 13px;
+    gap: 6px;
 }
 
 .modal-toggle-label {

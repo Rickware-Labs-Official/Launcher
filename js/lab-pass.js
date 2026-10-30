@@ -1,218 +1,15 @@
 (function() {
-    var LP_LEVELS = 100;
-    var LP_CURRENT_LEVEL = 1;
-    var LP_CURRENT_XP = 50;
-    var LP_NEXT_XP = 250;
-    var LP_HAS_PREMIUM = false;
-    var LP_DAYS_LEFT = 0;
-    var LP_SEASON = 'Season 1: Coming Soon';
-    var LP_PASS_PRICE = 39;
+    var passState = null;
+    var loadedAt = Date.now();
+    var busy = false;
+    var showAllChallenges = true;
+    var hintShown = false;
+    var resetReloadPending = false;
+    var esc = RWL.escapeHtml;
 
-    var freeRewards = [
-        { level: 1, type: 'lc', amount: 5, name: '5 LC', unlocked: true },
-        { level: 2, type: 'xp', name: 'XP', unlocked: false },
-        { level: 3, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 4, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 5, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 6, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 7, type: 'xp', name: 'XP', unlocked: false },
-        { level: 8, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 9, type: 'chest', name: 'Mystery Chest', unlocked: false },
-        { level: 10, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 11, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 12, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 13, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 14, type: 'xp', name: 'XP', unlocked: false },
-        { level: 15, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 16, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 17, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 18, type: 'xp', name: 'XP', unlocked: false },
-        { level: 19, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 20, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 21, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 22, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 23, type: 'xp', name: 'XP', unlocked: false },
-        { level: 24, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 25, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 26, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 27, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 28, type: 'xp', name: 'XP', unlocked: false },
-        { level: 29, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 30, type: 'item', name: 'Launcher Name Color', unlocked: false },
-        { level: 31, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 32, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 33, type: 'xp', name: 'XP', unlocked: false },
-        { level: 34, type: 'item', name: 'Launcher Nameplate', unlocked: false },
-        { level: 35, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 36, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 37, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 38, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 39, type: 'xp', name: 'XP', unlocked: false },
-        { level: 40, type: 'chest', name: 'Mystery Chest', unlocked: false },
-        { level: 41, type: 'item', name: 'Launcher Name Color', unlocked: false },
-        { level: 42, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 43, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 44, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 45, type: 'xp', name: 'XP', unlocked: false },
-        { level: 46, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 47, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 48, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 49, type: 'item', name: 'Launcher Nameplate', unlocked: false },
-        { level: 50, type: 'xp', name: 'XP', unlocked: false },
-        { level: 51, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 52, type: 'item', name: 'Launcher Name Color', unlocked: false },
-        { level: 53, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 54, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 55, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 56, type: 'xp', name: 'XP', unlocked: false },
-        { level: 57, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 58, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 59, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 60, type: 'item', name: 'Launcher Nameplate', unlocked: false },
-        { level: 61, type: 'item', name: '5% Coupon', unlocked: false },
-        { level: 62, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 63, type: 'xp', name: 'XP', unlocked: false },
-        { level: 64, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 65, type: 'item', name: '10% Coupon', unlocked: false },
-        { level: 66, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 67, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 68, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 69, type: 'xp', name: 'XP', unlocked: false },
-        { level: 70, type: 'chest', name: 'Mystery Chest', unlocked: false },
-        { level: 71, type: 'item', name: 'Launcher Name Color', unlocked: false },
-        { level: 72, type: 'item', name: '15% Coupon', unlocked: false },
-        { level: 73, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 74, type: 'item', name: 'Launcher Nameplate', unlocked: false },
-        { level: 75, type: 'xp', name: 'XP', unlocked: false },
-        { level: 76, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 77, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 78, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 79, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 80, type: 'xp', name: 'XP', unlocked: false },
-        { level: 81, type: 'item', name: '5% Coupon', unlocked: false },
-        { level: 82, type: 'item', name: 'Launcher Name Color', unlocked: false },
-        { level: 83, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 84, type: 'item', name: 'Launcher Nameplate', unlocked: false },
-        { level: 85, type: 'xp', name: 'XP', unlocked: false },
-        { level: 86, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 87, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 88, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 89, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 90, type: 'xp', name: 'XP', unlocked: false },
-        { level: 91, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 92, type: 'item', name: '10% Coupon', unlocked: false },
-        { level: 93, type: 'item', name: 'Launcher Name Color', unlocked: false },
-        { level: 94, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 95, type: 'item', name: 'Launcher Nameplate', unlocked: false },
-        { level: 96, type: 'xp', name: 'XP', unlocked: false },
-        { level: 97, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 98, type: 'lc', amount: 5, name: '5 LC', unlocked: false },
-        { level: 99, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 100, type: 'chest', name: 'Mystery Chest', unlocked: false }
-    ];
-
-    var premiumRewards = [
-        { level: 1, type: 'lc', amount: 20, name: '20 LC', unlocked: false },
-        { level: 2, type: 'xp', name: 'XP', unlocked: false },
-        { level: 3, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 4, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 5, type: 'lc', amount: 30, name: '30 LC', unlocked: false },
-        { level: 6, type: 'chest', name: 'Mystery Chest', unlocked: false },
-        { level: 7, type: 'xp', name: 'XP', unlocked: false },
-        { level: 8, type: 'lc', amount: 20, name: '20 LC', unlocked: false },
-        { level: 9, type: 'item', name: '1 Week License', unlocked: false },
-        { level: 10, type: 'item', name: '2x Launcher PB Deco', unlocked: false },
-        { level: 11, type: 'lc', amount: 30, name: '30 LC', unlocked: false },
-        { level: 12, type: 'xp', name: 'XP', unlocked: false },
-        { level: 13, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 14, type: 'lc', amount: 20, name: '20 LC', unlocked: false },
-        { level: 15, type: 'chest', name: 'Mystery Chest', unlocked: false },
-        { level: 16, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 17, type: 'xp', name: 'XP', unlocked: false },
-        { level: 18, type: 'lc', amount: 30, name: '30 LC', unlocked: false },
-        { level: 19, type: 'item', name: '1 Week License', unlocked: false },
-        { level: 20, type: 'item', name: '2x Launcher PB Deco', unlocked: false },
-        { level: 21, type: 'lc', amount: 20, name: '20 LC', unlocked: false },
-        { level: 22, type: 'xp', name: 'XP', unlocked: false },
-        { level: 23, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 24, type: 'lc', amount: 30, name: '30 LC', unlocked: false },
-        { level: 25, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 26, type: 'xp', name: 'XP', unlocked: false },
-        { level: 27, type: 'lc', amount: 20, name: '20 LC', unlocked: false },
-        { level: 28, type: 'item', name: '1 Week License', unlocked: false },
-        { level: 29, type: 'item', name: '2x Launcher PB Deco', unlocked: false },
-        { level: 30, type: 'lc', amount: 30, name: '30 LC', unlocked: false },
-        { level: 31, type: 'item', name: 'Launcher Name Color', unlocked: false },
-        { level: 32, type: 'lc', amount: 30, name: '30 LC', unlocked: false },
-        { level: 33, type: 'xp', name: 'XP', unlocked: false },
-        { level: 34, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 35, type: 'item', name: '1 Week License', unlocked: false },
-        { level: 36, type: 'chest', name: 'Mystery Chest', unlocked: false },
-        { level: 37, type: 'item', name: 'Launcher Nameplate', unlocked: false },
-        { level: 38, type: 'lc', amount: 60, name: '60 LC', unlocked: false },
-        { level: 39, type: 'xp', name: 'XP', unlocked: false },
-        { level: 40, type: 'item', name: '2x Launcher PB Deco', unlocked: false },
-        { level: 41, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 42, type: 'lc', amount: 30, name: '30 LC', unlocked: false },
-        { level: 43, type: 'item', name: '2x Launcher Name Color', unlocked: false },
-        { level: 44, type: 'chest', name: 'Mystery Chest', unlocked: false },
-        { level: 45, type: 'xp', name: 'XP', unlocked: false },
-        { level: 46, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 47, type: 'item', name: '1 Week License', unlocked: false },
-        { level: 48, type: 'lc', amount: 60, name: '60 LC', unlocked: false },
-        { level: 49, type: 'item', name: '2x Launcher Nameplate', unlocked: false },
-        { level: 50, type: 'xp', name: 'XP', unlocked: false },
-        { level: 51, type: 'item', name: '2x Launcher PB Deco', unlocked: false },
-        { level: 52, type: 'lc', amount: 30, name: '30 LC', unlocked: false },
-        { level: 53, type: 'item', name: '1 Day License', unlocked: false },
-        { level: 54, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 55, type: 'xp', name: 'XP', unlocked: false },
-        { level: 56, type: 'item', name: '2x Launcher Name Color', unlocked: false },
-        { level: 57, type: 'lc', amount: 60, name: '60 LC', unlocked: false },
-        { level: 58, type: 'item', name: 'Launcher PB Deco', unlocked: false },
-        { level: 59, type: 'item', name: '1 Week License', unlocked: false },
-        { level: 60, type: 'item', name: '2x Launcher Nameplate', unlocked: false },
-        { level: 61, type: 'item', name: '5% Coupon', unlocked: false },
-        { level: 62, type: 'lc', amount: 60, name: '60 LC', unlocked: false },
-        { level: 63, type: 'xp', name: 'XP', unlocked: false },
-        { level: 64, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 65, type: 'item', name: '10% Coupon', unlocked: false },
-        { level: 66, type: 'chest', name: 'Mystery Chest', unlocked: false },
-        { level: 67, type: 'item', name: '2x Launcher Name Color', unlocked: false },
-        { level: 68, type: 'item', name: '1 Week License', unlocked: false },
-        { level: 69, type: 'xp', name: 'XP', unlocked: false },
-        { level: 70, type: 'lc', amount: 90, name: '90 LC', unlocked: false },
-        { level: 71, type: 'item', name: '2x Launcher Nameplate', unlocked: false },
-        { level: 72, type: 'item', name: '15% Coupon', unlocked: false },
-        { level: 73, type: 'item', name: '2x Launcher PB Deco', unlocked: false },
-        { level: 74, type: 'chest', name: 'Mystery Chest', unlocked: false },
-        { level: 75, type: 'xp', name: 'XP', unlocked: false },
-        { level: 76, type: 'item', name: '2x 1 Day License', unlocked: false },
-        { level: 77, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 78, type: 'lc', amount: 60, name: '60 LC', unlocked: false },
-        { level: 79, type: 'item', name: '2x Launcher PB Deco', unlocked: false },
-        { level: 80, type: 'xp', name: 'XP', unlocked: false },
-        { level: 81, type: 'item', name: '2x 1 Week License', unlocked: false },
-        { level: 82, type: 'lc', amount: 90, name: '90 LC', unlocked: false },
-        { level: 83, type: 'item', name: '5% Coupon', unlocked: false },
-        { level: 84, type: 'item', name: '2x Launcher Name Color', unlocked: false },
-        { level: 85, type: 'xp', name: 'XP', unlocked: false },
-        { level: 86, type: 'chest', name: 'Mystery Chest', unlocked: false },
-        { level: 87, type: 'item', name: '10% Coupon', unlocked: false },
-        { level: 88, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 89, type: 'item', name: '2x Launcher Nameplate', unlocked: false },
-        { level: 90, type: 'xp', name: 'XP', unlocked: false },
-        { level: 91, type: 'lc', amount: 60, name: '60 LC', unlocked: false },
-        { level: 92, type: 'item', name: '15% Coupon', unlocked: false },
-        { level: 93, type: 'item', name: '2x 1 Week License', unlocked: false },
-        { level: 94, type: 'item', name: '2x Launcher PB Deco', unlocked: false },
-        { level: 95, type: 'xp', name: 'XP', unlocked: false },
-        { level: 96, type: 'lc', amount: 90, name: '90 LC', unlocked: false },
-        { level: 97, type: 'item', name: '2x Launcher Name Color', unlocked: false },
-        { level: 98, type: 'item', name: 'Launcher Theme', unlocked: false },
-        { level: 99, type: 'item', name: '2x Launcher PB Deco', unlocked: false },
-        { level: 100, type: 'chest', name: 'Mystery Chest', unlocked: false }
-    ];
+    function notify(message, type) {
+        if (typeof showBanner === 'function') showBanner(message, type);
+    }
 
     function getRewardIcon(type) {
         if (type === 'lc') {
@@ -221,73 +18,315 @@
         if (type === 'xp') {
             return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
         }
-        if (type === 'sticker') {
-            return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 9h18M9 21V9"/></svg>';
-        }
-        if (type === 'banner') {
-            return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>';
-        }
-        if (type === 'nitro') {
-            return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5865f2" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l4-4 4 4M12 8v8"/></svg>';
-        }
         if (type === 'chest') {
             return '<img src="../images/assets/lab_pass/rickware-labs_chest.webp" alt="Mystery Chest" style="width:28px;height:28px;object-fit:contain;">';
         }
         return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
     }
 
+    function ensureClaimStyles() {
+        if (document.getElementById('lpClaimStyles')) return;
+        var style = document.createElement('style');
+        style.id = 'lpClaimStyles';
+        style.textContent = '@keyframes lpClaimPulse{0%,100%{box-shadow:0 0 0 1px rgba(201,126,255,0.55),0 0 10px rgba(155,0,204,0.35)}50%{box-shadow:0 0 0 1px rgba(224,170,255,0.95),0 0 22px rgba(201,126,255,0.75)}}' +
+            '.lp-cell-claimable{cursor:pointer;animation:lpClaimPulse 1.8s ease-in-out infinite;}' +
+            '.lp-cell-claimable:hover{transform:translateY(-2px);}' +
+            '.lp-hero-claimable{cursor:pointer;}';
+        document.head.appendChild(style);
+    }
+
+    function lockIcon() {
+        return '<div class="lp-reward-lock-icon"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="rgba(201,126,255,0.5)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>';
+    }
+
+    function checkIcon() {
+        return '<div class="lp-reward-check-icon"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>';
+    }
+
+    function rewardCellHtml(track, reward, currentLevel) {
+        var isCurrent = reward.level === currentLevel;
+        var cellClass = isCurrent ? 'lp-cell-active' : (reward.unlocked ? 'lp-cell-unlocked' : 'lp-cell-locked');
+        if (reward.claimable) cellClass += ' lp-cell-claimable';
+        var title = reward.claimed ? 'Claimed' : (reward.claimable ? 'Click to claim' : (track === 'premium' && !passState.progress.premium ? 'Premium Lab-Pass required' : 'Reach level ' + reward.level));
+        var html = '<div class="lp-grid-cell ' + cellClass + '" data-track="' + track + '" data-level="' + reward.level + '" title="' + esc(reward.name + ' · ' + title) + '">';
+        html += '<div class="lp-reward-icon-wrap">';
+        html += '<div class="lp-reward-icon-placeholder">' + getRewardIcon(reward.icon) + '</div>';
+        if (reward.claimed) html += checkIcon();
+        else if (!reward.unlocked) html += lockIcon();
+        html += '</div>';
+        html += '<div class="lp-reward-name">' + esc(reward.name) + '</div>';
+        html += '</div>';
+        return html;
+    }
+
     function renderRewardsGrid() {
         var track = document.getElementById('lpRewardsTrack');
-        if (!track) return;
-
+        if (!track || !passState) return;
+        var maxLevel = passState.season.max_level;
+        var currentLevel = passState.progress.level;
         var headerHtml = '<div class="lp-grid-header-row"><div class="lp-grid-header-spacer"></div>';
-        for (var i = 1; i <= LP_LEVELS; i++) {
-            var isActive = (i === LP_CURRENT_LEVEL);
-            headerHtml += '<div class="lp-grid-level-header' + (isActive ? ' lp-level-active' : '') + '">' + i + '</div>';
+        for (var i = 1; i <= maxLevel; i++) {
+            headerHtml += '<div class="lp-grid-level-header' + (i === currentLevel ? ' lp-level-active' : '') + '">' + i + '</div>';
         }
         headerHtml += '</div>';
-
         var freeRowHtml = '<div class="lp-grid-body-row lp-grid-free-row"><div class="lp-grid-row-label">Free</div>';
-        for (var fi = 1; fi <= LP_LEVELS; fi++) {
-            var fr = freeRewards[fi - 1];
-            var isAct = (fi === LP_CURRENT_LEVEL);
-            var isUnl = fr.unlocked && !fr.current;
-            var cellClass = isAct ? 'lp-cell-active' : (isUnl ? 'lp-cell-unlocked' : 'lp-cell-locked');
-            freeRowHtml += '<div class="lp-grid-cell ' + cellClass + '">';
-            freeRowHtml += '<div class="lp-reward-icon-wrap">';
-            freeRowHtml += '<div class="lp-reward-icon-placeholder">' + getRewardIcon(fr.type) + '</div>';
-            if (!isUnl && !isAct) {
-                freeRowHtml += '<div class="lp-reward-lock-icon"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="rgba(201,126,255,0.5)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>';
-            } else if (isUnl) {
-                freeRowHtml += '<div class="lp-reward-check-icon"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>';
-            }
-            freeRowHtml += '</div>';
-            freeRowHtml += '<div class="lp-reward-name">' + fr.name + '</div>';
-            freeRowHtml += '</div>';
-        }
+        passState.free_rewards.forEach(function(reward) { freeRowHtml += rewardCellHtml('free', reward, currentLevel); });
         freeRowHtml += '</div>';
-
         var premHtml = '<div class="lp-grid-body-row lp-grid-premium-row"><div class="lp-grid-row-label lp-grid-premium-label">Premium</div>';
-        for (var pi = 1; pi <= LP_LEVELS; pi++) {
-            var pr = premiumRewards[pi - 1];
-            var isActP = (pi === LP_CURRENT_LEVEL);
-            var isUnlP = pr.unlocked && !pr.current;
-            var cellClassP = isActP ? 'lp-cell-active' : (isUnlP ? 'lp-cell-unlocked' : 'lp-cell-locked');
-            premHtml += '<div class="lp-grid-cell ' + cellClassP + '">';
-            premHtml += '<div class="lp-reward-icon-wrap">';
-            premHtml += '<div class="lp-reward-icon-placeholder">' + getRewardIcon(pr.type) + '</div>';
-            if (!isUnlP && !isActP) {
-                premHtml += '<div class="lp-reward-lock-icon"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="rgba(201,126,255,0.5)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>';
-            } else if (isUnlP) {
-                premHtml += '<div class="lp-reward-check-icon"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>';
-            }
-            premHtml += '</div>';
-            premHtml += '<div class="lp-reward-name">' + pr.name + '</div>';
-            premHtml += '</div>';
-        }
+        passState.premium_rewards.forEach(function(reward) { premHtml += rewardCellHtml('premium', reward, currentLevel); });
         premHtml += '</div>';
-
         track.innerHTML = headerHtml + freeRowHtml + premHtml;
+    }
+
+    function claimableCount() {
+        if (!passState) return 0;
+        return passState.free_rewards.concat(passState.premium_rewards).filter(function(reward) { return reward.claimable; }).length;
+    }
+
+    function formatDuration(seconds) {
+        var total = Math.max(0, Math.floor(seconds));
+        var days = Math.floor(total / 86400);
+        var hours = Math.floor((total % 86400) / 3600);
+        var minutes = Math.floor((total % 3600) / 60);
+        if (days > 0) return days + 'd ' + hours + 'h';
+        if (hours > 0) return hours + 'h ' + minutes + 'm';
+        return minutes + 'm ' + (total % 60) + 's';
+    }
+
+    function elapsedSeconds() {
+        return (Date.now() - loadedAt) / 1000;
+    }
+
+    function renderTimeLeft() {
+        var element = document.getElementById('lpTimeLeft');
+        if (!element || !passState || !passState.season) return;
+        var season = passState.season;
+        var remaining = season.seconds_left - elapsedSeconds();
+        if (season.status === 'active') element.textContent = remaining > 0 ? formatDuration(remaining) + ' left' : 'Season ended';
+        else if (season.status === 'upcoming') element.textContent = remaining > 0 ? 'Starts in ' + formatDuration(remaining) : 'Starting now';
+        else element.textContent = 'Season ended';
+    }
+
+    function renderHeader() {
+        var season = passState.season;
+        var progress = passState.progress;
+        var label = document.querySelector('.lp-season-label');
+        if (label) label.textContent = String(season.name || '').toUpperCase();
+        var currentLevel = document.getElementById('lpCurrentLevel');
+        var nextLevel = document.getElementById('lpNextLevel');
+        var xpBar = document.getElementById('lpXpBar');
+        var xpText = document.getElementById('lpXpText');
+        if (currentLevel) currentLevel.textContent = progress.level;
+        if (nextLevel) nextLevel.textContent = progress.max_level_reached ? 'MAX' : progress.next_level;
+        if (xpBar) xpBar.style.width = Math.max(0, Math.min(100, progress.level_xp / progress.next_level_xp * 100)) + '%';
+        if (xpText) xpText.textContent = progress.max_level_reached ? 'Max level reached' : progress.level_xp + ' / ' + progress.next_level_xp + ' XP';
+        var passPrice = document.getElementById('lpPassPrice');
+        if (passPrice) passPrice.textContent = progress.premium ? 'Active' : season.premium_price_lc + ' LC';
+        var activateBtn = document.getElementById('lpActivateBtn');
+        if (activateBtn) {
+            var activateLabel = progress.premium ? (progress.premium_included ? 'Included With Your Account' : 'Lab-Pass Active') : 'Activate Lab-Pass';
+            var textNode = Array.prototype.filter.call(activateBtn.childNodes, function(node) { return node.nodeType === 3 && node.textContent.trim(); })[0];
+            if (textNode) textNode.textContent = ' ' + activateLabel + ' ';
+            activateBtn.disabled = progress.premium || season.status !== 'active';
+            activateBtn.title = progress.premium ? 'Your premium Lab-Pass is active for this season' : 'Unlock all premium rewards for ' + season.premium_price_lc + ' LC';
+        }
+        var bundleNew = document.querySelector('.lp-bundle-price-new');
+        var bundleOld = document.querySelector('.lp-bundle-price-old');
+        var bundleDesc = document.querySelector('.lp-bundle-desc');
+        var bundleDiscount = document.querySelector('.lp-bundle-discount');
+        var bundleBtn = document.getElementById('lpBundleBtn');
+        if (bundleNew) bundleNew.textContent = season.bundle_price_lc + ' LC';
+        if (bundleOld) bundleOld.textContent = season.bundle_original_price_lc + ' LC';
+        if (bundleDesc) bundleDesc.textContent = 'Pass + ' + season.bundle_levels + ' Levels';
+        if (bundleDiscount && season.bundle_original_price_lc > 0) bundleDiscount.textContent = '-' + Math.round((1 - season.bundle_price_lc / season.bundle_original_price_lc) * 100) + '%';
+        if (bundleBtn) {
+            bundleBtn.disabled = progress.premium || season.status !== 'active';
+            bundleBtn.textContent = progress.premium ? 'Pass Active' : 'Buy Bundle';
+        }
+        var hero = document.getElementById('lpHeroChest');
+        if (hero) {
+            var pending = claimableCount();
+            hero.classList.toggle('lp-hero-claimable', pending > 0);
+            hero.title = pending > 0 ? 'Click to claim all ' + pending + ' available rewards' : 'No rewards ready to claim';
+        }
+        renderTimeLeft();
+    }
+
+    function renderChallenges() {
+        var list = document.getElementById('lpChallengesList');
+        if (!list || !passState) return;
+        var items = passState.daily_challenges.items.filter(function(item) { return showAllChallenges || !item.completed; });
+        list.innerHTML = items.map(function(item) {
+            var percent = Math.max(0, Math.min(100, item.progress / item.target * 100));
+            return '<div class="lp-challenge-item" title="' + esc(item.source === 'client' && item.challenge_id !== 'visit_store' && item.challenge_id !== 'browse_tools' && item.challenge_id !== 'share_product' ? 'Tracked by the Rickware - Labs© Launcher' : 'Tracked automatically') + '">' +
+                '<div class="lp-challenge-info">' +
+                    '<span class="lp-challenge-name">' + esc(item.name) + '</span>' +
+                    '<div class="lp-challenge-bar-wrap">' +
+                        '<div class="lp-challenge-bar-track"><div class="lp-challenge-bar-fill" style="width:' + percent + '%"></div></div>' +
+                        '<span class="lp-challenge-prog">' + Math.min(item.progress, item.target) + '/' + item.target + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="lp-challenge-reward">' +
+                    (item.completed ? '<svg class="lp-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+                    '<span class="lp-xp-reward">' + item.xp + ' XP</span>' +
+                '</div>' +
+            '</div>';
+        }).join('') || '<div class="lp-challenge-item"><div class="lp-challenge-info"><span class="lp-challenge-name">All daily challenges completed. Come back tomorrow!</span></div></div>';
+        var allButton = document.getElementById('lpAllChallengesBtn');
+        if (allButton) allButton.textContent = showAllChallenges ? 'Hide Completed' : 'All Challenges';
+    }
+
+    function updateChallengeTimer() {
+        var timer = document.getElementById('lpChallengeTimer');
+        if (!timer) return;
+        if (!passState || !passState.daily_challenges) {
+            var now = new Date();
+            var tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+            timer.textContent = formatDuration((tomorrow - now) / 1000);
+            return;
+        }
+        var remaining = passState.daily_challenges.seconds_until_reset - elapsedSeconds();
+        if (remaining <= 0) {
+            timer.textContent = '0m 0s';
+            if (!resetReloadPending) {
+                resetReloadPending = true;
+                loadPass().finally(function() { resetReloadPending = false; });
+            }
+            return;
+        }
+        var hours = Math.floor(remaining / 3600);
+        var minutes = Math.floor((remaining % 3600) / 60);
+        var seconds = Math.floor(remaining % 60);
+        timer.textContent = hours + 'h ' + minutes + 'm ' + seconds + 's';
+    }
+
+    function applyPass(data) {
+        if (!data || !data.season) return;
+        passState = data;
+        loadedAt = Date.now();
+        renderHeader();
+        renderRewardsGrid();
+        renderChallenges();
+        if (typeof setLabCoinsBalance === 'function' && data.lab_coins !== undefined) setLabCoinsBalance(data.lab_coins);
+        if (!hintShown && claimableCount() > 0) {
+            hintShown = true;
+            notify('You have ' + claimableCount() + ' rewards ready. Click a glowing reward or the Season Chest to claim everything.', 'info');
+        }
+    }
+
+    function showUnavailable(status) {
+        var element = document.getElementById('lpTimeLeft');
+        if (element) element.textContent = status === 'disabled' ? 'Unavailable' : 'Coming Soon';
+        var track = document.getElementById('lpRewardsTrack');
+        if (track) track.innerHTML = '<div style="padding:30px;color:rgba(255,255,255,0.6);">The next Lab-Pass season is being prepared. Check back soon!</div>';
+    }
+
+    async function loadPass() {
+        if (!RWL.getToken()) {
+            window.location.href = './login_register.html?tab=login';
+            return;
+        }
+        try {
+            var data = await RWL.apiRequest('/api/season_pass');
+            if (!data.season) {
+                showUnavailable(data.status);
+                return;
+            }
+            applyPass(data);
+        } catch (error) {
+            if (error.status === 401) {
+                window.location.href = './login_register.html?tab=login';
+                return;
+            }
+            notify(error.message || 'The Lab-Pass could not be loaded.', 'error');
+        }
+    }
+
+    function describeClaims(claims, labCoins) {
+        var parts = [];
+        claims.forEach(function(claim) {
+            if (claim.items) {
+                claim.items.forEach(function(item) {
+                    if (item.fallback_lab_coins) return;
+                    parts.push((item.name || claim.name) + (item.duplicate ? ' (duplicate)' : ''));
+                });
+            } else if (claim.type !== 'lab_coins') {
+                parts.push(claim.name);
+            }
+        });
+        if (labCoins) parts.unshift(labCoins + ' LC');
+        var unique = parts.slice(0, 6).join(', ');
+        return unique + (parts.length > 6 ? ' and ' + (parts.length - 6) + ' more' : '');
+    }
+
+    async function claim(body) {
+        if (busy) return;
+        busy = true;
+        try {
+            var result = await RWL.apiRequest('/api/season_pass/claim', { method: 'POST', body: body });
+            applyPass(result.pass);
+            notify('Claimed: ' + describeClaims(result.claimed || [], result.lab_coins_awarded || 0), 'success');
+        } catch (error) {
+            notify(error.message || 'The reward could not be claimed.', 'error');
+        } finally {
+            busy = false;
+        }
+    }
+
+    async function purchase(bundle) {
+        if (busy || !passState) return;
+        var season = passState.season;
+        var price = bundle ? season.bundle_price_lc : season.premium_price_lc;
+        var label = bundle ? 'the Lab-Pass Bundle (Pass + ' + season.bundle_levels + ' Levels)' : 'the premium Lab-Pass';
+        if (!window.confirm('Buy ' + label + ' for ' + price + ' Lab Coins? Your balance: ' + passState.lab_coins + ' LC. Lab-Pass purchases are final.')) return;
+        busy = true;
+        try {
+            var result = await RWL.apiRequest('/api/season_pass/purchase', { method: 'POST', body: { bundle: !!bundle } });
+            applyPass(result.pass);
+            notify('Lab-Pass activated! ' + result.lc_spent + ' LC spent, new balance: ' + result.lc_balance + ' LC.', 'success');
+        } catch (error) {
+            notify(error.message || 'The purchase failed.', 'error');
+        } finally {
+            busy = false;
+        }
+    }
+
+    function setupInteractions() {
+        var track = document.getElementById('lpRewardsTrack');
+        if (track) {
+            track.addEventListener('click', function(e) {
+                var cell = e.target.closest('.lp-grid-cell');
+                if (!cell || !passState) return;
+                var trackName = cell.getAttribute('data-track');
+                var level = parseInt(cell.getAttribute('data-level'), 10);
+                var rewards = trackName === 'premium' ? passState.premium_rewards : passState.free_rewards;
+                var reward = rewards.filter(function(entry) { return entry.level === level; })[0];
+                if (!reward) return;
+                if (reward.claimable) { claim({ track: trackName, level: level }); return; }
+                if (reward.claimed) { notify(reward.name + ' was already claimed.', 'info'); return; }
+                if (trackName === 'premium' && !passState.progress.premium) { notify('Activate the premium Lab-Pass to unlock premium rewards.', 'info'); return; }
+                notify('Reach level ' + level + ' to unlock ' + reward.name + '.', 'info');
+            });
+        }
+        var hero = document.getElementById('lpHeroChest');
+        if (hero) {
+            hero.addEventListener('click', function() {
+                if (claimableCount() > 0) claim({ claim_all: true });
+            });
+        }
+        var activateBtn = document.getElementById('lpActivateBtn');
+        if (activateBtn) activateBtn.addEventListener('click', function() { purchase(false); });
+        var priceBtn = document.getElementById('lpPriceBtn');
+        if (priceBtn) priceBtn.addEventListener('click', function() { if (passState && !passState.progress.premium) purchase(false); });
+        var bundleBtn = document.getElementById('lpBundleBtn');
+        if (bundleBtn) bundleBtn.addEventListener('click', function() { purchase(true); });
+        var allButton = document.getElementById('lpAllChallengesBtn');
+        if (allButton) {
+            allButton.addEventListener('click', function() {
+                showAllChallenges = !showAllChallenges;
+                renderChallenges();
+            });
+        }
     }
 
     function initSlider() {
@@ -328,11 +367,13 @@
         });
 
         var isDragging = false;
+        var dragMoved = false;
         var startX = 0;
         var startScroll = 0;
 
         scrollEl.addEventListener('mousedown', function(e) {
             isDragging = true;
+            dragMoved = false;
             startX = e.pageX - scrollEl.offsetLeft;
             startScroll = scrollEl.scrollLeft;
             scrollEl.style.cursor = 'grabbing';
@@ -342,6 +383,7 @@
             if (!isDragging) return;
             e.preventDefault();
             var x = e.pageX - scrollEl.offsetLeft;
+            if (Math.abs(x - startX) > 4) dragMoved = true;
             scrollEl.scrollLeft = startScroll - (x - startX);
         });
 
@@ -352,30 +394,36 @@
             }
         });
 
+        scrollEl.addEventListener('click', function(e) {
+            if (dragMoved) {
+                e.stopPropagation();
+                dragMoved = false;
+            }
+        }, true);
+
         updateFill();
     }
 
-    function updateChallengeTimer() {
-        var lpChallengeTimer = document.getElementById('lpChallengeTimer');
-        if (!lpChallengeTimer) return;
-
-        var now = new Date();
-        var tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
-
-        var diff = tomorrow - now;
-        var hours = Math.floor(diff / (1000 * 60 * 60));
-        var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        var seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-        lpChallengeTimer.textContent = hours + 'h ' + minutes + 'm ' + seconds + 's';
+    function scrollToCurrentLevel() {
+        var scrollEl = document.getElementById('lpRewardsScroll');
+        var active = document.querySelector('.lp-grid-level-header.lp-level-active');
+        if (!scrollEl || !active) return;
+        scrollEl.scrollLeft = Math.max(0, active.offsetLeft - scrollEl.clientWidth / 2);
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        renderRewardsGrid();
+    document.addEventListener('DOMContentLoaded', async function() {
+        ensureClaimStyles();
+        var challengeList = document.getElementById('lpChallengesList');
+        if (challengeList) challengeList.innerHTML = '<div class="lp-challenge-item"><div class="lp-challenge-info"><span class="lp-challenge-name">Loading daily challenges...</span></div></div>';
         initSlider();
+        setupInteractions();
         updateChallengeTimer();
-        setInterval(updateChallengeTimer, 1000);
+        setInterval(function() {
+            updateChallengeTimer();
+            renderTimeLeft();
+        }, 1000);
+        await loadPass();
+        scrollToCurrentLevel();
+        setInterval(function() { if (!document.hidden && !busy) loadPass(); }, 60000);
     });
 })();

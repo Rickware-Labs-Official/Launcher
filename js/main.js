@@ -1,12 +1,3 @@
-const API_BASE_RAW = 'http://prem-eu4.bot-hosting.net:20940';
-const CF_WORKER = 'https://rickware-labs-launcher.rickware-labs-official.workers.dev';
-function apiUrl(path) {
-    if (window.location.protocol === 'https:') {
-        return CF_WORKER + path;
-    }
-    return API_BASE_RAW + path;
-}
-
 function profilePicUrl(profilePicturePath) {
     if (!profilePicturePath) return '';
     if (profilePicturePath.startsWith('data:') || profilePicturePath.startsWith('http')) return profilePicturePath;
@@ -33,7 +24,7 @@ function showBanner(message, type) {
         iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
     }
     banner.style.cssText = 'position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:999999;display:flex;align-items:center;gap:10px;padding:13px 22px;border-radius:14px;font-size:14px;font-weight:600;color:#fff;background:' + bg + ';border:1px solid ' + border + ';backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,0.45),0 0 0 1px ' + border + ';transition:opacity 0.4s,transform 0.4s;opacity:1;max-width:90vw;white-space:nowrap;cursor:pointer;';
-    banner.innerHTML = iconSvg + '<span>' + message + '</span>';
+    banner.innerHTML = iconSvg + '<span>' + escHtml(typeof message === 'string' ? message : 'Something went wrong. Please try again.') + '</span>';
     document.body.appendChild(banner);
     var timer = setTimeout(function() {
         banner.style.opacity = '0';
@@ -955,9 +946,15 @@ function updateCartBadge() {
     if (badge) badge.textContent = cart.length;
 }
 
+function siteBaseUrl() {
+    var script = document.querySelector('script[src*="js/main.js"]');
+    if (script && script.src) return script.src.replace(/js\/main\.js.*$/, '');
+    return './';
+}
+
 async function loadConfig() {
     try {
-        var res = await fetch('./config/config.json');
+        var res = await fetch(siteBaseUrl() + 'config/config.json', { cache: 'no-store' });
         if (res.ok) config = await res.json();
     } catch(e) {
         config = {};
@@ -967,23 +964,28 @@ async function loadConfig() {
 
 var PERMISSION_RANKS = { 'user': 0, 'vip': 1, 'partner': 2, 'beta': 3, 'unlockall': 4, 'admin': 5, 'owner': 6 };
 
+function normalizePermissionKey(value) {
+    return String(value || 'User').toLowerCase().replace(/\s+/g, '');
+}
+
 function getCurrentPermissionRank() {
-    var perms = (currentUser && currentUser.account_permissions) || (currentUser && currentUser.account_type) || 'User';
-    if (Array.isArray(perms)) {
-        var highest = 0;
-        perms.forEach(function(p) {
-            var r = PERMISSION_RANKS[String(p || 'User').toLowerCase()];
-            if (r !== undefined && r > highest) highest = r;
-        });
-        return highest;
-    }
-    var rank = PERMISSION_RANKS[String(perms || 'User').toLowerCase()];
-    return rank !== undefined ? rank : 0;
+    if (!currentUser) return 0;
+    var candidates = [];
+    [currentUser.account_permissions, currentUser.account_type, currentUser.role].forEach(function(value) {
+        if (Array.isArray(value)) candidates = candidates.concat(value);
+        else if (value) candidates.push(value);
+    });
+    var highest = 0;
+    candidates.forEach(function(value) {
+        var rank = PERMISSION_RANKS[normalizePermissionKey(value)];
+        if (rank !== undefined && rank > highest) highest = rank;
+    });
+    return highest;
 }
 
 function meetsRequiredPermission(requiredPermission) {
     if (!requiredPermission) return true;
-    var requiredRank = PERMISSION_RANKS[String(requiredPermission).toLowerCase()];
+    var requiredRank = PERMISSION_RANKS[normalizePermissionKey(requiredPermission)];
     if (requiredRank === undefined) return true;
     return getCurrentPermissionRank() >= requiredRank;
 }
@@ -1052,43 +1054,27 @@ async function getCurrentUser() {
 function getAccountData() {
     try {
         var stored = sessionStorage.getItem('rickware_user');
-        if (!stored) return null;
-        var user = JSON.parse(stored);
-        var pw = sessionStorage.getItem('rickware_pw') || '';
-        return Object.assign({}, user, { password: pw });
+        return stored ? JSON.parse(stored) : null;
     } catch(e) { return null; }
 }
 
 async function checkLoginStatus() {
     var authButtons = document.getElementById('authButtons');
     var userProfileBtn = document.getElementById('userProfileBtn');
-    var token = sessionStorage.getItem('rickware_token');
-    if (token) {
-        try {
-            var parts = token.split('.');
-            if (parts.length === 3) {
-                var decoded = JSON.parse(atob(parts[1]));
-                var fullUser = await fetchFullUser(token);
-                if (fullUser) {
-                    sessionStorage.setItem('rickware_user', JSON.stringify(fullUser));
-                    currentUser = fullUser;
-                    updateUserProfile(fullUser);
-                } else {
-                    var stored = sessionStorage.getItem('rickware_user');
-                    var mergedUser = decoded;
-                    if (stored) {
-                        try { mergedUser = Object.assign({}, decoded, JSON.parse(stored)); } catch(e) {}
-                    }
-                    currentUser = mergedUser;
-                    updateUserProfile(mergedUser);
-                }
-                if (authButtons) authButtons.style.display = 'none';
-                if (userProfileBtn) userProfileBtn.style.display = 'flex';
-                return;
-            }
-        } catch(e) {}
-        sessionStorage.removeItem('rickware_token');
+    var token = RWL.getToken();
+    if (token && token.split('.').length === 3) {
+        var fullUser = await fetchFullUser(token);
+        var resolvedUser = fullUser || (RWL.getToken() ? getAccountData() : null);
+        if (resolvedUser) {
+            if (fullUser) sessionStorage.setItem('rickware_user', JSON.stringify(fullUser));
+            currentUser = resolvedUser;
+            updateUserProfile(resolvedUser);
+            if (authButtons) authButtons.style.display = 'none';
+            if (userProfileBtn) userProfileBtn.style.display = 'flex';
+            return;
+        }
     }
+    if (token && !RWL.getToken()) RWL.clearSession();
     currentUser = null;
     if (authButtons) authButtons.style.display = 'flex';
     if (userProfileBtn) userProfileBtn.style.display = 'none';
@@ -1103,11 +1089,28 @@ function getAccountTypeBadgeStyle(accountType) {
     return 'background:rgba(155,0,204,0.12);color:#b87fff;border:1px solid rgba(155,0,204,0.3);';
 }
 
+function applyNameColor(el, cosmetics, fallback) {
+    ['background-image', 'background-size', '-webkit-background-clip', 'background-clip', '-webkit-text-fill-color', 'animation', 'color'].forEach(function(property) {
+        el.style.removeProperty(property);
+    });
+    RWL.nameColorStyle(cosmetics || {}, fallback).split(';').forEach(function(rule) {
+        var separator = rule.indexOf(':');
+        if (separator > 0) el.style.setProperty(rule.slice(0, separator).trim(), rule.slice(separator + 1).trim());
+    });
+}
+
+function userProfileImageSrc(user) {
+    if (user && user.profile_picture_base64) return 'data:image/png;base64,' + user.profile_picture_base64;
+    if (user && user.profile_picture) return profilePicUrl(user.profile_picture);
+    return siteBaseUrl() + 'images/main/logo.webp';
+}
+
 function updateUserProfile(user) {
-    var nameColor = (config && config.default_name_color) ? config.default_name_color : '#ffffff';
+    var fallbackColor = (config && config.default_name_color) ? config.default_name_color : '#ffffff';
+    var cosmetics = user.equipped_cosmetics || {};
     document.querySelectorAll('#usernameDisplay, #usernameDisplaySidebar, .cp-profile-username').forEach(function(el) {
         el.textContent = user.username || 'Guest';
-        el.style.color = nameColor;
+        applyNameColor(el, cosmetics, fallbackColor);
     });
     document.querySelectorAll('#userTypeSidebar').forEach(function(el) {
         el.innerHTML = '<span style="font-size:9px;font-weight:600;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;line-height:1;">Acc Type</span><span>' + escHtml(user.account_type || 'User') + '</span>';
@@ -1124,19 +1127,11 @@ function updateUserProfile(user) {
             sidebarPerms.style.display = 'none';
         }
     }
-    var profileSrc = '';
-    if (user.profile_picture_base64) {
-        profileSrc = 'data:image/png;base64,' + user.profile_picture_base64;
-    } else if (user.profile_picture) {
-        profileSrc = './images/' + user.profile_picture;
-    } else if (user.username) {
-        profileSrc = './images/' + user.username + '/' + user.username + '.png';
-    }
+    var profileSrc = userProfileImageSrc(user);
     document.querySelectorAll('#profileImage, #profileImageLarge').forEach(function(img) {
         img.src = profileSrc;
     });
-    var nameplateFile = user.nameplate || (config && config.default_nameplate) || 'spirit_blossom_petrals.webm';
-    var nameplateSrc = './images/assets/nameplates/' + nameplateFile;
+    var nameplateSrc = userNameplateSrc(cosmetics);
     document.querySelectorAll('#nameplateBg, #nameplateBgLarge').forEach(function(nameplateBg) {
         if (nameplateBg.getAttribute('data-src') !== nameplateSrc) {
             nameplateBg.setAttribute('data-src', nameplateSrc);
@@ -1145,10 +1140,9 @@ function updateUserProfile(user) {
             nameplateBg.play().catch(function(){});
         }
     });
-    var decorationFile = user.avatar_decoration || (config && config.default_avatar_decoration) || 'chromawave.png';
-    var decorationSrc = decorationFile ? './images/assets/avatar_decoration/' + decorationFile : '';
+    var decorationSrc = userDecorationSrc(cosmetics);
     document.querySelectorAll('#avatarDecoration, #avatarDecorationLarge').forEach(function(avatarDecoration) {
-        if (decorationFile) {
+        if (decorationSrc) {
             if (avatarDecoration.getAttribute('data-src') !== decorationSrc) {
                 avatarDecoration.setAttribute('data-src', decorationSrc);
                 avatarDecoration.src = decorationSrc;
@@ -1205,7 +1199,6 @@ async function loginUser(usernameOrEmail, password) {
         if (res.ok) {
             var data = await res.json();
             sessionStorage.setItem('rickware_token', data.token);
-            sessionStorage.setItem('rickware_pw', password);
             if (data.refresh_token) sessionStorage.setItem('rickware_refresh_token', data.refresh_token);
             if (data.account) {
                 sessionStorage.setItem('rickware_user', JSON.stringify(data.account));
@@ -1498,42 +1491,6 @@ function setLabCoinsBalance(v) {
     if (nameplateEl) nameplateEl.textContent = v + ' LC';
 }
 
-async function saveOrderToHistory(orderEntry, token, accountData) {
-    if (!token || !accountData) return;
-    try {
-        var stored = sessionStorage.getItem('rickware_user');
-        var user = stored ? JSON.parse(stored) : null;
-        if (!user) return;
-        var history = user.order_history || [];
-        var existingIdx = history.findIndex(function(o) { return o.order_id === orderEntry.order_id; });
-        if (existingIdx >= 0) {
-            history[existingIdx] = Object.assign({}, history[existingIdx], orderEntry);
-        } else {
-            history.push(orderEntry);
-        }
-        user.order_history = history;
-        sessionStorage.setItem('rickware_user', JSON.stringify(user));
-        var publicFields = [
-            'system_ban','system_timeout','username','2_fa','email_newsletter',
-            'email_adress','phone_number','discord_linked','google_linked',
-            'profile_picture','account_type','account_permissions',
-            'database_main_product_key','purchased_products','paid_products',
-            'product_types','product_license_keys','paused_license_keys',
-            'banned_products','user_last_ip','user_last_login','user_login_count',
-            'user_discord_username','user_discord_displayname','user_discord_user_id',
-            'user_discord_user_ticket_ids','user_discord_user_coin_amount',
-            'user_discord_user_xp_amount','user_discord_user_invited_user'
-        ];
-        var currentData = {};
-        publicFields.forEach(function(f) { if (user[f] !== undefined) currentData[f] = user[f]; });
-        await fetch(apiUrl('/api/profile/update'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ current_data: currentData, new_data: { order_history: history } })
-        });
-    } catch(e) {}
-}
-
 async function showBankPage() {
     var content = document.getElementById('content');
     if (!content) return;
@@ -1557,9 +1514,10 @@ async function showBankPage() {
     ];
     var coinPackages = defaultPackages;
     try {
-        var bankRes = await fetch(apiUrl('/api/bank'));
+        var bankRes = await fetch(apiUrl('/api/bank'), { headers: RWL.authHeaders() });
         if (bankRes.ok) {
             var bankData = await bankRes.json();
+            if (bankData.lc_usd_rate) window._lcUsdRate = bankData.lc_usd_rate;
             if (bankData.main && bankData.main.lc_balance !== undefined) {
                 labCoinsBalance = bankData.main.lc_balance;
             }
@@ -1607,7 +1565,7 @@ async function showBankPage() {
                     '<div class="bank-balance-card glass-card">' +
                         '<div class="bank-balance-label">Your Balance</div>' +
                         '<div class="bank-balance-amount" id="bankBalanceDisplay">' + labCoinsBalance + ' <span>LC</span></div>' +
-                        '<div class="bank-balance-usd">≈ $' + (labCoinsBalance * 0.137).toFixed(2) + ' USD</div>' +
+                        '<div class="bank-balance-usd">≈ $' + (labCoinsBalance * currentLcUsdRate()).toFixed(2) + ' USD</div>' +
                     '</div>' +
                 '</div>' +
             '</div>' +
@@ -1652,7 +1610,7 @@ function openCoinCheckout(packId, coins, bonus, price, label) {
     var overlay = document.getElementById('checkoutModalOverlay');
     var inner = document.getElementById('checkoutModalInner');
     if (!overlay || !inner) return;
-    var lcRate = 0.137;
+    var lcRate = currentLcUsdRate();
     var lcCost = Math.ceil(price / lcRate);
     var userLc = labCoinsBalance || 0;
     var canAffordLc = userLc >= lcCost;
@@ -1702,85 +1660,18 @@ function openCoinCheckout(packId, coins, bonus, price, label) {
 
 async function coinCheckoutConfirmNew(packId, coins, bonus, price, label) {
     var inner = document.getElementById('checkoutModalInner');
-    var overlay = document.getElementById('checkoutModalOverlay');
     if (!inner) return;
     var selectedBtn = inner.querySelector('.coin-payment-btn.active');
-    var method = selectedBtn ? (selectedBtn.getAttribute('data-method') || '') : '';
-    if (!method) { showBanner('Please select a payment method.', 'error'); return; }
-    if (!currentUser) { showBanner('Please login to purchase coins.', 'error'); return; }
-    var token = sessionStorage.getItem('rickware_token');
-    if (!token) { showBanner('Please login to purchase coins.', 'error'); return; }
-    var accountData = getAccountData();
-    if (!accountData || !accountData.password) { showBanner('Session expired. Please login again.', 'error'); return; }
+    if (!selectedBtn) { showBanner('Please select a payment method.', 'error'); return; }
     var total = coins + bonus;
-    var now = new Date();
-    var orderId = 'LC-' + Date.now();
-    var orderEntry = {
-        order_id: orderId,
-        created_at: now.toISOString(),
-        paid_at: null,
-        status: 'pending',
-        coin: method || null,
-        total_usd: price,
-        items: [{ name: label + ' Pack (' + total + ' LC)', quantity: 1, amount: price }]
-    };
-    await saveOrderToHistory(orderEntry, token, accountData);
-    var cryptoMethods = ['btc','eth','sol','bnb','trx','ltc','bch','doge'];
-    if (cryptoMethods.indexOf(method) >= 0) {
-        var confirmBtn = document.getElementById('coinCheckoutConfirmBtn');
-        if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Creating payment...'; }
-        try {
-            var res = await fetch(apiUrl('/api/payment/create'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({
-                    account_data: accountData,
-                    cart_items: [{ name: label + ' Pack (' + total + ' LC)', price: price, qty: 1, product: { id: packId, title: label + ' Lab Coins Pack', lc_pack: true, lc_total: total }, licenseKey: null }],
-                    coin: method,
-                    coupon_code: null
-                })
-            });
-            if (res.ok) {
-                var data = await res.json();
-                orderEntry.order_id = data.order_id || orderId;
-                orderEntry.status = 'pending';
-                await saveOrderToHistory(orderEntry, token, accountData);
-                if (inner) {
-                    inner.innerHTML =
-                        '<div class="coin-checkout-modal">' +
-                            '<div class="coin-checkout-header"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h2>Payment Created</h2></div>' +
-                            '<div class="coin-checkout-summary glass-card">' +
-                                '<div class="coin-checkout-row"><span>Order ID</span><strong style="font-size:12px;">' + escHtml(data.order_id) + '</strong></div>' +
-                                '<div class="coin-checkout-row"><span>Send Amount</span><strong>' + escHtml(String(data.pay_amount)) + ' ' + escHtml((data.pay_currency || method).toUpperCase()) + '</strong></div>' +
-                                '<div class="coin-checkout-row" style="flex-direction:column;align-items:flex-start;gap:6px;"><span>Send To Address</span><strong style="word-break:break-all;font-size:11px;line-height:1.5;color:#c97eff;">' + escHtml(data.pay_address) + '</strong></div>' +
-                                (data.expiration_estimate_date ? '<div class="coin-checkout-row"><span>Expires</span><strong>' + escHtml(data.expiration_estimate_date) + '</strong></div>' : '') +
-                            '</div>' +
-                            '<div class="coin-checkout-note">Send exactly the amount shown. Your Lab Coins will be credited automatically after confirmation.</div>' +
-                            '<button class="coin-checkout-confirm-btn" style="background:rgba(99,0,138,0.4);" onclick="(function(){var o=document.getElementById(\'checkoutModalOverlay\');if(o){o.style.display=\'none\';}document.body.style.overflow=\'\';})()" >Close</button>' +
-                        '</div>';
-                }
-                showBanner('Payment address created. Send crypto to receive your Lab Coins.', 'success');
-            } else {
-                var errD = null; try { errD = await res.json(); } catch(e) {}
-                orderEntry.status = 'failed';
-                await saveOrderToHistory(orderEntry, token, accountData);
-                showBanner((errD && errD.detail) ? errD.detail : 'Payment creation failed.', 'error');
-                if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Proceed →'; }
-            }
-        } catch(e) {
-            showBanner('Failed to create payment. Please try again.', 'error');
-        }
-    } else {
-        if (inner) {
-            inner.innerHTML = '<div style="text-align:center;padding:40px 20px;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" style="margin-bottom:16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h2 style="color:#4caf50;margin-bottom:8px;">Order Submitted!</h2><p style="color:var(--text-secondary);">Open a Discord ticket with your payment proof. Coins will be credited within 24 hours.</p></div>';
-        }
-        orderEntry.status = 'pending';
-        await saveOrderToHistory(orderEntry, token, accountData);
-        setTimeout(function() {
-            if (overlay) { overlay.style.display = 'none'; }
-            document.body.style.overflow = '';
-        }, 3500);
-    }
+    await runCheckout({
+        overlayId: 'checkoutModalOverlay',
+        inner: inner,
+        items: [{ name: label + ' Pack (' + total + ' LC)', qty: 1, product: { id: packId, lc_pack: true }, licenseKey: null }],
+        selectedBtn: selectedBtn,
+        couponCode: null,
+        onComplete: function() {}
+    });
 }
 
 function coinCheckoutConfirm() {
@@ -1989,16 +1880,16 @@ function renderCustomerPanelContent() {
     var profileHtml =
         '<div class="cp-profile-card glass-card">' +
             '<div class="cp-profile-left">' +
-                '<img src="' + escHtml(fullUser.profile_picture || '') + '" alt="" class="cp-profile-img" onerror="this.style.display=\'none\'">' +
+                '<img src="' + escHtml(customerPanelAvatarSrc(fullUser)) + '" alt="" class="cp-profile-img" onerror="this.style.display=\'none\'">' +
                 '<div class="cp-profile-info">' +
                     '<div class="cp-profile-username-row">' +
-                        '<div class="cp-profile-username" style="color:' + escHtml((config && config.default_name_color) ? config.default_name_color : '#ffffff') + ';">' + escHtml(fullUser.username || 'Unknown') + '</div>' +
+                        '<div class="cp-profile-username" style="' + escHtml(userNameStyle(fullUser.equipped_cosmetics || {})) + '">' + escHtml(fullUser.username || 'Unknown') + '</div>' +
                         '<span class="cp-account-type-badge" style="' + accountTypeBadgeStyle + 'flex-direction:column;align-items:center;padding:3px 10px;"><span style=\'font-size:9px;font-weight:600;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.06em;line-height:1;margin-bottom:1px;\'>Acc Type</span><span>' + escHtml(fullUser.account_type || 'User') + '</span></span>' +
                         permsBadgeHtml +
                     '</div>' +
                     '<div class="cp-profile-meta">' +
                         (fullUser.email_adress ? '<span>' + escHtml(fullUser.email_adress) + '</span>' : '') +
-                        (fullUser.user_created_at ? '<span>Member since ' + new Date(fullUser.user_created_at).toLocaleDateString() + '</span>' : '') +
+                        (fullUser.created_at ? '<span>Member since ' + escHtml(new Date(fullUser.created_at).toLocaleDateString()) + '</span>' : '') +
                     '</div>' +
                 '</div>' +
             '</div>' +
@@ -2055,6 +1946,16 @@ async function loadReviewsData() {
     } catch(e) {}
 }
 
+var COSMETIC_PAYLOAD_FIELDS = ['nameplate', 'nameplate_url', 'avatar_decoration', 'avatar_decoration_url', 'name_color', 'name_color_hex', 'name_color_rarity', 'name_color_animated', 'name_color_gradient', 'name_color_animation_seconds'];
+
+function cosmeticFields(source) {
+    var fields = {};
+    COSMETIC_PAYLOAD_FIELDS.forEach(function(key) {
+        if (source && source[key] !== undefined) fields[key] = source[key];
+    });
+    return fields;
+}
+
 async function loadForumData() {
     try {
         var res = await fetch(apiUrl('/api/forum'));
@@ -2062,8 +1963,26 @@ async function loadForumData() {
             var data = await res.json();
             if (typeof data.online_count === 'number') forumOnlineCount = data.online_count;
             var myUser = currentUser ? currentUser.username : null;
+            var normalizeComment = function(c) {
+                return Object.assign({
+                    comment_id: c.comment_id || '',
+                    username: c.username || 'User',
+                    account_type: c.account_type || null,
+                    account_permissions: c.account_permissions || null,
+                    profile_picture: c.profile_picture || null,
+                    text: c.content || c.text || '',
+                    time: c.date || c.time || '',
+                    likes: c.likes || 0,
+                    dislikes: c.dislikes || 0,
+                    liked_by: c.liked_by || [],
+                    disliked_by: c.disliked_by || [],
+                    _likedByMe: myUser ? (c.liked_by || []).indexOf(myUser) >= 0 : false,
+                    _dislikedByMe: myUser ? (c.disliked_by || []).indexOf(myUser) >= 0 : false,
+                    replies: (c.replies || []).map(normalizeComment)
+                }, cosmeticFields(c));
+            };
             forumPosts = (data.posts || []).map(function(p) {
-                return {
+                return Object.assign({
                     post_id: p.post_id || '',
                     username: p.username || 'User',
                     account_type: p.account_type || null,
@@ -2076,27 +1995,12 @@ async function loadForumData() {
                     dislikes: p.dislikes || 0,
                     liked_by: p.liked_by || [],
                     disliked_by: p.disliked_by || [],
+                    is_pinned: !!p.is_pinned,
+                    is_locked: !!p.is_locked,
                     _likedByMe: myUser ? (p.liked_by || []).indexOf(myUser) >= 0 : false,
                     _dislikedByMe: myUser ? (p.disliked_by || []).indexOf(myUser) >= 0 : false,
-                    comments: (p.comments || []).map(function normalizeComment(c) {
-                        return {
-                            comment_id: c.comment_id || '',
-                            username: c.username || 'User',
-                            account_type: c.account_type || null,
-                            account_permissions: c.account_permissions || null,
-                            profile_picture: c.profile_picture || null,
-                            text: c.content || c.text || '',
-                            time: c.date || c.time || '',
-                            likes: c.likes || 0,
-                            dislikes: c.dislikes || 0,
-                            liked_by: c.liked_by || [],
-                            disliked_by: c.disliked_by || [],
-                            _likedByMe: myUser ? (c.liked_by || []).indexOf(myUser) >= 0 : false,
-                            _dislikedByMe: myUser ? (c.disliked_by || []).indexOf(myUser) >= 0 : false,
-                            replies: (c.replies || []).map(normalizeComment)
-                        };
-                    })
-                };
+                    comments: (p.comments || []).map(normalizeComment)
+                }, cosmeticFields(p));
             });
         }
     } catch(e) {}
@@ -2141,17 +2045,22 @@ function forumUserAvatar(username, profilePicture, userLike) {
 }
 
 function userNameColor(userLike) {
-    return (userLike && userLike.name_color) || (config && config.default_name_color) || '#ffffff';
+    return RWL.sanitizeHex(userLike && userLike.name_color_hex, (config && config.default_name_color) || '#ffffff');
+}
+
+function userNameStyle(userLike) {
+    return RWL.nameColorStyle(userLike || {}, (config && config.default_name_color) || '#ffffff');
 }
 
 function userNameplateSrc(userLike) {
-    var nameplateFile = (userLike && userLike.nameplate) || (config && config.default_nameplate) || 'spirit_blossom_petrals.webm';
-    return './images/assets/nameplates/' + nameplateFile;
+    if (userLike && userLike.nameplate_url) return userLike.nameplate_url;
+    return siteBaseUrl() + 'images/assets/nameplates/' + ((config && config.default_nameplate) || 'spirit_blossom_petrals.webm');
 }
 
 function userDecorationSrc(userLike) {
-    var decorationFile = (userLike && userLike.avatar_decoration) || (config && config.default_avatar_decoration) || 'chromawave.png';
-    return decorationFile ? './images/assets/avatar_decoration/' + decorationFile : '';
+    if (userLike && userLike.avatar_decoration_url) return userLike.avatar_decoration_url;
+    var decorationFile = (config && config.default_avatar_decoration) || 'chromawave.png';
+    return siteBaseUrl() + 'images/assets/avatar_decoration/' + decorationFile;
 }
 
 function miniNameplateAvatarHtml(userLike, profilePicture) {
@@ -2166,9 +2075,8 @@ function miniNameplateAvatarHtml(userLike, profilePicture) {
 }
 
 function miniNameplateUsernameHtml(userLike, extraClass) {
-    var color = userNameColor(userLike);
     var username = (userLike && userLike.username) || 'User';
-    return '<span class="' + (extraClass || '') + '" style="color:' + escHtml(color) + ';">' + escHtml(username) + '</span>';
+    return '<span class="' + (extraClass || '') + '" style="' + escHtml(userNameStyle(userLike)) + '">' + escHtml(username) + '</span>';
 }
 
 function miniNameplateWrapStart() {
@@ -2279,7 +2187,7 @@ function buildCommentHtml(c, postIdx, commentPath) {
                 '<video class="mini-nameplate-bg" autoplay loop muted playsinline src="' + escHtml(userNameplateSrc(c)) + '"></video>' +
                 avatarHtml +
                 '<div class="forum-comment-meta">' +
-                    '<span class="forum-comment-user" style="color:' + escHtml(userNameColor(c)) + ';">' + escHtml(c.username) + '</span>' +
+                    '<span class="forum-comment-user" style=\"' + escHtml(userNameStyle(c)) + '\">' + escHtml(c.username) + '</span>' +
                     badges +
                     '<span class="forum-comment-time">' + escHtml(c.time) + '</span>' +
                 '</div>' +
@@ -2335,7 +2243,7 @@ function buildForumPostCard(p, idx) {
                 avatarHtml +
                 '<div class="forum-post-meta">' +
                     '<div class="forum-post-user-row">' +
-                        '<span class="forum-post-username" style="color:' + escHtml(userNameColor(p)) + ';">' + escHtml(p.username) + '</span>' +
+                        '<span class="forum-post-username" style=\"' + escHtml(userNameStyle(p)) + '\">' + escHtml(p.username) + '</span>' +
                         badges +
                     '</div>' +
                     '<span class="forum-post-time">' + escHtml(p.time) + '</span>' +
@@ -2469,12 +2377,12 @@ async function forumVote(idx, type) {
     if (currentUser && p.post_id) {
         var token = sessionStorage.getItem('rickware_token');
         var accountData = getAccountData();
-        if (token && accountData && accountData.password) {
+        if (token && accountData) {
             try {
                 await fetch(apiUrl('/api/forum/like'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ account_data: accountData, post_id: p.post_id, action: action })
+                    body: JSON.stringify({ post_id: p.post_id, action: action })
                 });
             } catch(e) {}
         }
@@ -2509,12 +2417,12 @@ async function forumCommentVote(postIdx, commentPath, type) {
     if (currentUser && p.post_id) {
         var token = sessionStorage.getItem('rickware_token');
         var accountData = getAccountData();
-        if (token && accountData && accountData.password) {
+        if (token && accountData) {
             try {
                 await fetch(apiUrl('/api/forum/comment/like'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ account_data: accountData, post_id: p.post_id, comment_path: commentPath, action: action })
+                    body: JSON.stringify({ post_id: p.post_id, comment_path: commentPath, action: action })
                 });
             } catch(e) {}
         }
@@ -2604,7 +2512,7 @@ async function submitForumComment(idx) {
             await fetch(apiUrl('/api/forum/comment'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ account_data: accountData, post_id: p.post_id, content: commentText })
+                body: JSON.stringify({ post_id: p.post_id, content: commentText })
             });
         } catch(e) {}
     }
@@ -2626,14 +2534,14 @@ async function submitForumReply(postIdx, commentPath) {
     if (!isAdmin && depth >= MAX_DEPTH) { showBanner('Maximum reply depth reached.', 'error'); return; }
     var token = sessionStorage.getItem('rickware_token');
     var accountData = getAccountData();
-    if (!token || !accountData || !accountData.password) { showBanner('Session expired. Please login again.', 'error'); return; }
+    if (!token || !accountData) { showBanner('Session expired. Please login again.', 'error'); return; }
     var replyText = input.value.trim();
     if (replyBtn) applyForumButtonCooldown(replyBtn, 10);
     try {
         var res = await fetch(apiUrl('/api/forum/reply'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ account_data: accountData, post_id: p.post_id, comment_path: commentPath, content: replyText })
+            body: JSON.stringify({ post_id: p.post_id, comment_path: commentPath, content: replyText })
         });
         if (res.ok) {
             var data = await res.json();
@@ -2744,12 +2652,12 @@ async function submitForumPost() {
     var token = sessionStorage.getItem('rickware_token');
     if (!token) { showBanner('Please login to post.', 'error'); if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; submitBtn.style.cursor = ''; } return; }
     var accountData = getAccountData();
-    if (!accountData || !accountData.password) { showBanner('Session expired. Please login again.', 'error'); if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; submitBtn.style.cursor = ''; } return; }
+    if (!accountData) { showBanner('Session expired. Please login again.', 'error'); if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; submitBtn.style.cursor = ''; } return; }
     try {
         var res = await fetch(apiUrl('/api/forum/post'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ account_data: accountData, title: title.trim(), content: body.trim(), category: category })
+            body: JSON.stringify({ title: title.trim(), content: body.trim(), category: category })
         });
         if (res.ok) {
             var data = await res.json();
@@ -2928,13 +2836,12 @@ async function submitUserReview() {
     var token = sessionStorage.getItem('rickware_token');
     if (!token) { showBanner('Please login to write a review.', 'error'); if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; submitBtn.style.cursor = ''; } return; }
     var accountData = getAccountData();
-    if (!accountData || !accountData.password) { showBanner('Session expired. Please login again.', 'error'); if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; submitBtn.style.cursor = ''; } return; }
+    if (!accountData) { showBanner('Session expired. Please login again.', 'error'); if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; submitBtn.style.cursor = ''; } return; }
     try {
         var res = await fetch(apiUrl('/api/reviews/create'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({
-                account_data: accountData,
                 product_type: state.type || state.product,
                 product_description: state.product,
                 text: text.trim(),
@@ -3067,7 +2974,7 @@ async function showReviewsPage() {
                 '<div class="review-avatar-wrap">' + avatarHtml + decorationHtmlR + '</div>' +
                 '<div class="review-user-info">' +
                     '<div class="review-user-name-row">' +
-                        '<span class="review-username" style="color:' + escHtml(userNameColor(r)) + ';">' + escHtml(r.username) + '</span>' +
+                        '<span class="review-username" style=\"' + escHtml(userNameStyle(r)) + '\">' + escHtml(r.username) + '</span>' +
                         typeBadgeHtml +
                         permsBadgeHtml +
                     '</div>' +
@@ -3075,13 +2982,10 @@ async function showReviewsPage() {
                 '</div>' +
             '</div>' +
             '<div class="review-card-bottom">' +
-                '<div class="review-verified">' +
-                    '<div class="review-verified-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>' +
-                    'Verified Purchase' +
-                '</div>' +
+                reviewSourceBadgeHtml(r) +
                 '<div class="review-vote-row">' +
-                    '<button class="review-vote-btn' + (!currentUser ? ' vote-disabled' : '') + '" id="rv-like-'+idx+'" ' + (!currentUser ? 'disabled title="Login to vote"' : 'onclick="voteReview('+idx+',\'like\')"') + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg> <span id="rv-like-count-'+idx+'">' + (r.likes||0) + '</span></button>' +
-                    '<button class="review-vote-btn' + (!currentUser ? ' vote-disabled' : '') + '" id="rv-dislike-'+idx+'" ' + (!currentUser ? 'disabled title="Login to vote"' : 'onclick="voteReview('+idx+',\'dislike\')"') + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg> <span id="rv-dislike-count-'+idx+'">' + (r.dislikes||0) + '</span></button>' +
+                    '<button class="review-vote-btn' + (!canVoteReview(r) ? ' vote-disabled' : '') + '" id="rv-like-'+idx+'" ' + (!canVoteReview(r) ? 'disabled title="' + reviewVoteBlockedTitle(r) + '"' : 'onclick="voteReview('+idx+',\'like\')"') + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg> <span id="rv-like-count-'+idx+'">' + (r.likes||0) + '</span></button>' +
+                    '<button class="review-vote-btn' + (!canVoteReview(r) ? ' vote-disabled' : '') + '" id="rv-dislike-'+idx+'" ' + (!canVoteReview(r) ? 'disabled title="' + reviewVoteBlockedTitle(r) + '"' : 'onclick="voteReview('+idx+',\'dislike\')"') + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg> <span id="rv-dislike-count-'+idx+'">' + (r.dislikes||0) + '</span></button>' +
                 '</div>' +
             '</div>';
         grid.appendChild(card);
@@ -3092,6 +2996,7 @@ async function showReviewsPage() {
         }
     });
     applyShinyTextToEls();
+    startReviewsLiveRefresh();
 }
 
 function toggleReviewBody(idx) {
@@ -3138,6 +3043,7 @@ function applyReviewVoteCooldown(btn, key, seconds) {
 }
 
 async function voteReview(idx, type) {
+    if (!canVoteReview(reviewsApiData[idx])) return;
     var key = 'rv-' + idx;
     var likeKey = key + '-like';
     var dislikeKey = key + '-dislike';
@@ -3172,12 +3078,12 @@ async function voteReview(idx, type) {
         var review = reviewsApiData[idx];
         var token = sessionStorage.getItem('rickware_token');
         var accountData = getAccountData();
-        if (review && review.review_id && token && accountData && accountData.password) {
+        if (review && review.review_id && token && accountData) {
             try {
                 await fetch(apiUrl('/api/reviews/like'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ account_data: accountData, review_id: review.review_id, action: action })
+                    body: JSON.stringify({ review_id: review.review_id, action: action })
                 });
             } catch(e) {}
         }
@@ -3223,15 +3129,19 @@ function setupProfileSidebar() {
     }
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async function() {
-            var token = sessionStorage.getItem('rickware_token');
+            var token = RWL.getToken();
+            var refreshToken = sessionStorage.getItem('rickware_refresh_token') || localStorage.getItem('rickware_refresh_token');
+            if (window.RWLLauncher) await RWLLauncher.disconnect();
             if (token) {
                 try {
                     await fetch(apiUrl('/api/logout'), {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+                        headers: RWL.authHeaders(),
+                        body: JSON.stringify({ refresh_token: refreshToken || null })
                     });
                 } catch(e) {}
             }
+            RWL.clearSession();
             sessionStorage.clear();
             currentUser = null;
             var ab = document.getElementById('authButtons');
@@ -3866,6 +3776,8 @@ async function loadGithubTab() {
     }
     var repos = data.Cards || data.cards || data.repositories || data.repos || data.products || [];
     repos = repos.slice();
+    repos.forEach(function(repoEntry) { repoEntry.is_github_listing = true; });
+    registerGithubProducts(repos);
     if (productsData && productsData.products) {
         var apiGithubProds = productsData.products.filter(function(p) { return p.file_product === false; });
         apiGithubProds.forEach(function(p) {
@@ -3984,6 +3896,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     await loadConfig();
     await checkLoginStatus();
+    RWL.ensureCosmeticStyles();
+    if (currentUser && document.getElementById('productsGrid')) RWL.trackEvent('visit_store');
     applyConfigVisibility();
     setupNavigation();
     setupTabs();
@@ -4151,7 +4065,7 @@ function openCheckoutModal() {
         html += '<div class="coin-checkout-payment">';
         html += '<div class="coin-checkout-payment-label">Select Payment Method</div>';
         html += '<div class="coin-payment-methods">';
-        var lcRate = 0.137;
+        var lcRate = currentLcUsdRate();
         payments.forEach(function(pm) {
             if (pm.available) {
                 var label = pm.icon + ' ' + pm.name;
@@ -4182,12 +4096,7 @@ function openCheckoutModal() {
 }
 
 function applyCheckoutCoupon() {
-    var inp = document.getElementById('checkoutCoupon');
-    if (inp && inp.value.trim()) {
-        inp.style.borderColor = 'rgba(76,175,80,0.6)';
-        inp.placeholder = 'Coupon noted - handled by Discord support';
-        inp.disabled = true;
-    }
+    applyCouponInput('checkoutCoupon');
 }
 
 function selectCheckoutPayment(btn) {
@@ -4197,167 +4106,25 @@ function selectCheckoutPayment(btn) {
 }
 
 async function confirmCheckout() {
-    var overlay = document.getElementById('checkoutModalOverlay');
     var inner = document.getElementById('checkoutModalInner');
     var selectedBtn = inner ? inner.querySelector('.coin-payment-btn.active') : null;
-    var selectedCoin = selectedBtn ? (selectedBtn.getAttribute('data-coin') || '') : '';
-    var couponInput = document.getElementById('checkoutCoupon');
-    var couponCode = (couponInput && couponInput.value.trim()) ? couponInput.value.trim() : null;
     if (!selectedBtn) {
         showBanner('Please select a payment method.', 'error');
         return;
     }
-    if (cart.length === 0) return;
-    var token = sessionStorage.getItem('rickware_token');
-    var accountData = currentUser ? getAccountData() : null;
-    var now = new Date();
-    var orderId = 'ORD-' + Date.now();
-    var totalAmt = cart.reduce(function(s, item) { return s + (parseFloat(String(item.price || '0').replace(',','.')) || 0) * (item.qty || 1); }, 0);
-    var orderEntry = {
-        order_id: orderId,
-        created_at: now.toISOString(),
-        paid_at: null,
-        status: 'pending',
-        coin: selectedCoin || null,
-        total_usd: totalAmt,
-        coupon: couponCode || null,
-        items: cart.map(function(item) { return { name: item.name, quantity: item.qty || 1, amount: parseFloat(String(item.price||'0').replace(',','.')) || 0 }; })
-    };
-    if (token && accountData) {
-        await saveOrderToHistory(orderEntry, token, accountData);
-    }
-    if (selectedCoin) {
-        if (!token || !currentUser) {
-            showBanner('Please login to complete your purchase.', 'error');
-            return;
-        }
-        if (!accountData || !accountData.password) {
-            showBanner('Session expired. Please login again.', 'error');
-            return;
-        }
-        if (inner) {
-            inner.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="color:#c97eff;font-size:14px;margin-bottom:12px;">Creating payment...</div><div style="width:32px;height:32px;border:3px solid rgba(155,0,204,0.3);border-top-color:#c97eff;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div></div>';
-        }
-        try {
-            var res = await fetch(apiUrl('/api/payment/create'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({
-                    account_data: accountData,
-                    cart_items: cart.map(function(item) { return { name: item.name, price: item.price || 0, qty: item.qty || 1, product: item.product || {}, licenseKey: item.licenseKey || null, _uid: item._uid }; }),
-                    coin: selectedCoin,
-                    coupon_code: couponCode
-                })
-            });
-            if (!res.ok) {
-                var errData = null;
-                try { errData = await res.json(); } catch(e) {}
-                var errMsg = (errData && errData.detail) ? errData.detail : 'Payment creation failed. Please try again.';
-                orderEntry.status = 'failed';
-                if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-                if (inner) {
-                    inner.innerHTML = '<div style="text-align:center;padding:40px 20px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="margin-bottom:12px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><p style="color:#ef4444;font-size:14px;">' + escHtml(errMsg) + '</p><button class="coin-checkout-confirm-btn" style="background:rgba(99,0,138,0.4);margin-top:16px;" onclick="(function(){document.getElementById(\'checkoutModalOverlay\').style.display=\'none\';document.body.style.overflow=\'\';})()" >Close</button></div>';
-                }
-                return;
-            }
-            var data = await res.json();
-            orderEntry.order_id = data.order_id || orderId;
-            orderEntry.status = 'pending';
-            orderEntry.paid_at = null;
-            if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
+    if (cart.length === 0 || !inner) return;
+    await runCheckout({
+        overlayId: 'checkoutModalOverlay',
+        inner: inner,
+        items: cart.slice(),
+        selectedBtn: selectedBtn,
+        couponCode: checkoutCouponValue(document.getElementById('checkoutCoupon')),
+        onComplete: function() {
             cart = [];
             updateCartBadge();
-            var expLine = data.expiration_estimate_date ? '<div class="coin-checkout-row"><span>Expires</span><strong>' + escHtml(data.expiration_estimate_date) + '</strong></div>' : '';
-            if (inner) {
-                inner.innerHTML =
-                    '<div class="coin-checkout-modal">' +
-                        '<div class="coin-checkout-header">' +
-                            '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
-                            '<h2>Payment Created</h2>' +
-                        '</div>' +
-                        '<div class="coin-checkout-summary glass-card">' +
-                            '<div class="coin-checkout-row"><span>Order ID</span><strong style="font-size:12px;">' + escHtml(data.order_id) + '</strong></div>' +
-                            '<div class="coin-checkout-row"><span>Send Amount</span><strong>' + escHtml(String(data.pay_amount)) + ' ' + escHtml((data.pay_currency || selectedCoin).toUpperCase()) + '</strong></div>' +
-                            '<div class="coin-checkout-row" style="flex-direction:column;align-items:flex-start;gap:6px;"><span>Send To Address</span><strong style="word-break:break-all;font-size:11px;line-height:1.5;color:#c97eff;">' + escHtml(data.pay_address) + '</strong></div>' +
-                            expLine +
-                        '</div>' +
-                        '<div class="coin-checkout-note">Send exactly the amount shown to the address above. Your license keys will be activated automatically after confirmation. Do not close this window until you have copied the address.</div>' +
-                        '<button class="coin-checkout-confirm-btn" style="background:rgba(99,0,138,0.4);" onclick="(function(){var o=document.getElementById(\'checkoutModalOverlay\');if(o){o.classList.remove(\'open\');o.classList.remove(\'active\');o.style.display=\'none\';}document.body.style.overflow=\'\';})()" >Close</button>' +
-                    '</div>';
-            }
-            showBanner('Payment address created. Send crypto to complete your purchase.', 'success');
-        } catch(e) {
-            orderEntry.status = 'failed';
-            if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-            showBanner('Failed to create payment. Please try again.', 'error');
-            if (overlay) { overlay.classList.remove('open'); overlay.classList.remove('active'); overlay.style.display = 'none'; }
-            document.body.style.overflow = '';
+            if (typeof renderCartDropdown === 'function') renderCartDropdown();
         }
-    } else {
-        var isLcPayment = selectedBtn && selectedBtn.getAttribute('data-coin') === '' && selectedBtn.textContent.indexOf('LC') >= 0 && selectedBtn.textContent.indexOf('Lab Coins') >= 0 && !selectedBtn.disabled;
-        if (isLcPayment) {
-            if (!token || !currentUser) { showBanner('Please login to pay with Lab Coins.', 'error'); return; }
-            var lcRate2 = 0.137;
-            var lcCost2 = Math.ceil(totalAmt / lcRate2);
-            var userLc2 = labCoinsBalance || 0;
-            if (userLc2 < lcCost2) {
-                orderEntry.status = 'failed';
-                if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-                showBanner('Insufficient Lab Coins. You need ' + lcCost2 + ' LC but have ' + userLc2 + ' LC (' + (lcCost2 - userLc2) + ' LC missing).', 'error');
-                return;
-            }
-            if (!accountData || !accountData.password) { showBanner('Session expired. Please login again.', 'error'); return; }
-            try {
-                var lcRes = await fetch(apiUrl('/api/payment/lc'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({
-                        account_data: accountData,
-                        cart_items: cart.map(function(item) { return { name: item.name, price: item.price || 0, qty: item.qty || 1, product: item.product || {}, licenseKey: item.licenseKey || null }; }),
-                        lc_amount: lcCost2,
-                        coupon_code: couponCode
-                    })
-                });
-                if (lcRes.ok) {
-                    var lcData = await lcRes.json();
-                    labCoinsBalance = (labCoinsBalance || 0) - lcCost2;
-                    setLabCoinsBalance(labCoinsBalance);
-                    var stored2 = sessionStorage.getItem('rickware_user');
-                    if (stored2) { try { var u2 = JSON.parse(stored2); u2.user_discord_user_coin_amount = labCoinsBalance; sessionStorage.setItem('rickware_user', JSON.stringify(u2)); } catch(e) {} }
-                    orderEntry.status = 'paid';
-                    orderEntry.paid_at = new Date().toISOString();
-                    orderEntry.coin = 'lc';
-                    if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-                    cart = [];
-                    updateCartBadge();
-                    if (inner) inner.innerHTML = '<div style="text-align:center;padding:40px 20px;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" style="margin-bottom:16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h2 style="color:#4caf50;margin-bottom:8px;">Payment Successful!</h2><p style="color:var(--text-secondary);">Your purchase was completed with Lab Coins. Your products are now activated.</p><p style="color:#c97eff;margin-top:12px;">New balance: ' + labCoinsBalance + ' LC</p></div>';
-                    showBanner('Payment successful! Products activated.', 'success');
-                    setTimeout(function() { if (overlay) { overlay.style.display = 'none'; } document.body.style.overflow = ''; }, 3000);
-                } else {
-                    var lcErr = null; try { lcErr = await lcRes.json(); } catch(e) {}
-                    orderEntry.status = 'failed';
-                    if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-                    showBanner((lcErr && lcErr.detail) ? lcErr.detail : 'Lab Coins payment failed.', 'error');
-                }
-            } catch(e) {
-                orderEntry.status = 'failed';
-                if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-                showBanner('Lab Coins payment failed. Please try again.', 'error');
-            }
-        } else {
-            orderEntry.status = 'pending';
-            if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-            if (inner) {
-                inner.innerHTML = '<div style="text-align:center;padding:40px 20px;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" style="margin-bottom:16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h2 style="color:#4caf50;margin-bottom:8px;">Order Submitted!</h2><p style="color:var(--text-secondary);">Please join our Discord and open a ticket to complete your manual payment.</p></div>';
-            }
-            cart = [];
-            updateCartBadge();
-            setTimeout(function() {
-                if (overlay) { overlay.classList.remove('open'); overlay.classList.remove('active'); overlay.style.display = 'none'; }
-                document.body.style.overflow = '';
-            }, 3500);
-        }
-    }
+    });
 }
 
 var currentPage = 1;
@@ -4409,6 +4176,7 @@ async function loadProducts() {
         showMaintenanceScreen();
         return;
     }
+    await loadGithubProductRegistry();
     buildCategoryTabs();
     renderProducts('all');
     setupSortSelect();
@@ -4568,6 +4336,70 @@ function renderPriceArea(p) {
     return html;
 }
 
+var githubProductUrlSet = {};
+
+function normalizeGithubUrl(rawUrl) {
+    return String(rawUrl || '').trim().toLowerCase().replace(/\.git$/, '').replace(/\/+$/, '');
+}
+
+function registerGithubProducts(productList) {
+    if (!Array.isArray(productList)) return;
+    productList.forEach(function(entry) {
+        var normalizedUrl = normalizeGithubUrl(entry && entry.github_url);
+        if (normalizedUrl) githubProductUrlSet[normalizedUrl] = true;
+    });
+}
+
+async function loadGithubProductRegistry() {
+    try {
+        var response = await fetch('./config/github.json');
+        if (!response.ok) return;
+        var githubData = await response.json();
+        registerGithubProducts(githubData.Cards || githubData.cards || githubData.repositories || githubData.repos || githubData.products || []);
+    } catch (error) {
+        console.error('GitHub registry could not be loaded:', error);
+    }
+}
+
+function isGithubProduct(p) {
+    if (!p) return false;
+    if (p.file_product === false) return true;
+    if (p.is_github_listing === true) return true;
+    var normalizedUrl = normalizeGithubUrl(p.github_url);
+    return normalizedUrl !== '' && githubProductUrlSet[normalizedUrl] === true;
+}
+
+function openGithubProductPage(rawUrl) {
+    var targetUrl = String(rawUrl || '').trim();
+    if (!/^https?:\/\//i.test(targetUrl)) return;
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+}
+
+function formatCompactCount(rawValue) {
+    var numericValue = parseInt(rawValue, 10);
+    if (isNaN(numericValue) || numericValue < 0) numericValue = 0;
+    if (numericValue >= 1000000) return (numericValue / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (numericValue >= 1000) return (numericValue / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return String(numericValue);
+}
+
+function buildProductStatsHtml(p, iconSize) {
+    var totalUsers = formatCompactCount(p.total_users);
+    var totalDownloads = formatCompactCount(p.total_downloads);
+    return '<div class="product-stats-inline">' +
+        '<span class="product-stat-item" title="Active users (total licenses)">' +
+        '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+        '<span class="product-stat-value">' + totalUsers + '</span></span>' +
+        '<span class="product-stat-item" title="Total downloads">' +
+        '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+        '<span class="product-stat-value">' + totalDownloads + '</span></span>' +
+        '</div>';
+}
+
+function buildGithubIconSvg(iconSize) {
+    return '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>';
+}
+
 function isFreeProduct(p) {
     var info = getProductPriceInfo(p);
     return info.type === 'free';
@@ -4694,27 +4526,29 @@ function buildProductCard(p, showCategory) {
         body.appendChild(desc);
     }
 
-    if (p.auto_update || p.auto_setup || p.enabled_update !== undefined || p.enabled_setup !== undefined) {
-        var togglesDiv = document.createElement('div');
-        togglesDiv.className = 'product-auto-toggles';
-        if (p.auto_setup) {
-            var setupChecked = p.enabled_setup === true;
-            var lbl1 = document.createElement('label');
-            lbl1.className = 'auto-toggle-label';
-            lbl1.innerHTML = '<input type="checkbox"' + (setupChecked ? ' checked' : '') + '> Auto Setup';
-            lbl1.querySelector('input').addEventListener('click', function(e) { e.stopPropagation(); });
-            togglesDiv.appendChild(lbl1);
-        }
-        if (p.auto_update) {
-            var updateChecked = p.enabled_update === true;
-            var lbl2 = document.createElement('label');
-            lbl2.className = 'auto-toggle-label';
-            lbl2.innerHTML = '<input type="checkbox"' + (updateChecked ? ' checked' : '') + '> Auto Update';
-            lbl2.querySelector('input').addEventListener('click', function(e) { e.stopPropagation(); });
-            togglesDiv.appendChild(lbl2);
-        }
-        body.appendChild(togglesDiv);
+    var togglesDiv = document.createElement('div');
+    togglesDiv.className = 'product-auto-toggles';
+    var togglesGroup = document.createElement('div');
+    togglesGroup.className = 'product-toggles-group';
+    if (p.auto_setup) {
+        var setupChecked = p.enabled_setup === true;
+        var lbl1 = document.createElement('label');
+        lbl1.className = 'auto-toggle-label';
+        lbl1.innerHTML = '<input type="checkbox"' + (setupChecked ? ' checked' : '') + '> Auto Setup';
+        lbl1.querySelector('input').addEventListener('click', function(e) { e.stopPropagation(); });
+        togglesGroup.appendChild(lbl1);
     }
+    if (p.auto_update) {
+        var updateChecked = p.enabled_update === true;
+        var lbl2 = document.createElement('label');
+        lbl2.className = 'auto-toggle-label';
+        lbl2.innerHTML = '<input type="checkbox"' + (updateChecked ? ' checked' : '') + '> Auto Update';
+        lbl2.querySelector('input').addEventListener('click', function(e) { e.stopPropagation(); });
+        togglesGroup.appendChild(lbl2);
+    }
+    togglesDiv.appendChild(togglesGroup);
+    togglesDiv.insertAdjacentHTML('beforeend', buildProductStatsHtml(p, 13));
+    body.appendChild(togglesDiv);
 
     card.appendChild(body);
 
@@ -4748,13 +4582,14 @@ function buildProductCard(p, showCategory) {
 
     if (isFree) {
         var dlBtn = document.createElement('button');
-        if (p.file_product === false) {
-            dlBtn.className = 'product-btn product-btn-download';
-            var ghUrl = p.github_url && p.github_url.trim() ? p.github_url : '#';
-            dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg> Download Via GitHub';
-            dlBtn.addEventListener('click', function(e) { e.stopPropagation(); window.open(ghUrl, '_blank', 'noopener,noreferrer'); });
+        dlBtn.className = 'product-btn product-btn-download';
+        if (isGithubProduct(p)) {
+            var ghUrl = p.github_url && p.github_url.trim() ? p.github_url : '';
+            dlBtn.title = 'Open the GitHub repository in a new tab';
+            dlBtn.innerHTML = buildGithubIconSvg(13) + ' Download via GitHub';
+            dlBtn.addEventListener('click', function(e) { e.stopPropagation(); openGithubProductPage(ghUrl); });
         } else {
-            dlBtn.className = 'product-btn product-btn-download';
+            dlBtn.title = 'Download this product for free';
             dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Free';
             dlBtn.addEventListener('click', function(e) { e.stopPropagation(); });
         }
@@ -4930,6 +4765,8 @@ var selectedLicenseKey = null;
 
 function openProductModal(p) {
     selectedLicenseKey = null;
+    window._rwlActiveProduct = p;
+    RWL.trackEvent('browse_tools', String(p.product_id || p.id || '').slice(0, 40));
     var overlay = document.getElementById('productModalOverlay');
     var inner = document.getElementById('productModalInner');
     if (!overlay || !inner) return;
@@ -4982,18 +4819,19 @@ function openProductModal(p) {
         html += '<div class="modal-description">' + formatDescription(descText) + '</div>';
     }
 
-    if (p.auto_setup || p.auto_update || p.enabled_setup !== undefined || p.enabled_update !== undefined) {
-        html += '<div class="modal-toggles">';
-        if (p.auto_setup) {
-            var setupChecked = p.enabled_setup === true;
-            html += '<label class="modal-toggle-label"><input type="checkbox" id="modalAutoSetup"' + (setupChecked ? ' checked' : '') + '> Auto Setup</label>';
-        }
-        if (p.auto_update) {
-            var updateChecked = p.enabled_update === true;
-            html += '<label class="modal-toggle-label"><input type="checkbox" id="modalAutoUpdate"' + (updateChecked ? ' checked' : '') + '> Auto Update</label>';
-        }
-        html += '</div>';
+    html += '<div class="modal-toggles">';
+    html += '<div class="modal-toggles-group">';
+    if (p.auto_setup) {
+        var setupChecked = p.enabled_setup === true;
+        html += '<label class="modal-toggle-label"><input type="checkbox" id="modalAutoSetup"' + (setupChecked ? ' checked' : '') + '> Auto Setup</label>';
     }
+    if (p.auto_update) {
+        var updateChecked = p.enabled_update === true;
+        html += '<label class="modal-toggle-label"><input type="checkbox" id="modalAutoUpdate"' + (updateChecked ? ' checked' : '') + '> Auto Update</label>';
+    }
+    html += '</div>';
+    html += buildProductStatsHtml(p, 15);
+    html += '</div>';
 
     if (!isFree && hasMultiLicense) {
         html += '<div class="modal-section-title">Select License</div>';
@@ -5030,9 +4868,9 @@ function openProductModal(p) {
 
     html += '<div class="modal-actions" id="modalActions">';
     if (isFree) {
-        if (p.file_product === false) {
+        if (isGithubProduct(p)) {
             var ghUrl2 = p.github_url && p.github_url.trim() ? p.github_url : '#';
-            html += '<a class="modal-btn modal-btn-download" id="modalDlBtn" href="' + escHtml(ghUrl2) + '" target="_blank" rel="noopener noreferrer"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg> Download Via GitHub</a>';
+            html += '<a class="modal-btn modal-btn-download" id="modalDlBtn" title="Open the GitHub repository in a new tab" href="' + escHtml(ghUrl2) + '" target="_blank" rel="noopener noreferrer">' + buildGithubIconSvg(15) + ' Download via GitHub</a>';
         } else {
             html += '<button class="modal-btn modal-btn-download" id="modalDlBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Free</button>';
         }
@@ -5311,8 +5149,8 @@ function renderLanguages(data, container) {
 }
 
 function escHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function applyShinyTextToEls() {
@@ -5633,7 +5471,7 @@ function buildWishlistCheckoutHtml(tempCartItems) {
         { name: 'Bank Transfer', icon: '\ud83c\udfe6', available: false, coin: null },
         { name: 'Klarna', icon: '\ud83d\udecd', available: false, coin: null }
     ];
-    var lcRate = 0.137;
+    var lcRate = currentLcUsdRate();
     var html = '<div class="coin-checkout-modal">';
     html += '<div class="coin-checkout-header"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><h2>Checkout</h2></div>';
     html += '<div class="coin-checkout-summary glass-card">';
@@ -5671,12 +5509,7 @@ function buildWishlistCheckoutHtml(tempCartItems) {
 }
 
 function applyWishlistCheckoutCoupon() {
-    var inp = document.getElementById('wishlistCheckoutCoupon');
-    if (inp && inp.value.trim()) {
-        inp.style.borderColor = 'rgba(76,175,80,0.6)';
-        inp.placeholder = 'Coupon noted - handled by Discord support';
-        inp.disabled = true;
-    }
+    applyCouponInput('wishlistCheckoutCoupon');
 }
 
 function selectWishlistCheckoutPayment(btn) {
@@ -5686,139 +5519,19 @@ function selectWishlistCheckoutPayment(btn) {
 }
 
 async function confirmWishlistCheckout() {
-    var overlay = document.getElementById('wishlistLicenseModalOverlay');
     var inner = document.getElementById('wishlistLicenseModalInner');
     var selectedBtn = inner ? inner.querySelector('.coin-payment-btn.active') : null;
-    var selectedCoin = selectedBtn ? (selectedBtn.getAttribute('data-coin') || '') : '';
-    var couponInput = document.getElementById('wishlistCheckoutCoupon');
-    var couponCode = (couponInput && couponInput.value.trim()) ? couponInput.value.trim() : null;
     var tempCart = window._wishlistTempCart || [];
     if (!selectedBtn) { showBanner('Please select a payment method.', 'error'); return; }
-    if (tempCart.length === 0) return;
-    var token = sessionStorage.getItem('rickware_token');
-    var accountData = currentUser ? getAccountData() : null;
-    var now = new Date();
-    var orderId = 'ORD-' + Date.now();
-    var totalAmt = tempCart.reduce(function(s, item) { return s + (parseFloat(String(item.price || '0').replace(',','.')) || 0) * (item.qty || 1); }, 0);
-    var orderEntry = {
-        order_id: orderId,
-        created_at: now.toISOString(),
-        paid_at: null,
-        status: 'pending',
-        coin: selectedCoin || null,
-        total_usd: totalAmt,
-        coupon: couponCode || null,
-        items: tempCart.map(function(item) { return { name: item.name, quantity: item.qty || 1, amount: parseFloat(String(item.price||'0').replace(',','.')) || 0 }; })
-    };
-    if (token && accountData) {
-        await saveOrderToHistory(orderEntry, token, accountData);
-    }
-    if (selectedCoin) {
-        if (!token || !currentUser) { showBanner('Please login to complete your purchase.', 'error'); return; }
-        if (!accountData || !accountData.password) { showBanner('Session expired. Please login again.', 'error'); return; }
-        if (inner) {
-            inner.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="color:#c97eff;font-size:14px;margin-bottom:12px;">Creating payment...</div><div style="width:32px;height:32px;border:3px solid rgba(155,0,204,0.3);border-top-color:#c97eff;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div></div>';
-        }
-        try {
-            var res = await fetch(apiUrl('/api/payment/create'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({
-                    account_data: accountData,
-                    cart_items: tempCart.map(function(item) { return { name: item.name, price: item.price || 0, qty: item.qty || 1, product: item.product || {}, licenseKey: item.licenseKey || null, _uid: item._uid }; }),
-                    coin: selectedCoin,
-                    coupon_code: couponCode
-                })
-            });
-            if (!res.ok) {
-                var errData = null;
-                try { errData = await res.json(); } catch(e) {}
-                var errMsg = (errData && errData.detail) ? errData.detail : 'Payment creation failed. Please try again.';
-                orderEntry.status = 'failed';
-                if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-                if (inner) {
-                    inner.innerHTML = '<div style="text-align:center;padding:40px 20px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="margin-bottom:12px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><p style="color:#ef4444;font-size:14px;">' + escHtml(errMsg) + '</p><button class="coin-checkout-confirm-btn" style="background:rgba(99,0,138,0.4);margin-top:16px;" onclick="(function(){document.getElementById(\'wishlistLicenseModalOverlay\').style.display=\'none\';document.body.style.overflow=\'\';})()" >Close</button></div>';
-                }
-                return;
-            }
-            var data = await res.json();
-            orderEntry.order_id = data.order_id || orderId;
-            if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-            window._wishlistTempCart = null;
-            var expLine = data.expiration_estimate_date ? '<div class="coin-checkout-row"><span>Expires</span><strong>' + escHtml(data.expiration_estimate_date) + '</strong></div>' : '';
-            if (inner) {
-                inner.innerHTML = '<div class="coin-checkout-modal"><div class="coin-checkout-header"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h2>Payment Created</h2></div><div class="coin-checkout-summary glass-card"><div class="coin-checkout-row"><span>Order ID</span><strong style="font-size:12px;">' + escHtml(data.order_id) + '</strong></div><div class="coin-checkout-row"><span>Send Amount</span><strong>' + escHtml(String(data.pay_amount)) + ' ' + escHtml((data.pay_currency || selectedCoin).toUpperCase()) + '</strong></div><div class="coin-checkout-row" style="flex-direction:column;align-items:flex-start;gap:6px;"><span>Send To Address</span><strong style="word-break:break-all;font-size:11px;line-height:1.5;color:#c97eff;">' + escHtml(data.pay_address) + '</strong></div>' + expLine + '</div><div class="coin-checkout-note">Send exactly the amount shown to the address above. Your license keys will be activated automatically after confirmation.</div><button class="coin-checkout-confirm-btn" style="background:rgba(99,0,138,0.4);" onclick="(function(){var o=document.getElementById(\'wishlistLicenseModalOverlay\');if(o){o.style.display=\'none\';}document.body.style.overflow=\'\';})()" >Close</button></div>';
-            }
-            showBanner('Payment address created. Send crypto to complete your purchase.', 'success');
-        } catch(e) {
-            orderEntry.status = 'failed';
-            if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-            showBanner('Failed to create payment. Please try again.', 'error');
-            if (overlay) { overlay.style.display = 'none'; }
-            document.body.style.overflow = '';
-        }
-    } else {
-        var isLcPayment = selectedBtn && selectedBtn.getAttribute('data-coin') === '' && selectedBtn.textContent.indexOf('LC') >= 0 && selectedBtn.textContent.indexOf('Lab Coins') >= 0 && !selectedBtn.disabled;
-        if (isLcPayment) {
-            if (!token || !currentUser) { showBanner('Please login to pay with Lab Coins.', 'error'); return; }
-            var lcRate2 = 0.137;
-            var lcCost2 = Math.ceil(totalAmt / lcRate2);
-            var userLc2 = labCoinsBalance || 0;
-            if (userLc2 < lcCost2) {
-                orderEntry.status = 'failed';
-                if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-                showBanner('Insufficient Lab Coins. You need ' + lcCost2 + ' LC but have ' + userLc2 + ' LC (' + (lcCost2 - userLc2) + ' LC missing).', 'error');
-                return;
-            }
-            if (!accountData || !accountData.password) { showBanner('Session expired. Please login again.', 'error'); return; }
-            try {
-                var lcRes = await fetch(apiUrl('/api/payment/lc'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({
-                        account_data: accountData,
-                        cart_items: tempCart.map(function(item) { return { name: item.name, price: item.price || 0, qty: item.qty || 1, product: item.product || {}, licenseKey: item.licenseKey || null }; }),
-                        lc_amount: lcCost2,
-                        coupon_code: couponCode
-                    })
-                });
-                if (lcRes.ok) {
-                    labCoinsBalance = (labCoinsBalance || 0) - lcCost2;
-                    setLabCoinsBalance(labCoinsBalance);
-                    var stored2 = sessionStorage.getItem('rickware_user');
-                    if (stored2) { try { var u2 = JSON.parse(stored2); u2.user_discord_user_coin_amount = labCoinsBalance; sessionStorage.setItem('rickware_user', JSON.stringify(u2)); } catch(e) {} }
-                    orderEntry.status = 'paid';
-                    orderEntry.paid_at = new Date().toISOString();
-                    orderEntry.coin = 'lc';
-                    if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-                    window._wishlistTempCart = null;
-                    if (inner) inner.innerHTML = '<div style="text-align:center;padding:40px 20px;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" style="margin-bottom:16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h2 style="color:#4caf50;margin-bottom:8px;">Payment Successful!</h2><p style="color:var(--text-secondary);">Your purchase was completed with Lab Coins. Your products are now activated.</p><p style="color:#c97eff;margin-top:12px;">New balance: ' + labCoinsBalance + ' LC</p></div>';
-                    showBanner('Payment successful! Products activated.', 'success');
-                    setTimeout(function() { if (overlay) { overlay.style.display = 'none'; } document.body.style.overflow = ''; }, 3000);
-                } else {
-                    var lcErr = null; try { lcErr = await lcRes.json(); } catch(e) {}
-                    orderEntry.status = 'failed';
-                    if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-                    showBanner((lcErr && lcErr.detail) ? lcErr.detail : 'Lab Coins payment failed.', 'error');
-                }
-            } catch(e) {
-                orderEntry.status = 'failed';
-                if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-                showBanner('Lab Coins payment failed. Please try again.', 'error');
-            }
-        } else {
-            orderEntry.status = 'pending';
-            if (token && accountData) await saveOrderToHistory(orderEntry, token, accountData);
-            if (inner) {
-                inner.innerHTML = '<div style="text-align:center;padding:40px 20px;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" style="margin-bottom:16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h2 style="color:#4caf50;margin-bottom:8px;">Order Submitted!</h2><p style="color:var(--text-secondary);">Please join our Discord and open a ticket to complete your manual payment.</p></div>';
-            }
-            window._wishlistTempCart = null;
-            setTimeout(function() {
-                if (overlay) { overlay.style.display = 'none'; }
-                document.body.style.overflow = '';
-            }, 3500);
-        }
-    }
+    if (tempCart.length === 0 || !inner) return;
+    await runCheckout({
+        overlayId: 'wishlistLicenseModalOverlay',
+        inner: inner,
+        items: tempCart.slice(),
+        selectedBtn: selectedBtn,
+        couponCode: checkoutCouponValue(document.getElementById('wishlistCheckoutCoupon')),
+        onComplete: function() { window._wishlistTempCart = null; }
+    });
 }
 
 function openWishlistLicensePicker(item, wishlistIdx, mode) {
@@ -5932,4 +5645,286 @@ function toggleStatusChangelog(btn) {
     body.style.display = isOpen ? 'none' : 'block';
     btn.setAttribute('aria-expanded', String(!isOpen));
     btn.classList.toggle('open', !isOpen);
+}
+
+function currentLcUsdRate() {
+    var rate = parseFloat(window._lcUsdRate);
+    return rate > 0 ? rate : 0.137;
+}
+
+var CRYPTO_PAYMENT_COINS = ['btc', 'eth', 'sol', 'bnb', 'trx', 'ltc', 'bch', 'doge'];
+var FAILED_ORDER_STATUSES = ['failed', 'expired', 'cancelled', 'refunded'];
+var checkoutStatusTimers = {};
+
+function checkoutPaymentChoice(button) {
+    if (!button || button.disabled) return null;
+    var coin = button.getAttribute('data-coin') || '';
+    if (CRYPTO_PAYMENT_COINS.indexOf(coin) >= 0) return { kind: 'crypto', coin: coin };
+    var method = button.getAttribute('data-method') || '';
+    if (CRYPTO_PAYMENT_COINS.indexOf(method) >= 0) return { kind: 'crypto', coin: method };
+    var text = (button.textContent || '').toLowerCase();
+    if (method === 'amazon' || text.indexOf('amazon') >= 0) return { kind: 'manual', method: 'amazon', label: 'Amazon Voucher' };
+    if (method === 'psc' || text.indexOf('paysafecard') >= 0) return { kind: 'manual', method: 'paysafecard', label: 'Paysafecard' };
+    if (text.indexOf('lab coins') >= 0) return { kind: 'lc' };
+    return null;
+}
+
+function checkoutCouponValue(input) {
+    if (!input) return null;
+    var value = (input.dataset.code || input.value || '').trim().toUpperCase();
+    return value || null;
+}
+
+async function applyCouponInput(inputId) {
+    var input = document.getElementById(inputId);
+    if (!input) return;
+    var code = (input.value || '').trim().toUpperCase();
+    delete input.dataset.code;
+    if (!/^[A-Z0-9_\-]{3,50}$/.test(code)) {
+        input.style.borderColor = 'rgba(239,68,68,0.7)';
+        showBanner('Please enter a valid coupon code.', 'error');
+        return;
+    }
+    try {
+        var info = await RWL.apiRequest('/api/coupons/info?code=' + encodeURIComponent(code));
+        input.value = info.code;
+        input.dataset.code = info.code;
+        input.style.borderColor = 'rgba(76,175,80,0.6)';
+        var discountText = info.discount_type === 'percent' ? Number(info.discount_value) + '% off' : formatUSD(Number(info.discount_value)) + ' off';
+        var minimumText = info.min_order_amount ? ' on orders from ' + formatUSD(Number(info.min_order_amount)) : '';
+        showBanner('Coupon ' + info.code + ' applied: ' + discountText + minimumText + '. The final price is calculated securely at checkout.', 'success');
+    } catch (error) {
+        input.style.borderColor = 'rgba(239,68,68,0.7)';
+        showBanner(error.message || 'Coupon not found or inactive', 'error');
+    }
+}
+
+function checkoutCartPayload(items) {
+    return items.map(function(item) {
+        var product = item.product || {};
+        var productPayload = product.lc_pack ? { id: String(product.id || ''), lc_pack: true } : { product_id: String(product.product_id || '') };
+        return {
+            name: String(item.name || '').slice(0, 300),
+            qty: Math.max(1, Math.min(parseInt(item.qty, 10) || 1, 10)),
+            product: productPayload,
+            licenseKey: item.licenseKey || null
+        };
+    });
+}
+
+function closeCheckoutOverlayById(overlayId) {
+    var overlay = document.getElementById(overlayId);
+    if (overlay) {
+        overlay.classList.remove('open');
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+    stopCheckoutStatusPolling(overlayId);
+}
+
+function checkoutCloseButtonHtml(overlayId, extraStyle) {
+    return '<button class="coin-checkout-confirm-btn" style="background:rgba(99,0,138,0.4);' + (extraStyle || '') + '" onclick="closeCheckoutOverlayById(\'' + overlayId + '\')">Close</button>';
+}
+
+function checkoutLoadingHtml(text) {
+    return '<div style="text-align:center;padding:40px 20px;"><div style="color:#c97eff;font-size:14px;margin-bottom:12px;">' + escHtml(text) + '</div><div style="width:32px;height:32px;border:3px solid rgba(155,0,204,0.3);border-top-color:#c97eff;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div></div>';
+}
+
+function checkoutErrorHtml(message, overlayId) {
+    return '<div style="text-align:center;padding:40px 20px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="margin-bottom:12px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><p style="color:#ef4444;font-size:14px;">' + escHtml(message) + '</p>' + checkoutCloseButtonHtml(overlayId, 'margin-top:16px;') + '</div>';
+}
+
+function checkoutSuccessHtml(title, message, extraHtml) {
+    return '<div style="text-align:center;padding:40px 20px;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" style="margin-bottom:16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h2 style="color:#4caf50;margin-bottom:8px;">' + escHtml(title) + '</h2><p style="color:var(--text-secondary);">' + escHtml(message) + '</p>' + (extraHtml || '') + '</div>';
+}
+
+function checkoutStatusLabel(payload) {
+    var status = String((payload && payload.status) || 'pending');
+    var providerStatus = String((payload && payload.provider_status) || '');
+    if (status === 'paid') return 'Paid · Delivered';
+    if (status === 'partially_paid') return 'Partially paid · Send the remaining amount';
+    if (status === 'underpaid') return 'Underpaid · Please contact support';
+    if (FAILED_ORDER_STATUSES.indexOf(status) >= 0) return status.charAt(0).toUpperCase() + status.slice(1);
+    if (providerStatus === 'confirming') return 'Payment detected · Confirming';
+    if (providerStatus === 'sending' || providerStatus === 'confirmed') return 'Confirmed · Delivering';
+    return 'Waiting for payment';
+}
+
+function stopCheckoutStatusPolling(overlayId) {
+    if (checkoutStatusTimers[overlayId]) {
+        clearInterval(checkoutStatusTimers[overlayId]);
+        delete checkoutStatusTimers[overlayId];
+    }
+}
+
+function startCheckoutStatusPolling(overlayId, orderId) {
+    stopCheckoutStatusPolling(overlayId);
+    var startedAt = Date.now();
+    var poll = async function() {
+        var overlay = document.getElementById(overlayId);
+        var statusEl = document.getElementById('checkoutOrderStatus');
+        if (!overlay || overlay.style.display === 'none' || !statusEl || Date.now() - startedAt > 7200000) {
+            stopCheckoutStatusPolling(overlayId);
+            return;
+        }
+        try {
+            var payload = await RWL.apiRequest('/api/payment/status/' + encodeURIComponent(orderId));
+            statusEl.textContent = checkoutStatusLabel(payload);
+            if (payload.status === 'paid') {
+                statusEl.style.color = '#4caf50';
+                stopCheckoutStatusPolling(overlayId);
+                showBanner('Payment received! Your order has been delivered.', 'success');
+                await checkLoginStatus();
+            } else if (FAILED_ORDER_STATUSES.indexOf(payload.status) >= 0) {
+                statusEl.style.color = '#ef4444';
+                stopCheckoutStatusPolling(overlayId);
+            }
+        } catch (error) {}
+    };
+    checkoutStatusTimers[overlayId] = setInterval(poll, 15000);
+    setTimeout(poll, 4000);
+}
+
+function updateStoredLabCoins(balance) {
+    if (balance === undefined || balance === null) return;
+    setLabCoinsBalance(balance);
+    try {
+        var stored = sessionStorage.getItem('rickware_user');
+        if (stored) {
+            var user = JSON.parse(stored);
+            user.user_discord_user_coin_amount = balance;
+            user.lab_coins = balance;
+            sessionStorage.setItem('rickware_user', JSON.stringify(user));
+        }
+    } catch (error) {}
+}
+
+async function runCheckout(context) {
+    var inner = context.inner;
+    var choice = checkoutPaymentChoice(context.selectedBtn);
+    if (!choice) { showBanner('Please select a payment method.', 'error'); return; }
+    if (!context.items || context.items.length === 0) return;
+    if (!currentUser || !RWL.getToken()) { showBanner('Please login to complete your purchase.', 'error'); return; }
+    var cartPayload = checkoutCartPayload(context.items);
+    if (cartPayload.some(function(item) { return !item.product.product_id && !item.product.lc_pack; })) {
+        showBanner('A product in your cart is no longer available.', 'error');
+        return;
+    }
+    var couponCode = context.couponCode || null;
+    if (choice.kind === 'crypto') {
+        inner.innerHTML = checkoutLoadingHtml('Creating payment...');
+        try {
+            var data = await RWL.apiRequest('/api/payment/create', { method: 'POST', body: { cart_items: cartPayload, coin: choice.coin, coupon_code: couponCode } });
+            context.onComplete();
+            if (data.status === 'completed') {
+                inner.innerHTML = checkoutSuccessHtml('Order Completed!', 'No payment was required. Your order has been delivered.', checkoutCloseButtonHtml(context.overlayId, 'margin-top:16px;'));
+                await checkLoginStatus();
+                return;
+            }
+            var expLine = data.expiration_estimate_date ? '<div class="coin-checkout-row"><span>Expires</span><strong>' + escHtml(new Date(data.expiration_estimate_date).toLocaleString()) + '</strong></div>' : '';
+            var discountLine = data.discount_amount ? '<div class="coin-checkout-row"><span>Coupon Savings</span><strong>-' + escHtml(formatUSD(Number(data.discount_amount))) + '</strong></div>' : '';
+            inner.innerHTML =
+                '<div class="coin-checkout-modal">' +
+                    '<div class="coin-checkout-header"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h2>Payment Created</h2></div>' +
+                    '<div class="coin-checkout-summary glass-card">' +
+                        '<div class="coin-checkout-row"><span>Order ID</span><strong style="font-size:12px;">' + escHtml(data.order_id) + '</strong></div>' +
+                        '<div class="coin-checkout-row"><span>Total</span><strong>' + escHtml(formatUSD(Number(data.total_usd || 0))) + '</strong></div>' +
+                        discountLine +
+                        '<div class="coin-checkout-row"><span>Send Amount</span><strong>' + escHtml(String(data.pay_amount)) + ' ' + escHtml(String(data.pay_currency || choice.coin).toUpperCase()) + '</strong></div>' +
+                        '<div class="coin-checkout-row" style="flex-direction:column;align-items:flex-start;gap:6px;"><span>Send To Address</span><strong style="word-break:break-all;font-size:11px;line-height:1.5;color:#c97eff;">' + escHtml(data.pay_address) + '</strong></div>' +
+                        expLine +
+                        '<div class="coin-checkout-row"><span>Status</span><strong id="checkoutOrderStatus">Waiting for payment</strong></div>' +
+                    '</div>' +
+                    '<div class="coin-checkout-note">Send exactly the amount shown to the address above. Your order is delivered automatically after the network confirmation. Do not close this window until you have copied the address.</div>' +
+                    checkoutCloseButtonHtml(context.overlayId) +
+                '</div>';
+            showBanner('Payment address created. Send crypto to complete your purchase.', 'success');
+            startCheckoutStatusPolling(context.overlayId, data.order_id);
+        } catch (error) {
+            inner.innerHTML = checkoutErrorHtml(error.message || 'Payment creation failed. Please try again.', context.overlayId);
+        }
+        return;
+    }
+    if (choice.kind === 'lc') {
+        inner.innerHTML = checkoutLoadingHtml('Processing Lab Coins payment...');
+        try {
+            var lcData = await RWL.apiRequest('/api/payment/lc', { method: 'POST', body: { cart_items: cartPayload, coupon_code: couponCode } });
+            updateStoredLabCoins(lcData.lc_balance);
+            context.onComplete();
+            inner.innerHTML = checkoutSuccessHtml('Payment Successful!', 'Your purchase was completed with Lab Coins. Your products are now activated.', '<p style="color:#c97eff;margin-top:12px;">' + escHtml(String(lcData.lc_spent)) + ' LC spent · New balance: ' + escHtml(String(lcData.lc_balance)) + ' LC</p>' + checkoutCloseButtonHtml(context.overlayId, 'margin-top:16px;'));
+            showBanner('Payment successful! Products activated.', 'success');
+            checkLoginStatus();
+        } catch (error) {
+            inner.innerHTML = checkoutErrorHtml(error.message || 'Lab Coins payment failed.', context.overlayId);
+        }
+        return;
+    }
+    inner.innerHTML = checkoutLoadingHtml('Submitting order...');
+    try {
+        var manualData = await RWL.apiRequest('/api/payment/manual', { method: 'POST', body: { cart_items: cartPayload, method: choice.method, coupon_code: couponCode } });
+        context.onComplete();
+        var invite = (config && config.discord_invite) ? config.discord_invite : 'https://discord.gg/Wk7d8mJgyN';
+        inner.innerHTML = checkoutSuccessHtml(
+            'Order Submitted!',
+            'Join our Discord and open a ticket with your ' + choice.label + ' and the order ID below. Your order is delivered as soon as the team confirms the payment.',
+            '<div class="coin-checkout-summary glass-card" style="margin-top:16px;text-align:left;">' +
+                '<div class="coin-checkout-row"><span>Order ID</span><strong style="font-size:12px;">' + escHtml(manualData.order_id) + '</strong></div>' +
+                '<div class="coin-checkout-row"><span>Total</span><strong>' + escHtml(formatUSD(Number(manualData.total_usd || 0))) + '</strong></div>' +
+            '</div>' +
+            '<a href="' + escHtml(invite) + '" target="_blank" rel="noopener noreferrer" class="coin-checkout-confirm-btn" style="display:block;text-decoration:none;margin-top:12px;">Open Discord Ticket →</a>' +
+            checkoutCloseButtonHtml(context.overlayId, 'margin-top:10px;')
+        );
+        showBanner('Order submitted. Open a Discord ticket to complete your payment.', 'success');
+    } catch (error) {
+        inner.innerHTML = checkoutErrorHtml(error.message || 'Order submission failed. Please try again.', context.overlayId);
+    }
+}
+
+function canVoteReview(review) {
+    return !!currentUser && !!review && review.votable !== false;
+}
+
+function reviewVoteBlockedTitle(review) {
+    if (review && review.votable === false) return 'Votes are only available for website reviews';
+    return 'Login to vote';
+}
+
+function reviewSourceBadgeHtml(review) {
+    if (review && review.source === 'discord') {
+        return '<div class="review-verified" style="color:#8ea1e1;" title="Posted in our Discord server. This review is not linked to a verified purchase.">' +
+            '<div class="review-verified-icon" style="border-color:#5865f2;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#5865f2" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>' +
+            'Unverified Discord Review' +
+        '</div>';
+    }
+    return '<div class="review-verified" title="Written by a customer who owns this product.">' +
+        '<div class="review-verified-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+        'Verified Purchase' +
+    '</div>';
+}
+
+var reviewsLiveTimer = null;
+var reviewsLiveSignature = '';
+
+function reviewsSignature(list) {
+    return (list || []).map(function(review) { return review.review_id; }).join('|');
+}
+
+function startReviewsLiveRefresh() {
+    reviewsLiveSignature = reviewsSignature(reviewsApiData);
+    if (reviewsLiveTimer) return;
+    reviewsLiveTimer = setInterval(async function() {
+        var section = document.getElementById('reviewsPageSection');
+        if (!section || section.style.display === 'none' || document.hidden) return;
+        var modal = document.getElementById('writeReviewModalOverlay');
+        if (modal && modal.style.display && modal.style.display !== 'none') return;
+        try {
+            var data = await RWL.apiRequest('/api/reviews');
+            if (reviewsSignature(data.reviews) !== reviewsLiveSignature) await showReviewsPage();
+        } catch (error) {}
+    }, 20000);
+}
+
+function customerPanelAvatarSrc(user) {
+    return userProfileImageSrc(user);
 }
