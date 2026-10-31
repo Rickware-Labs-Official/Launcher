@@ -137,7 +137,7 @@
                                 <div class="form-group">
                                     <label data-translate="password">Password*</label>
                                     <div class="input-group">
-                                        <input type="password" id="register-password" required minlength="6" placeholder="Password">
+                                        <input type="password" id="register-password" required minlength="8" placeholder="Password">
                                         <button type="button" class="toggle-password" data-target="register-password">
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -209,20 +209,5 @@
     <script src="../js/launcher_bridge.js"></script>
     <script src="../js/main.js"></script>
     <script src="../js/login_register.js"></script>
-    <script>
-        (function() {
-            function updateClock() {
-                var el = document.getElementById('authClock');
-                if (!el) return;
-                var now = new Date();
-                var h = String(now.getHours()).padStart(2,'0');
-                var m = String(now.getMinutes()).padStart(2,'0');
-                var s = String(now.getSeconds()).padStart(2,'0');
-                el.textContent = h + ':' + m + ':' + s;
-            }
-            updateClock();
-            setInterval(updateClock, 1000);
-        })();
-    </script>
 </body>
 </html>

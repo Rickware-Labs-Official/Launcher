@@ -107,6 +107,12 @@
         return headers;
     }
 
+    function errorDetail(data, fallback) {
+        var detail = data && data.detail;
+        if (Array.isArray(detail)) detail = detail.map(function (entry) { return entry && entry.msg ? String(entry.msg).replace(/^Value error, /, '') : ''; }).filter(Boolean).join(', ');
+        return typeof detail === 'string' && detail ? detail : fallback;
+    }
+
     async function apiRequest(path, options) {
         var settings = options || {};
         var response = await fetch(apiUrl(path), {
@@ -117,9 +123,7 @@
         var data = null;
         try { data = await response.json(); } catch (error) { data = null; }
         if (!response.ok) {
-            var detail = data && data.detail;
-            if (Array.isArray(detail)) detail = detail.map(function (entry) { return entry && entry.msg ? entry.msg : ''; }).filter(Boolean).join(', ');
-            var failure = new Error(typeof detail === 'string' && detail ? detail : 'Request failed (' + response.status + ')');
+            var failure = new Error(errorDetail(data, 'Request failed (' + response.status + ')'));
             failure.status = response.status;
             failure.data = data;
             throw failure;
@@ -217,6 +221,7 @@
         apiBase: RWL_API_BASE,
         apiUrl: apiUrl,
         apiRequest: apiRequest,
+        errorDetail: errorDetail,
         authHeaders: authHeaders,
         getToken: getToken,
         storeTokens: storeTokens,

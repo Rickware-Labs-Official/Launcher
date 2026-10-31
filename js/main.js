@@ -1215,12 +1215,11 @@ async function loginUser(usernameOrEmail, password) {
         } else {
             var errData = null;
             try { errData = await res.json(); } catch(e) {}
-            var msg = (errData && errData.detail) ? errData.detail : 'Invalid credentials';
-            showBanner(msg, 'error');
+            showBanner(RWL.errorDetail(errData, 'Invalid credentials'), 'error');
             return null;
         }
     } catch(e) {
-        showBanner('Login failed', 'error');
+        showBanner('Login failed. The server could not be reached, please try again.', 'error');
         return null;
     }
 }
@@ -1279,11 +1278,13 @@ async function registerUser(username, email, phone, password) {
         if (res.ok) {
             return await loginUser(username, password);
         } else {
-            showBanner('Registration failed', 'error');
+            var errData = null;
+            try { errData = await res.json(); } catch(e) {}
+            showBanner(RWL.errorDetail(errData, 'Registration failed'), 'error');
             return null;
         }
     } catch(e) {
-        showBanner('Registration failed', 'error');
+        showBanner('Registration failed. The server could not be reached, please try again.', 'error');
         return null;
     }
 }

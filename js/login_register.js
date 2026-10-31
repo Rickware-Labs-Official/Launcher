@@ -5,9 +5,13 @@ document.addEventListener('DOMContentLoaded', () => {
     handleOAuthCallback();
 });
 
+var MIN_PASSWORD_LENGTH = 8;
+var authPageInitialized = false;
+var authClockTimer = null;
+
 function initAuthClock() {
     var el = document.getElementById('authClock');
-    if (!el) return;
+    if (!el || authClockTimer !== null) return;
     function update() {
         var now = new Date();
         var h = String(now.getHours()).padStart(2, '0');
@@ -17,7 +21,7 @@ function initAuthClock() {
         el.textContent = h + ':' + m + ':' + s + (tz ? '  ' + tz : '');
     }
     update();
-    setInterval(update, 1000);
+    authClockTimer = setInterval(update, 1000);
 }
 
 function initAuthTabsSlider() {
@@ -38,8 +42,9 @@ function initAuthTabsSlider() {
     });
 }
 
-var GOOGLE_CLIENT_ID = (typeof config !== 'undefined' && config.google_client_id) ? config.google_client_id : '';
-var DISCORD_CLIENT_ID = (typeof config !== 'undefined' && config.discord_client_id) ? config.discord_client_id : '';
+function oauthClientId(configKey) {
+    return (typeof config !== 'undefined' && config && typeof config[configKey] === 'string') ? config[configKey].trim() : '';
+}
 
 var DISCORD_REDIRECT_URI = window.location.origin + window.location.pathname;
 var GOOGLE_REDIRECT_URI = window.location.origin + window.location.pathname;
@@ -47,7 +52,7 @@ var GOOGLE_REDIRECT_URI = window.location.origin + window.location.pathname;
 var DISCORD_SCOPE = 'identify email guilds guilds.join';
 
 function getGoogleOAuthUrl(mode) {
-    var clientId = GOOGLE_CLIENT_ID;
+    var clientId = oauthClientId('google_client_id');
     if (!clientId) { showBanner('Google OAuth is not configured.', 'error'); return null; }
     var state = btoa(JSON.stringify({ mode: mode, nonce: Math.random().toString(36).slice(2) }));
     sessionStorage.setItem('oauth_state', state);
@@ -66,7 +71,7 @@ function getGoogleOAuthUrl(mode) {
 }
 
 function getDiscordOAuthUrl(mode) {
-    var clientId = DISCORD_CLIENT_ID;
+    var clientId = oauthClientId('discord_client_id');
     if (!clientId) { showBanner('Discord OAuth is not configured.', 'error'); return null; }
     var state = btoa(JSON.stringify({ mode: mode, nonce: Math.random().toString(36).slice(2) }));
     sessionStorage.setItem('oauth_state', state);
@@ -213,7 +218,22 @@ function saveRememberMe(usernameOrEmail, token, refreshToken, user) {
     }
 }
 
+async function runWithSubmitLock(formEl, task) {
+    var submitButton = formEl.querySelector('button[type="submit"]');
+    if (formEl.dataset.submitting === '1') return;
+    formEl.dataset.submitting = '1';
+    if (submitButton) submitButton.disabled = true;
+    try {
+        await task();
+    } finally {
+        formEl.dataset.submitting = '';
+        if (submitButton) submitButton.disabled = false;
+    }
+}
+
 function initAuthPage() {
+    if (authPageInitialized) return;
+    authPageInitialized = true;
     loadRememberedCredentials();
 
     var authTabs = document.querySelectorAll('.auth-tab');
@@ -288,18 +308,20 @@ function initAuthPage() {
 
     var loginFormEl = document.getElementById('loginForm');
     if (loginFormEl) {
-        loginFormEl.addEventListener('submit', async function(e) {
+        loginFormEl.addEventListener('submit', function(e) {
             e.preventDefault();
-            var usernameOrEmail = document.getElementById('login-username-email').value;
-            var password = document.getElementById('login-password').value;
-            var user = await loginUser(usernameOrEmail, password);
-            if (user) {
-                var token = sessionStorage.getItem('rickware_token');
-                var refreshToken = sessionStorage.getItem('rickware_refresh_token');
-                saveRememberMe(usernameOrEmail, token, refreshToken, user);
-                sessionStorage.setItem('rickware_pending_banner', JSON.stringify({ message: 'Successfully logged in. Welcome back, ' + (user.username || 'User') + '!', type: 'success' }));
-                window.location.href = '../index.html';
-            }
+            runWithSubmitLock(loginFormEl, async function() {
+                var usernameOrEmail = document.getElementById('login-username-email').value;
+                var password = document.getElementById('login-password').value;
+                var user = await loginUser(usernameOrEmail, password);
+                if (user) {
+                    var token = sessionStorage.getItem('rickware_token');
+                    var refreshToken = sessionStorage.getItem('rickware_refresh_token');
+                    saveRememberMe(usernameOrEmail, token, refreshToken, user);
+                    sessionStorage.setItem('rickware_pending_banner', JSON.stringify({ message: 'Successfully logged in. Welcome back, ' + (user.username || 'User') + '!', type: 'success' }));
+                    window.location.href = '../index.html';
+                }
+            });
         });
     }
 
@@ -344,7 +366,7 @@ function initAuthPage() {
             var newPw = document.getElementById('reset-new-password').value;
             var newPw2 = document.getElementById('reset-confirm-password').value;
             if (newPw !== newPw2) { showBanner('Passwords do not match', 'error'); return; }
-            if (newPw.length < 6) { showBanner('Password must be at least 6 characters', 'error'); return; }
+            if (newPw.length < MIN_PASSWORD_LENGTH) { showBanner('Password must be at least ' + MIN_PASSWORD_LENGTH + ' characters', 'error'); return; }
             var ok = await confirmReset(identifier, code, newPw);
             if (ok) {
                 if (forgotSection) forgotSection.style.display = 'none';
@@ -357,19 +379,21 @@ function initAuthPage() {
 
     var registerFormEl = document.getElementById('registerForm');
     if (registerFormEl) {
-        registerFormEl.addEventListener('submit', async function(e) {
+        registerFormEl.addEventListener('submit', function(e) {
             e.preventDefault();
             var pw = document.getElementById('register-password').value;
             var pw2 = document.getElementById('register-confirm-password').value;
             if (pw !== pw2) { showBanner('Passwords do not match!', 'error'); return; }
-            if (pw.length < 6) { showBanner('Password must be at least 6 characters', 'error'); return; }
-            var user = await registerUser(
-                document.getElementById('register-username').value,
-                document.getElementById('register-email').value,
-                document.getElementById('register-phone').value,
-                pw
-            );
-            if (user) { sessionStorage.setItem('rickware_pending_banner', JSON.stringify({ message: 'Account created! Welcome, ' + (user.username || 'User') + '!', type: 'success' })); window.location.href = '../index.html'; }
+            if (pw.length < MIN_PASSWORD_LENGTH) { showBanner('Password must be at least ' + MIN_PASSWORD_LENGTH + ' characters', 'error'); return; }
+            runWithSubmitLock(registerFormEl, async function() {
+                var user = await registerUser(
+                    document.getElementById('register-username').value,
+                    document.getElementById('register-email').value,
+                    document.getElementById('register-phone').value,
+                    pw
+                );
+                if (user) { sessionStorage.setItem('rickware_pending_banner', JSON.stringify({ message: 'Account created! Welcome, ' + (user.username || 'User') + '!', type: 'success' })); window.location.href = '../index.html'; }
+            });
         });
     }
 }

@@ -8,7 +8,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadAccountSettings(user);
     setupProfileUpload();
     setupSaveCancel();
+    setupPasswordToggles();
 });
+
+function setupPasswordToggles() {
+    document.querySelectorAll('.toggle-password').forEach(btn => {
+        if (btn.dataset.toggleBound === '1') return;
+        btn.dataset.toggleBound = '1';
+        btn.setAttribute('type', 'button');
+        btn.addEventListener('click', () => {
+            const input = document.getElementById(btn.getAttribute('data-target'));
+            if (input) input.type = input.type === 'password' ? 'text' : 'password';
+        });
+    });
+}
 
 async function loadAccountSettings(user) {
     document.getElementById('username').value = user.username || '';
