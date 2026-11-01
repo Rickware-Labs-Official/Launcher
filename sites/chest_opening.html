@@ -186,6 +186,47 @@ z-index:10000;
 .close{right:15px}
 .back{left:15px}
 
+.pageNav{
+position:fixed;
+top:16px;
+width:44px;
+height:44px;
+border-radius:12px;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+font-size:20px;
+font-weight:700;
+background:rgba(20,0,40,0.75);
+border:1px solid rgba(180,80,255,0.45);
+color:#e0aaff;
+box-shadow:0 0 14px rgba(170,0,255,0.25);
+z-index:10001;
+transition:background .2s,box-shadow .2s,transform .2s;
+}
+
+.pageNav:hover{
+background:rgba(120,0,200,0.35);
+box-shadow:0 0 22px rgba(170,0,255,0.55);
+transform:translateY(-1px);
+}
+
+.pageNav:focus-visible{
+outline:2px solid #e0aaff;
+outline-offset:2px;
+}
+
+.pageBack{left:16px}
+.pageClose{right:16px}
+
+.win.active ~ .pageBack{display:none}
+
+.themeStripes.animatedStripes i{
+flex:1;
+background-size:300% 100%;
+}
+
 .box img{
 width:100%;
 height:100%;
@@ -437,6 +478,9 @@ text-overflow:ellipsis;
 <div class="box" id="box"></div>
 </div>
 
+<button type="button" class="pageNav pageBack" id="pageBack" title="Back to the inventory" aria-label="Back to the inventory">←</button>
+<button type="button" class="pageNav pageClose" id="pageClose" title="Close the chest opening" aria-label="Close the chest opening">✕</button>
+
 <script src="../js/api_client.js"></script>
 <script>
 (function(){
@@ -485,6 +529,10 @@ return CATEGORY_IMAGES[category]||idleImages[0]
 
 function themeStripesHtml(item){
 const colors=(item.preview||[]).map(function(color){return RWL.sanitizeHex(color,"#7b2cbf")})
+if(item.animated&&colors.length>1){
+const seconds=Math.max(4,Math.min(parseInt((item.animation||{}).period_seconds,10)||12,40))
+return '<div class="themeStripes animatedStripes"><i style="'+KEEP+'background-image:linear-gradient(90deg,'+colors.concat([colors[0]]).join(",")+');animation:rwlNameRgb '+seconds+'s linear infinite;"></i></div>'
+}
 return '<div class="themeStripes">'+(colors.length?colors:["#7b2cbf"]).map(function(color){return '<i style="'+KEEP+'background:'+color+';"></i>'}).join("")+'</div>'
 }
 
@@ -753,8 +801,9 @@ if(!spin.disabled&&!pendingResult)startIdle()
 }
 
 function exitChest(){
+const interrupted=opening||!!pendingResult
 win.classList.remove("active")
-window.parent.postMessage({type:"chest_opening_done",opened:openedAny},window.location.origin)
+window.parent.postMessage({type:"chest_opening_done",opened:openedAny||interrupted,interrupted:interrupted},window.location.origin)
 }
 
 async function loadSummary(){
@@ -775,6 +824,8 @@ setButton("SPIN CHEST",false)
 spin.onclick=spinChest
 openAll.onclick=openAllChests
 document.getElementById("back").onclick=backToChest
+document.getElementById("pageBack").onclick=exitChest
+document.getElementById("pageClose").onclick=exitChest
 win.onclick=function(e){
 if(e.target===win)backToChest()
 }

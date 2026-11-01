@@ -1,5 +1,7 @@
 (function (global) {
-    var DEFAULT_LANGUAGE = 'de';
+    var DEFAULT_LANGUAGE = 'en';
+    var API_BASE = 'https://rickware-labs-api.apps.bot-hosting.cloud';
+    var VISITOR_LANGUAGE_KEY = 'rwl_visitor_language';
     var SOURCE_LANGUAGE = 'en';
     var SUPPORTED_LANGUAGES = ['de', 'en', 'ru', 'fr', 'es', 'it', 'pt', 'ja', 'ko', 'zh'];
     var LANGUAGE_NAMES = { de: 'Deutsch', en: 'English', ru: 'Русский', fr: 'Français', es: 'Español', it: 'Italiano', pt: 'Português', ja: '日本語', ko: '한국어', zh: '中文' };
@@ -32,7 +34,26 @@
         return SUPPORTED_LANGUAGES.indexOf(language) >= 0 ? language : null;
     }
 
-    var currentLanguage = supportedLanguage(readStorage(LANGUAGE_STORAGE_KEY)) || DEFAULT_LANGUAGE;
+    function readSessionValue(key) {
+        try { return global.sessionStorage.getItem(key); } catch (error) { return null; }
+    }
+
+    function writeSessionValue(key, value) {
+        try { global.sessionStorage.setItem(key, value); } catch (error) {}
+    }
+
+    function signedIn() {
+        try {
+            if (global.sessionStorage.getItem('rickware_token')) return true;
+            return global.localStorage.getItem('rickware_remember_me') === '1' && !!global.localStorage.getItem('rickware_token');
+        } catch (error) {
+            return false;
+        }
+    }
+
+    var currentLanguage = signedIn()
+        ? (supportedLanguage(readStorage(LANGUAGE_STORAGE_KEY)) || DEFAULT_LANGUAGE)
+        : (supportedLanguage(readSessionValue(VISITOR_LANGUAGE_KEY)) || DEFAULT_LANGUAGE);
     var packs = {};
     var loadedPackFiles = {};
     var textRecords = new WeakMap();
@@ -268,10 +289,15 @@
         }));
     }
 
-    function setLanguage(language) {
+    function setLanguage(language, scope) {
         var next = supportedLanguage(language);
         if (!next) return Promise.resolve(false);
-        writeStorage(LANGUAGE_STORAGE_KEY, next);
+        if (scope === 'visitor') writeSessionValue(VISITOR_LANGUAGE_KEY, next);
+        else writeStorage(LANGUAGE_STORAGE_KEY, next);
+        if (next === currentLanguage && (next === SOURCE_LANGUAGE || packs[next])) {
+            try { global.dispatchEvent(new CustomEvent('rwl-language-changed', { detail: { language: next } })); } catch (error) {}
+            return Promise.resolve(true);
+        }
         currentLanguage = next;
         document.documentElement.setAttribute('lang', next);
         var ready = next === SOURCE_LANGUAGE ? Promise.resolve() : loadPackScripts(next);
@@ -318,6 +344,33 @@
         if (currentLanguage !== SOURCE_LANGUAGE) translateTree(document.documentElement);
     });
 
+    var visitorLookup = null;
+
+    function detectVisitorLanguage() {
+        var cached = supportedLanguage(readSessionValue(VISITOR_LANGUAGE_KEY));
+        if (cached) return Promise.resolve(cached);
+        if (visitorLookup) return visitorLookup;
+        visitorLookup = fetch(API_BASE + '/api/visitor/locale', { method: 'GET', credentials: 'omit', cache: 'no-store' })
+            .then(function (response) { return response.ok ? response.json() : null; })
+            .then(function (data) {
+                var detected = supportedLanguage(data && data.language) || DEFAULT_LANGUAGE;
+                writeSessionValue(VISITOR_LANGUAGE_KEY, detected);
+                return detected;
+            })
+            .catch(function () { return DEFAULT_LANGUAGE; });
+        return visitorLookup;
+    }
+
+    function useVisitorLanguage() {
+        return detectVisitorLanguage().then(function (language) {
+            return setLanguage(language, 'visitor');
+        });
+    }
+
+    function useAccountLanguage(preferred) {
+        return setLanguage(supportedLanguage(preferred) || DEFAULT_LANGUAGE, 'account');
+    }
+
     global.RWLI18n = {
         defaultLanguage: DEFAULT_LANGUAGE,
         sourceLanguage: SOURCE_LANGUAGE,
@@ -326,10 +379,17 @@
         language: function () { return currentLanguage; },
         register: register,
         setLanguage: setLanguage,
+        useVisitorLanguage: useVisitorLanguage,
+        useAccountLanguage: useAccountLanguage,
+        signedIn: signedIn,
         t: function (text) { var translated = translateMessage(String(text)); return translated; },
         source: sourceText,
         refresh: function (root) { translateTree(root || document.documentElement); }
     };
+
+    if (!signedIn() && !supportedLanguage(readSessionValue(VISITOR_LANGUAGE_KEY))) {
+        useVisitorLanguage();
+    }
 
     var COLOR_PATTERN = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z])|rgba?\(\s*[\d.]+%?\s*[\s,]\s*[\d.]+%?\s*[\s,]\s*[\d.]+%?\s*(?:[,/]\s*[\d.]+%?\s*)?\)/g;
     var COLOR_HINT = /#[0-9a-fA-F]{3}|rgba?\(/;
@@ -350,11 +410,21 @@
         return Math.max(minimum, Math.min(maximum, number));
     }
 
+    function normalizeAnimation(raw) {
+        if (!raw || typeof raw !== 'object' || (raw.mode !== 'oscillate' && raw.mode !== 'cycle')) return null;
+        return {
+            mode: raw.mode,
+            hue_to: clampNumber(raw.hue_to, 0, 720, 360),
+            period_seconds: clampNumber(raw.period_seconds, 6, 120, 20)
+        };
+    }
+
     function normalizeTheme(raw) {
         if (!raw || typeof raw !== 'object' || !raw.item_id) return null;
         var bandMin = clampNumber(raw.band_min, 0, 359, 245);
         var bandMax = clampNumber(raw.band_max, 0, 359, 330);
         return {
+            animation: normalizeAnimation(raw.animation),
             item_id: String(raw.item_id).slice(0, 64),
             name: String(raw.name || '').slice(0, 80),
             hue: clampNumber(raw.hue, 0, 359, 285),
@@ -571,9 +641,71 @@
         themeObserver = null;
     }
 
+    var ANIMATION_STEP_MS = 700;
+    var ANIMATION_SLOW_STEP_MS = 1800;
+    var animationTimer = null;
+    var animationBase = null;
+    var animationStep = ANIMATION_STEP_MS;
+
+    function reducedMotion() {
+        try { return global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (error) { return false; }
+    }
+
+    function retint() {
+        colorCache = new Map();
+        for (var index = 0; index < themedDeclarations.length; index++) {
+            var entry = themedDeclarations[index];
+            try { entry.style.setProperty(entry.property, transformValue(entry.original), entry.priority); } catch (error) {}
+        }
+        var nodes = document.querySelectorAll('[style],[fill],[stroke],[stop-color]');
+        for (var node = 0; node < nodes.length; node++) {
+            for (var attribute = 0; attribute < THEMED_ATTRIBUTES.length; attribute++) {
+                if (nodes[node].hasAttribute(THEMED_ATTRIBUTES[attribute])) processThemeAttribute(nodes[node], THEMED_ATTRIBUTES[attribute]);
+            }
+        }
+    }
+
+    function animationFrame() {
+        if (!activeTheme || !animationBase || !activeTheme.animation) return;
+        if (document.hidden) return;
+        var animation = activeTheme.animation;
+        var seconds = (Date.now() / 1000) % animation.period_seconds;
+        var progress = seconds / animation.period_seconds;
+        var offset;
+        if (animation.mode === 'cycle') {
+            offset = progress * 360;
+        } else {
+            offset = ((Math.sin(progress * Math.PI * 2 - Math.PI / 2) + 1) / 2) * (animation.hue_to - animationBase.hue);
+        }
+        activeTheme.hue = Math.round(animationBase.hue + offset + 720) % 360;
+        activeTheme.background_hue = Math.round(animationBase.background_hue + offset * (animation.mode === 'cycle' ? 1 : 0.6) + 720) % 360;
+        var started = (global.performance && performance.now) ? performance.now() : Date.now();
+        retint();
+        var elapsed = ((global.performance && performance.now) ? performance.now() : Date.now()) - started;
+        var nextStep = elapsed > 35 ? ANIMATION_SLOW_STEP_MS : ANIMATION_STEP_MS;
+        if (nextStep !== animationStep) {
+            animationStep = nextStep;
+            startThemeAnimation();
+        }
+    }
+
+    function stopThemeAnimation() {
+        if (animationTimer) clearInterval(animationTimer);
+        animationTimer = null;
+    }
+
+    function startThemeAnimation() {
+        stopThemeAnimation();
+        if (!activeTheme || !activeTheme.animation || reducedMotion()) return;
+        animationTimer = setInterval(animationFrame, animationStep);
+    }
+
     function applyTheme(rawTheme, persist) {
         var theme = normalizeTheme(rawTheme);
-        if (activeTheme && theme && activeTheme.item_id === theme.item_id && JSON.stringify(activeTheme) === JSON.stringify(theme)) return;
+        if (activeTheme && theme && activeTheme.item_id === theme.item_id && animationBase && JSON.stringify(animationBase) === JSON.stringify(theme)) return;
+        if (activeTheme && theme && activeTheme.item_id === theme.item_id && !theme.animation && JSON.stringify(activeTheme) === JSON.stringify(theme)) return;
+        stopThemeAnimation();
+        animationBase = theme ? JSON.parse(JSON.stringify(theme)) : null;
         restoreDeclarations();
         colorCache = new Map();
         activeTheme = theme;
@@ -588,6 +720,10 @@
         themeAllSheets();
         themeTree(document.documentElement);
         startThemeObserver();
+        if (theme.animation) {
+            animationStep = ANIMATION_STEP_MS;
+            startThemeAnimation();
+        }
     }
 
     function storedTheme() {

@@ -4,6 +4,7 @@
     var REFRESH_KEY = 'rickware_refresh_token';
     var USER_KEY = 'rickware_user';
     var REMEMBER_KEY = 'rickware_remember_me';
+    var DEVICE_KEY = 'rwl_device_key';
     var HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
     var KEEP_COLORS_STYLE = '--rwl-keep:1;';
     var AUTH_ENDPOINT_PATTERN = /\/api\/(refresh|login|logout|register|oauth\/|forgot_password|confirm_reset)/;
@@ -27,8 +28,53 @@
         return sessionStorage.getItem(TOKEN_KEY);
     }
 
+    function launcherHost() {
+        return !!(global.RickwareBridge && global.RickwareBridge.isLauncher);
+    }
+
     function isRemembered() {
-        return localStorage.getItem(REMEMBER_KEY) === '1';
+        return !launcherHost() && localStorage.getItem(REMEMBER_KEY) === '1';
+    }
+
+    function randomKey(length) {
+        var bytes = new Uint8Array(length);
+        (global.crypto || global.msCrypto).getRandomValues(bytes);
+        var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+        var out = '';
+        for (var index = 0; index < bytes.length; index++) out += alphabet.charAt(bytes[index] % alphabet.length);
+        return out;
+    }
+
+    function deviceKey() {
+        try {
+            var existing = localStorage.getItem(DEVICE_KEY);
+            if (existing && /^[A-Za-z0-9_-]{16,64}$/.test(existing)) return existing;
+            var created = randomKey(32);
+            localStorage.setItem(DEVICE_KEY, created);
+            return created;
+        } catch (error) {
+            return randomKey(32);
+        }
+    }
+
+    function clientKind() {
+        return launcherHost() ? 'launcher' : 'browser';
+    }
+
+    function applySession(session) {
+        if (!session) return;
+        try {
+            if (session.persistent && !launcherHost()) {
+                localStorage.setItem(REMEMBER_KEY, '1');
+                [TOKEN_KEY, REFRESH_KEY, USER_KEY].forEach(function (key) {
+                    var value = sessionStorage.getItem(key);
+                    if (value) localStorage.setItem(key, value);
+                });
+            } else {
+                localStorage.removeItem(REMEMBER_KEY);
+                [TOKEN_KEY, REFRESH_KEY, USER_KEY].forEach(function (key) { localStorage.removeItem(key); });
+            }
+        } catch (error) {}
     }
 
     function storedRefreshToken() {
@@ -50,7 +96,9 @@
             sessionStorage.removeItem(key);
             localStorage.removeItem(key);
         });
+        localStorage.removeItem(REMEMBER_KEY);
         if (global.RWLTheme) global.RWLTheme.clear();
+        if (global.RWLI18n && global.RWLI18n.useVisitorLanguage) global.RWLI18n.useVisitorLanguage();
     }
 
     function refreshAccessToken() {
@@ -71,6 +119,7 @@
                 var data = await response.json();
                 if (!data || !data.token) return null;
                 storeTokens(data.token, data.refresh_token);
+                if (data.session) applySession(data.session);
                 return data.token;
             } catch (error) {
                 return null;
@@ -87,9 +136,17 @@
         return String(input || '');
     }
 
+    function announceSystemState(response, url) {
+        if (response.status !== 503 || url.indexOf(RWL_API_BASE) !== 0) return;
+        var state = response.headers.get('X-System-State');
+        if (!state) return;
+        try { global.dispatchEvent(new CustomEvent('rwl-system-state', { detail: { state: state } })); } catch (error) {}
+    }
+
     global.fetch = async function (input, init) {
         var url = requestUrl(input);
         var response = await nativeFetch(input, init);
+        announceSystemState(response, url);
         if (response.status !== 401 || url.indexOf(RWL_API_BASE + '/api/') !== 0 || AUTH_ENDPOINT_PATTERN.test(url)) {
             return response;
         }
@@ -227,6 +284,10 @@
         authHeaders: authHeaders,
         getToken: getToken,
         storeTokens: storeTokens,
+        applySession: applySession,
+        deviceKey: deviceKey,
+        clientKind: clientKind,
+        isLauncherHost: launcherHost,
         clearSession: clearSession,
         refreshAccessToken: refreshAccessToken,
         escapeHtml: escapeHtml,

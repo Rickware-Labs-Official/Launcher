@@ -4,6 +4,10 @@
     var SESSION_KEY = 'rwl_session_id';
     var TOKEN_KEY = 'rickware_token';
     var STATE_POLL_MS = 15000;
+    var SYSTEM_POLL_MS = 30000;
+    var BLOCKED_POLL_MS = 15000;
+    var LONG_POLL_RETRY_MS = 4000;
+    var COMMAND_DONE_KEY = 'rwl_client_commands_done';
     var ANALYTICS_FLUSH_MS = 8000;
     var MAX_QUEUE = 40;
     var nativeFetch = global.fetch ? global.fetch.bind(global) : null;
@@ -78,7 +82,7 @@
 
     function meta() {
         var language = 'en';
-        try { language = global.localStorage.getItem('rwl_language') || 'en'; } catch (error) {}
+        try { language = (global.RWLI18n && global.RWLI18n.language()) || global.localStorage.getItem('rwl_language') || 'en'; } catch (error) {}
         return {
             lang: language,
             screen: (global.screen ? global.screen.width + 'x' + global.screen.height : ''),
@@ -227,7 +231,16 @@
             '.rwlfx-gravity :not(' + PROTECTED_SELECTOR + '){animation:rwlfxGravity 2s ease-in-out infinite alternate}',
             '.rwlfx-fly-clone{position:fixed;z-index:999998;pointer-events:none;animation:rwlfxFly 1.1s ease-in forwards;--rwlfx-dx:0px;--rwlfx-dy:0px;--rwlfx-dr:0deg}',
             '#rwlfxMessage{position:fixed;left:50%;transform:translateX(-50%);z-index:999997;max-width:92vw;padding:12px 22px;border-radius:12px;background:rgba(30,0,50,0.92);color:#fff;border:1px solid rgba(200,80,255,0.5);box-shadow:0 8px 32px rgba(0,0,0,0.45);font-weight:600;font-size:14px;text-align:center}',
-            '#rwlfxMessage.rwlfx-top{top:14px}#rwlfxMessage.rwlfx-center{top:50%;transform:translate(-50%,-50%)}#rwlfxMessage.rwlfx-bottom{bottom:14px}'
+            '#rwlfxMessage.rwlfx-top{top:14px}#rwlfxMessage.rwlfx-center{top:50%;transform:translate(-50%,-50%)}#rwlfxMessage.rwlfx-bottom{bottom:14px}',
+            '#rwlIdentifyBanner{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:2147483000;max-width:92vw;padding:14px 26px;border-radius:14px;background:linear-gradient(135deg,#f97316,#fb923c);color:#1a0b00;font-weight:800;font-size:15px;text-align:center;box-shadow:0 10px 36px rgba(249,115,22,0.55),0 0 0 2px rgba(255,237,213,0.6);animation:rwlIdentifyPulse 1.2s ease-in-out infinite}',
+            '#rwlIdentifyBanner small{display:block;font-weight:600;font-size:12px;opacity:0.85;margin-top:2px}',
+            '@keyframes rwlIdentifyPulse{0%,100%{box-shadow:0 10px 36px rgba(249,115,22,0.45),0 0 0 2px rgba(255,237,213,0.5)}50%{box-shadow:0 10px 44px rgba(249,115,22,0.85),0 0 0 4px rgba(255,237,213,0.85)}}',
+            '#rwlSystemBanner{position:fixed;left:0;right:0;top:0;z-index:2147482000;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 18px;font-weight:700;font-size:14px;text-align:center;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,0.45)}',
+            '#rwlSystemBanner.rwl-system-frozen{background:linear-gradient(135deg,#0c4a6e,#0ea5e9);border-bottom:1px solid rgba(186,230,253,0.7)}',
+            '#rwlSystemBanner.rwl-system-maintenance{background:linear-gradient(135deg,#78350f,#f59e0b);border-bottom:1px solid rgba(253,230,138,0.7)}',
+            '#rwlSystemBanner .rwl-system-icon{font-size:20px}',
+            'body.rwl-system-locked{padding-top:52px}',
+            '@media (prefers-reduced-motion: reduce){#rwlIdentifyBanner{animation:none}}'
         ].join('');
         (document.head || document.documentElement).appendChild(effectStyleEl);
     }
@@ -288,11 +301,20 @@
         }
     }
 
+    var messageTimer = null;
+
     function applyMessage(message) {
+        if (messageTimer) {
+            global.clearTimeout(messageTimer);
+            messageTimer = null;
+        }
         if (!message || !message.text) {
             if (messageEl && messageEl.parentNode) messageEl.remove();
             messageEl = null;
             return;
+        }
+        if (message.seconds_left) {
+            messageTimer = global.setTimeout(function () { applyMessage(null); }, Math.max(1, message.seconds_left) * 1000);
         }
         ensureEffectStyles();
         if (!messageEl) {
@@ -388,6 +410,150 @@
         labelReportTimer = global.setTimeout(collectLabels, 2500);
     }
 
+    var identifyEl = null;
+    var identifyTimer = null;
+    var systemBannerEl = null;
+    var systemState = 'normal';
+    var currentSignature = '';
+    var pollRunning = false;
+    var pollGeneration = 0;
+    var activeAudio = [];
+    var audioCommandVolume = 0.8;
+
+    function showIdentify(identify) {
+        if (!identify || !identify.number) return;
+        ensureEffectStyles();
+        if (!identifyEl) {
+            identifyEl = document.createElement('div');
+            identifyEl.id = 'rwlIdentifyBanner';
+            identifyEl.setAttribute('role', 'alert');
+            document.body.appendChild(identifyEl);
+        }
+        identifyEl.textContent = '';
+        var headline = document.createElement('span');
+        headline.textContent = 'System notice: this device is being identified as session #' + identify.number;
+        var detail = document.createElement('small');
+        detail.textContent = identify.kind === 'client' ? 'Rickware - Labs© Launcher' : 'Browser session';
+        identifyEl.appendChild(headline);
+        identifyEl.appendChild(detail);
+        if (identifyTimer) global.clearTimeout(identifyTimer);
+        identifyTimer = global.setTimeout(function () {
+            if (identifyEl && identifyEl.parentNode) identifyEl.remove();
+            identifyEl = null;
+        }, Math.min(10, Math.max(1, identify.seconds || 10)) * 1000);
+    }
+
+    function applySystemState(system) {
+        var state = system && system.state ? system.state : 'normal';
+        systemState = state;
+        if (state === 'normal') {
+            if (systemBannerEl && systemBannerEl.parentNode) systemBannerEl.remove();
+            systemBannerEl = null;
+            document.body.classList.remove('rwl-system-locked');
+            return;
+        }
+        ensureEffectStyles();
+        if (!systemBannerEl) {
+            systemBannerEl = document.createElement('div');
+            systemBannerEl.id = 'rwlSystemBanner';
+            systemBannerEl.setAttribute('role', 'alert');
+            document.body.appendChild(systemBannerEl);
+        }
+        systemBannerEl.className = state === 'frozen' ? 'rwl-system-frozen' : 'rwl-system-maintenance';
+        systemBannerEl.textContent = '';
+        var icon = document.createElement('span');
+        icon.className = 'rwl-system-icon';
+        icon.textContent = state === 'frozen' ? '🧊' : '🛠️';
+        var text = document.createElement('span');
+        text.textContent = system.message || (state === 'frozen' ? 'An administrator has frozen the system for security reasons. Everything is paused until it is released again.' : 'Maintenance in progress. This service is temporarily unavailable, please try again later.');
+        systemBannerEl.appendChild(icon);
+        systemBannerEl.appendChild(text);
+        document.body.classList.add('rwl-system-locked');
+    }
+
+    function doneCommands() {
+        try { return JSON.parse(global.sessionStorage.getItem(COMMAND_DONE_KEY) || '{}') || {}; } catch (error) { return {}; }
+    }
+
+    function markCommand(id) {
+        var done = doneCommands();
+        done[id] = Date.now();
+        var keys = Object.keys(done);
+        if (keys.length > 60) keys.sort(function (a, b) { return done[a] - done[b]; }).slice(0, keys.length - 60).forEach(function (key) { delete done[key]; });
+        try { global.sessionStorage.setItem(COMMAND_DONE_KEY, JSON.stringify(done)); } catch (error) {}
+    }
+
+    function isLauncherClient() {
+        return !!(global.RWLLauncher && global.RWLLauncher.isLauncher && global.RWLLauncher.isLauncher());
+    }
+
+    var nativeAudioActive = false;
+
+    function stopAudio() {
+        activeAudio.forEach(function (audio) {
+            try { audio.pause(); audio.src = ''; } catch (error) {}
+        });
+        activeAudio = [];
+        if (nativeAudioActive) {
+            nativeAudioActive = false;
+            try { global.RWLLauncher.call('stopSound', {}).catch(function () {}); } catch (error) {}
+        }
+    }
+
+    function playNative(command) {
+        try {
+            nativeAudioActive = true;
+            global.RWLLauncher.call('playSound', { url: API_BASE + command.url, volume: Math.max(0, Math.min(100, command.volume || 0)), mode: command.mode || 'once', repeat: Math.max(1, command.repeat || 1) }).catch(function () { nativeAudioActive = false; });
+        } catch (error) {
+            nativeAudioActive = false;
+        }
+    }
+
+    function playAudio(command) {
+        if (!command.url || command.url.indexOf('/api/client/sound/') !== 0) return;
+        stopAudio();
+        var audio = new Audio(API_BASE + command.url);
+        audioCommandVolume = Math.max(0, Math.min(100, command.volume || 0)) / 100;
+        audio.volume = audioCommandVolume;
+        audio.preload = 'auto';
+        var remaining = command.mode === 'repeat' ? Math.max(1, command.repeat || 1) : 1;
+        audio.loop = command.mode === 'loop';
+        audio.addEventListener('ended', function () {
+            remaining -= 1;
+            if (remaining > 0) {
+                audio.currentTime = 0;
+                audio.play().catch(function () {});
+            }
+        });
+        activeAudio.push(audio);
+        audio.play().catch(function () {
+            activeAudio = activeAudio.filter(function (entry) { return entry !== audio; });
+            playNative(command);
+        });
+    }
+
+    function applyCommands(state) {
+        if (!isLauncherClient()) return;
+        var done = doneCommands();
+        var audio = state.audio;
+        if (audio && audio.command_id && !done[audio.command_id]) {
+            markCommand(audio.command_id);
+            if (audio.action === 'stop') stopAudio();
+            else playAudio(audio);
+        }
+        var soundVolume = state.sound_volume;
+        if (soundVolume && soundVolume.command_id && !done[soundVolume.command_id]) {
+            markCommand(soundVolume.command_id);
+            audioCommandVolume = Math.max(0, Math.min(100, soundVolume.volume || 0)) / 100;
+            activeAudio.forEach(function (entry) { entry.volume = audioCommandVolume; });
+        }
+        var systemVolume = state.system_volume;
+        if (systemVolume && systemVolume.command_id && !done[systemVolume.command_id]) {
+            markCommand(systemVolume.command_id);
+            try { global.RWLLauncher.call('setSystemVolume', { level: systemVolume.level }).catch(function () {}); } catch (error) {}
+        }
+    }
+
     function applyState(state) {
         effectState = state;
         if (state.frozen) {
@@ -398,20 +564,84 @@
         applyEffects(state.effects || []);
         applyMessage(state.message);
         applyRenames(state.renames || {});
+        applySystemState(state.system);
+        if (state.identify) showIdentify(state.identify);
+        applyCommands(state);
+    }
+
+    function handleUnauthorized() {
+        if (global.RWL && global.RWL.clearSession) global.RWL.clearSession();
+        if (!/index\.html?$/.test(global.location.pathname) && global.location.pathname !== '/') global.location.replace('./index.html');
+    }
+
+    function wait(ms) {
+        return new Promise(function (resolve) { global.setTimeout(resolve, ms); });
+    }
+
+    function readSystemState() {
+        return nativeFetch(API_BASE + '/api/system/state', { cache: 'no-store' }).then(function (response) {
+            return response.ok ? response.json() : null;
+        }).then(function (system) {
+            if (system) applySystemState(system);
+            return system;
+        }).catch(function () { return null; });
+    }
+
+    function stateRequest(longPoll) {
+        var url = API_BASE + '/api/client/state' + (longPoll && currentSignature ? '?wait=1&since=' + encodeURIComponent(currentSignature) : '');
+        return nativeFetch(url, { headers: { 'Authorization': 'Bearer ' + token() }, cache: 'no-store' });
+    }
+
+    async function stateLoop(generation) {
+        while (generation === pollGeneration && isLoggedIn()) {
+            try {
+                var response = await stateRequest(true);
+                if (generation !== pollGeneration) return;
+                if (response.status === 401 || response.status === 403) {
+                    handleUnauthorized();
+                    return;
+                }
+                if (response.status === 503) {
+                    var blocked = null;
+                    try { blocked = await response.json(); } catch (error) { blocked = null; }
+                    applySystemState({ state: (blocked && blocked.system_state) || 'maintenance', message: blocked && blocked.detail });
+                    await wait(BLOCKED_POLL_MS);
+                    continue;
+                }
+                if (!response.ok) {
+                    await wait(LONG_POLL_RETRY_MS);
+                    continue;
+                }
+                var state = await response.json();
+                if (state && state.signature) {
+                    currentSignature = state.signature;
+                    applyState(state);
+                }
+                if (document.hidden) await wait(STATE_POLL_MS);
+            } catch (error) {
+                await wait(LONG_POLL_RETRY_MS);
+            }
+        }
+        pollRunning = false;
     }
 
     function pollState() {
-        if (!isLoggedIn() || !nativeFetch) return;
-        nativeFetch(API_BASE + '/api/client/state', { headers: { 'Authorization': 'Bearer ' + token() } }).then(function (response) {
-            if (response.status === 401 || response.status === 403) {
-                if (global.RWL && global.RWL.clearSession) global.RWL.clearSession();
-                if (!/index\.html?$/.test(global.location.pathname) && global.location.pathname !== '/') global.location.replace('./index.html');
-                return null;
-            }
-            return response.ok ? response.json() : null;
-        }).then(function (state) {
-            if (state) applyState(state);
-        }).catch(function () {});
+        if (!nativeFetch) return;
+        if (!isLoggedIn()) {
+            readSystemState();
+            return;
+        }
+        if (pollRunning) return;
+        pollRunning = true;
+        pollGeneration += 1;
+        stateLoop(pollGeneration);
+    }
+
+    function restartPolling() {
+        pollGeneration += 1;
+        pollRunning = false;
+        currentSignature = '';
+        pollState();
     }
 
     var effectObserver = null;
@@ -430,14 +660,22 @@
         startEffectObserver();
         scheduleLabelReport();
         pollState();
-        global.setInterval(pollState, STATE_POLL_MS);
+        global.setInterval(function () {
+            if (!isLoggedIn()) readSystemState();
+            else if (!pollRunning) pollState();
+        }, SYSTEM_POLL_MS);
+        global.addEventListener('rwl-system-state', function (event) {
+            if (event && event.detail) applySystemState(event.detail);
+        });
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
     else init();
 
     global.RWLFX = {
-        refresh: pollState,
+        refresh: restartPolling,
+        systemState: function () { return systemState; },
+        applySystemState: applySystemState,
         state: function () { return effectState; },
         reportLabels: collectLabels
     };

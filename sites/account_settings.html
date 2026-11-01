@@ -30,6 +30,13 @@
                     </svg>
                     <span>Account Settings</span>
                 </a>
+                <a href="./sessions.html" class="settings-nav-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="4" width="20" height="13" rx="2"></rect>
+                        <path d="M8 21h8M12 17v4"></path>
+                    </svg>
+                    <span>Sessions</span>
+                </a>
                 <a href="./preferences.html" class="settings-nav-item">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3"></circle>
@@ -69,7 +76,7 @@
                         <div class="profile-picture-actions">
                             <input type="file" id="profileImageInput" accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp,image/x-icon,.png,.jpg,.jpeg,.gif,.webp,.avif,.bmp,.ico" style="display: none;">
                             <button class="btn-secondary" id="uploadImageBtn" title="Choose a new profile picture">Upload New Picture</button>
-                            <small id="profileImageHint">PNG, JPG, GIF, WebP, AVIF, BMP or ICO · max 10 MB</small>
+                            <small id="profileImageHint">PNG, JPG, GIF, WebP, AVIF, BMP or ICO · max 16 MB</small>
                         </div>
                     </div>
                 </div>
@@ -102,7 +109,7 @@
                     <div class="form-group">
                         <label>Current Password</label>
                         <div class="input-group">
-                            <input type="password" id="currentPassword" class="form-control">
+                            <input type="password" id="currentPassword" class="form-control" autocomplete="current-password">
                             <button class="toggle-password" data-target="currentPassword">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -111,6 +118,8 @@
                             </button>
                         </div>
                     </div>
+
+                    <small class="security-hint">Only needed to change the email address or the password. Username and profile picture can be changed without it.</small>
 
                     <div class="form-group">
                         <label>New Password</label>

@@ -1112,7 +1112,13 @@ function userProfileImageSrc(user) {
 function syncAccountPreferences(user) {
     if (!user) return;
     if (window.RWLTheme) RWLTheme.sync(user.equipped_cosmetics || {});
-    if (window.RWLI18n && user.preferred_language && user.preferred_language !== RWLI18n.language()) RWLI18n.setLanguage(user.preferred_language);
+    if (window.RWLI18n) {
+        var accountLanguage = user.preferred_language || 'en';
+        if (accountLanguage !== RWLI18n.language()) {
+            if (RWLI18n.useAccountLanguage) RWLI18n.useAccountLanguage(accountLanguage);
+            else RWLI18n.setLanguage(accountLanguage);
+        }
+    }
 }
 
 function updateUserProfile(user) {
@@ -1192,6 +1198,8 @@ async function loginUser(usernameOrEmail, password) {
             body: JSON.stringify({
                 username: usernameOrEmail,
                 password: password,
+                device_key: RWL.deviceKey(),
+                client: RWL.clientKind(),
                 user_agent: navigator.userAgent || null,
                 time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
                 fingerprint: (navigator.userAgent + navigator.language + screen.width + screen.height) || null,
@@ -1212,8 +1220,10 @@ async function loginUser(usernameOrEmail, password) {
             if (data.refresh_token) sessionStorage.setItem('rickware_refresh_token', data.refresh_token);
             if (data.account) {
                 sessionStorage.setItem('rickware_user', JSON.stringify(data.account));
+                RWL.applySession(data.session);
                 return data.account;
             }
+            RWL.applySession(data.session);
             var fullUser = await fetchFullUser(data.token);
             if (fullUser) {
                 sessionStorage.setItem('rickware_user', JSON.stringify(fullUser));

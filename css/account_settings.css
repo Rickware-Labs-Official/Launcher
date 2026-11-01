@@ -410,3 +410,14 @@ body {
     .info-grid { grid-template-columns: 1fr; }
     .settings-actions { flex-direction: column; }
 }
+.form-control.input-invalid {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.18);
+}
+
+.security-hint {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    line-height: 1.5;
+    margin-top: -8px;
+}

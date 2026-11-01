@@ -138,6 +138,8 @@ async function handleOAuthCallback() {
                 provider: provider,
                 code: code,
                 redirect_uri: provider === 'discord' ? DISCORD_REDIRECT_URI : GOOGLE_REDIRECT_URI,
+                device_key: RWL.deviceKey(),
+                client: RWL.clientKind(),
                 user_agent: navigator.userAgent || null,
                 time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone || null
             })
@@ -157,12 +159,7 @@ async function handleOAuthCallback() {
             }
             if (user) sessionStorage.setItem('rickware_user', JSON.stringify(user));
 
-            var rememberMe = localStorage.getItem('rickware_remember_me') === '1';
-            if (rememberMe) {
-                localStorage.setItem('rickware_token', token);
-                if (data.refresh_token) localStorage.setItem('rickware_refresh_token', data.refresh_token);
-                if (user) localStorage.setItem('rickware_user', JSON.stringify(user));
-            }
+            RWL.applySession(data.session);
 
             var welcomeName = (user && user.username) ? user.username : 'User';
             var actionWord = mode === 'register' ? 'Account created! Welcome, ' : 'Successfully logged in. Welcome back, ';
@@ -179,10 +176,8 @@ async function handleOAuthCallback() {
 }
 
 function loadRememberedCredentials() {
-    var remembered = localStorage.getItem('rickware_remember_me') === '1';
-    if (!remembered) return;
-
-    var savedToken = localStorage.getItem('rickware_token');
+    var remembered = localStorage.getItem('rickware_remember_me') === '1' && !RWL.isLauncherHost();
+    var savedToken = remembered ? localStorage.getItem('rickware_token') : null;
     if (savedToken) {
         sessionStorage.setItem('rickware_token', savedToken);
         var savedUser = localStorage.getItem('rickware_user');
@@ -195,26 +190,19 @@ function loadRememberedCredentials() {
     }
 
     var savedUsername = localStorage.getItem('rickware_saved_username');
+    if (!savedUsername) return;
     var rememberCheckbox = document.getElementById('login-remember');
     var usernameInput = document.getElementById('login-username-email');
-    if (savedUsername && usernameInput) usernameInput.value = savedUsername;
+    if (usernameInput) usernameInput.value = savedUsername;
     if (rememberCheckbox) rememberCheckbox.checked = true;
 }
 
 function saveRememberMe(usernameOrEmail, token, refreshToken, user) {
     var checkbox = document.getElementById('login-remember');
-    if (checkbox && checkbox.checked) {
-        localStorage.setItem('rickware_remember_me', '1');
+    if (checkbox && checkbox.checked && !RWL.isLauncherHost()) {
         localStorage.setItem('rickware_saved_username', usernameOrEmail);
-        if (token) localStorage.setItem('rickware_token', token);
-        if (refreshToken) localStorage.setItem('rickware_refresh_token', refreshToken);
-        if (user) localStorage.setItem('rickware_user', JSON.stringify(user));
     } else {
-        localStorage.removeItem('rickware_remember_me');
         localStorage.removeItem('rickware_saved_username');
-        localStorage.removeItem('rickware_token');
-        localStorage.removeItem('rickware_refresh_token');
-        localStorage.removeItem('rickware_user');
     }
 }
 

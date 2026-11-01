@@ -75,6 +75,8 @@
     var LOCK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
     var CHEST_IMAGE = '../images/assets/lab_pass/rickware-labs_chest.webp';
     var KEEP_STYLE = '--rwl-keep:1;';
+    var DEFAULT_THEME_ID = '__default__';
+    var DEFAULT_THEME = { item_id: DEFAULT_THEME_ID, name: 'Rickware Purple (Default)', rarity: 'Common', preview: ['#9B00CC', '#C97EFF', '#14002A'], is_default: true };
 
     var state = {
         inventory: null,
@@ -272,7 +274,7 @@
             var cosmetic = COSMETIC_CATEGORIES[cat.id];
             var equippedId = cosmetic ? equipped[cosmetic.field] : null;
             var valueClass = equippedId ? 'inv-equipped-row-value' : 'inv-equipped-row-value inv-equipped-none';
-            var valueText = equippedId ? itemName(cosmetic.catalog, equippedId) : 'Not Equipped';
+            var valueText = equippedId ? itemName(cosmetic.catalog, equippedId) : (cat.id === 'themes' ? DEFAULT_THEME.name : 'Not Equipped');
             var valueStyle = equippedId && cat.id === 'name-colors' ? ' style="' + esc(RWL.nameColorStyle(cosmetics, '#e0aaff')) + '"' : '';
             var row = '<div class="inv-equipped-row">';
             row += '<div class="inv-equipped-row-icon">' + cat.icon.replace('width="32" height="32"', 'width="14" height="14"') + '</div>';
@@ -292,6 +294,12 @@
     function themePreviewHtml(item) {
         var colors = (item.preview || []).map(function(color) { return RWL.sanitizeHex(color, '#7b2cbf'); });
         if (!colors.length) colors = ['#7b2cbf'];
+        if (item.animated && colors.length > 1) {
+            RWL.ensureCosmeticStyles();
+            var seconds = Math.max(4, Math.min(parseInt((item.animation || {}).period_seconds, 10) || 12, 40));
+            var stops = colors.concat([colors[0]]).join(',');
+            return '<div class="inv-theme-preview inv-theme-preview-animated" title="Animated theme"><span style="' + KEEP_STYLE + 'flex:1;background-image:linear-gradient(90deg,' + stops + ');background-size:300% 100%;animation:rwlNameRgb ' + seconds + 's linear infinite;"></span></div>';
+        }
         return '<div class="inv-theme-preview">' + colors.map(function(color) {
             return '<span style="' + KEEP_STYLE + 'background:' + color + ';"></span>';
         }).join('') + '</div>';
@@ -328,12 +336,14 @@
         var fresh = newSet(cosmetic.catalog);
         var ownedItems = catalog.items.filter(function(item) { return isOwned(cosmetic.catalog, item.item_id, owned); });
         ownedItems.sort(function(left, right) { return (fresh[right.item_id] ? 1 : 0) - (fresh[left.item_id] ? 1 : 0); });
+        var isThemes = cosmetic.catalog === 'launcher_themes';
+        var defaultSlot = isThemes ? cosmeticSlotHtml(cosmetic.catalog, DEFAULT_THEME, true, !equippedId, false) : '';
         var ownedHtml = ownedItems.length
-            ? ownedItems.map(function(item) { return cosmeticSlotHtml(cosmetic.catalog, item, true, item.item_id === equippedId, !!fresh[item.item_id]); }).join('')
-            : emptyNote(catalog.items.length ? 'No ' + cosmetic.label.toLowerCase() + 's yet. Open Mystery Chests or progress the Lab-Pass to unlock them.' : 'No ' + cosmetic.label.toLowerCase() + 's are available yet.');
+            ? defaultSlot + ownedItems.map(function(item) { return cosmeticSlotHtml(cosmetic.catalog, item, true, item.item_id === equippedId, !!fresh[item.item_id]); }).join('')
+            : defaultSlot + emptyNote(catalog.items.length ? 'No ' + cosmetic.label.toLowerCase() + 's yet. Open Mystery Chests or progress the Lab-Pass to unlock them.' : 'No ' + cosmetic.label.toLowerCase() + 's are available yet.');
         var indexHtml = catalog.items.length
-            ? catalog.items.map(function(item) { var has = isOwned(cosmetic.catalog, item.item_id, owned); return cosmeticSlotHtml(cosmetic.catalog, item, has, has && item.item_id === equippedId, has && !!fresh[item.item_id]); }).join('')
-            : emptyNote('No ' + cosmetic.label.toLowerCase() + 's are available yet.');
+            ? defaultSlot + catalog.items.map(function(item) { var has = isOwned(cosmetic.catalog, item.item_id, owned); return cosmeticSlotHtml(cosmetic.catalog, item, has, has && item.item_id === equippedId, has && !!fresh[item.item_id]); }).join('')
+            : defaultSlot + emptyNote('No ' + cosmetic.label.toLowerCase() + 's are available yet.');
         return { owned: ownedHtml, index: indexHtml, ownedCount: ownedItems.length, total: catalog.items.length };
     }
 
@@ -554,6 +564,7 @@
         window.addEventListener('message', function(e) {
             if (e.origin !== window.location.origin) return;
             if (e.data === 'chest_opening_done' || (e.data && e.data.type === 'chest_opening_done')) {
+                if (e.data && e.data.interrupted) toast('Your chest was opened anyway. The reward was added to your inventory.', 'success');
                 closeChestIframe();
             }
         });
@@ -674,6 +685,7 @@
             var badge = slot.querySelector('.inv-item-badge');
             if (badge) badge.remove();
         });
+        if (!itemId && field === 'launcher_theme') itemId = DEFAULT_THEME_ID;
         if (!itemId) return;
         bodyEl.querySelectorAll('.inv-slot-item[data-owned="1"]').forEach(function(slot) {
             if (slot.getAttribute('data-item-id') === itemId) {
@@ -688,7 +700,11 @@
         if (!cosmetic || slot.classList.contains('inv-slot-busy')) return;
         var itemId = slot.getAttribute('data-item-id');
         var equipped = (state.inventory && state.inventory.equipped) || {};
-        var nextValue = equipped[cosmetic.field] === itemId ? '' : itemId;
+        if (itemId === DEFAULT_THEME_ID && !equipped[cosmetic.field]) {
+            toast('The default theme is already active.', 'success');
+            return;
+        }
+        var nextValue = (itemId === DEFAULT_THEME_ID || equipped[cosmetic.field] === itemId) ? '' : itemId;
         var payload = {};
         payload[cosmetic.field] = nextValue;
         slot.classList.add('inv-slot-busy');
@@ -704,7 +720,8 @@
             if (cosmetic.field === 'launcher_theme' && window.RWLTheme) RWLTheme.sync(state.inventory.equipped_cosmetics || {});
             updateEquippedSlots(document.getElementById('invModalBody'), cosmetic.field, nextValue);
             renderEquippedPanel();
-            toast((nextValue ? 'Equipped ' : 'Unequipped ') + itemName(cosmetic.catalog, itemId) + '.', 'success');
+            if (itemId === DEFAULT_THEME_ID) toast('The default theme is active again.', 'success');
+            else toast((nextValue ? 'Equipped ' : 'Unequipped ') + itemName(cosmetic.catalog, itemId) + '.', 'success');
         } catch (error) {
             toast(error.status === 429 ? 'You are changing items too fast. Please wait a moment.' : (error.message || 'The item could not be equipped.'), 'error');
         } finally {

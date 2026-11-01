@@ -37,7 +37,9 @@ async function loadAccountSettings(user) {
     if (!pendingProfilePictureFile) profileImg.src = userProfileImageSrc(user);
 }
 
-const PROFILE_PICTURE_LIMIT_MB = 10;
+const PROFILE_PICTURE_LIMIT_MB = 16;
+const PROFILE_PICTURE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif', 'image/bmp', 'image/x-icon', 'image/vnd.microsoft.icon'];
+const PROFILE_PICTURE_EXTENSIONS = /\.(png|jpe?g|gif|webp|avif|bmp|ico)$/i;
 const PROFILE_PICTURE_HINT = 'PNG, JPG, GIF, WebP, AVIF, BMP or ICO · max ' + PROFILE_PICTURE_LIMIT_MB + ' MB';
 let pendingProfilePictureBase64 = null;
 let pendingProfilePictureFile = null;
@@ -63,10 +65,15 @@ function setupProfileUpload() {
         imageInput.click();
     });
 
-    imageInput.addEventListener('change', (e) => {
+    imageInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         imageInput.value = '';
         if (!file) return;
+        if (!PROFILE_PICTURE_TYPES.includes((file.type || '').toLowerCase()) && !PROFILE_PICTURE_EXTENSIONS.test(file.name || '')) {
+            setProfileImageHint('Unsupported format. Allowed: PNG, JPG, GIF, WebP, AVIF, BMP, ICO.', 'error');
+            showBanner('Unsupported format. Allowed: PNG, JPG, GIF, WebP, AVIF, BMP, ICO.', 'error');
+            return;
+        }
         if (file.size > PROFILE_PICTURE_LIMIT_MB * 1024 * 1024) {
             setProfileImageHint('File too large: ' + formatMegabytes(file.size) + '. The limit is ' + PROFILE_PICTURE_LIMIT_MB + ' MB.', 'error');
             showBanner('File too large: ' + formatMegabytes(file.size) + '. The limit is ' + PROFILE_PICTURE_LIMIT_MB + ' MB.', 'error');
@@ -76,36 +83,111 @@ function setupProfileUpload() {
         pendingProfilePictureFile = file;
         pendingProfilePreviewUrl = URL.createObjectURL(file);
         document.getElementById('settingsProfileImage').src = pendingProfilePreviewUrl;
-        setProfileImageHint('Ready to upload (' + formatMegabytes(file.size) + '). Click Save Changes.', 'ready');
+        uploadBtn.disabled = true;
+        const token = RWL.getToken();
+        const uploaded = token ? await uploadPendingProfilePicture(token) : false;
+        uploadBtn.disabled = false;
+        if (uploaded) {
+            await refreshUserData();
+            showBanner('Profile picture updated.', 'success');
+        }
+    });
+}
+
+function uploadWithProgress(token, file) {
+    return new Promise((resolve) => {
+        const form = new FormData();
+        form.append('file', file, file.name || 'profile_picture');
+        const request = new XMLHttpRequest();
+        request.open('POST', apiUrl('/api/profile/picture'));
+        request.setRequestHeader('Authorization', 'Bearer ' + token);
+        request.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+                const percent = Math.round(event.loaded / event.total * 100);
+                setProfileImageHint('Uploading... ' + percent + '% (' + formatMegabytes(event.loaded) + ' of ' + formatMegabytes(event.total) + ')', 'ready');
+            }
+        });
+        request.addEventListener('load', () => {
+            let data = {};
+            try { data = JSON.parse(request.responseText || '{}'); } catch (error) { data = {}; }
+            resolve({ status: request.status, data: data });
+        });
+        request.addEventListener('error', () => resolve({ status: 0, data: {} }));
+        request.addEventListener('timeout', () => resolve({ status: 0, data: {} }));
+        request.timeout = 120000;
+        setProfileImageHint('Uploading... 0%', 'ready');
+        request.send(form);
     });
 }
 
 async function uploadPendingProfilePicture(token) {
     if (!pendingProfilePictureFile) return true;
-    const form = new FormData();
-    form.append('file', pendingProfilePictureFile, pendingProfilePictureFile.name || 'profile_picture');
-    let response;
-    try {
-        response = await fetch(apiUrl('/api/profile/picture'), {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token },
-            body: form
-        });
-    } catch (error) {
+    let result = await uploadWithProgress(token, pendingProfilePictureFile);
+    if (result.status === 401) {
+        const refreshed = await RWL.refreshAccessToken();
+        if (refreshed) result = await uploadWithProgress(refreshed, pendingProfilePictureFile);
+    }
+    if (result.status === 0) {
         setProfileImageHint('The upload failed. Please check your connection and try again.', 'error');
         showBanner('The upload failed. Please check your connection and try again.', 'error');
         return false;
     }
-    if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        const message = RWL.errorDetail(errData, response.status === 413 ? 'File too large (max ' + PROFILE_PICTURE_LIMIT_MB + ' MB)' : 'The picture could not be uploaded.');
+    if (result.status < 200 || result.status >= 300) {
+        const message = RWL.errorDetail(result.data, result.status === 413 ? 'File too large (max ' + PROFILE_PICTURE_LIMIT_MB + ' MB)' : 'The picture could not be uploaded.');
         setProfileImageHint(message, 'error');
         showBanner(message, 'error');
         return false;
     }
     pendingProfilePictureFile = null;
-    setProfileImageHint(PROFILE_PICTURE_HINT, null);
+    if (pendingProfilePreviewUrl) {
+        URL.revokeObjectURL(pendingProfilePreviewUrl);
+        pendingProfilePreviewUrl = null;
+    }
+    setProfileImageHint('Uploaded. ' + PROFILE_PICTURE_HINT, 'ready');
     return true;
+}
+
+function markInvalid(id, invalid) {
+    const element = document.getElementById(id);
+    if (element) element.classList.toggle('input-invalid', !!invalid);
+}
+
+async function changePasswordIfRequested() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmNewPassword').value;
+    markInvalid('newPassword', false);
+    markInvalid('confirmNewPassword', false);
+    if (!newPassword && !confirmPassword) return true;
+    if (!currentPassword) {
+        markInvalid('currentPassword', true);
+        showBanner('Enter your current password to set a new one.', 'error');
+        return false;
+    }
+    if (newPassword.length < 8) {
+        markInvalid('newPassword', true);
+        showBanner('The new password must have at least 8 characters.', 'error');
+        return false;
+    }
+    if (newPassword !== confirmPassword) {
+        markInvalid('confirmNewPassword', true);
+        showBanner('The new passwords do not match.', 'error');
+        return false;
+    }
+    try {
+        const result = await RWL.apiRequest('/api/account/password', { method: 'POST', body: { current_password: currentPassword, new_password: newPassword } });
+        if (result.token) {
+            RWL.storeTokens(result.token, result.refresh_token);
+            RWL.applySession(result.session);
+        }
+        ['currentPassword', 'newPassword', 'confirmNewPassword'].forEach((id) => { document.getElementById(id).value = ''; });
+        showBanner(result.message || 'Password changed.', 'success');
+        return true;
+    } catch (error) {
+        markInvalid(error.status === 400 && /current password/i.test(error.message || '') ? 'currentPassword' : 'newPassword', true);
+        showBanner(error.message || 'The password could not be changed.', 'error');
+        return false;
+    }
 }
 
 async function refreshUserData() {
@@ -134,19 +216,30 @@ async function setupSaveCancel() {
         const user = await getCurrentUser();
         if (!user) return;
 
-        const newUsername = document.getElementById('username').value;
-        const newEmail = document.getElementById('emailAddress').value;
+        ['username', 'emailAddress', 'currentPassword', 'phoneNumber'].forEach((id) => markInvalid(id, false));
+        const newUsername = document.getElementById('username').value.trim();
+        const newEmail = document.getElementById('emailAddress').value.trim();
         const newPhone = document.getElementById('phoneNumber').value;
         const newsletter = document.getElementById('emailNewsletter').checked;
 
         const usernameUnchanged = newUsername === (user.username || '');
         if (!usernameUnchanged && !validateUsername(newUsername)) {
+            markInvalid('username', true);
             showBanner('Invalid username format! Must be 7-20 characters, start with a letter, and contain at least one uppercase letter and one number.', 'error');
             return;
         }
 
-        if (!newEmail || !newEmail.includes('@')) {
+        if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(newEmail)) {
+            markInvalid('emailAddress', true);
             showBanner('Invalid email address!', 'error');
+            return;
+        }
+
+        const emailChanged = newEmail.toLowerCase() !== String(user.email_adress || user.email || '').toLowerCase();
+        const currentPasswordValue = document.getElementById('currentPassword').value;
+        if (emailChanged && !currentPasswordValue) {
+            markInvalid('currentPassword', true);
+            showBanner('Enter your current password to change the email address.', 'error');
             return;
         }
 
@@ -179,6 +272,7 @@ async function setupSaveCancel() {
             current_data: currentData,
             new_data: newData
         };
+        if (emailChanged) body.current_password = currentPasswordValue;
 
         if (pendingProfilePictureBase64) {
             body.profile_picture_base64 = pendingProfilePictureBase64;
@@ -188,7 +282,7 @@ async function setupSaveCancel() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${RWL.getToken() || token}`
             },
             body: JSON.stringify(body)
         });
@@ -198,6 +292,7 @@ async function setupSaveCancel() {
             const updatedUser = result.account || result;
             sessionStorage.setItem('rickware_user', JSON.stringify(updatedUser));
             pendingProfilePictureBase64 = null;
+            if (!(await changePasswordIfRequested())) return;
             await refreshUserData();
             showBanner('Settings saved successfully!', 'success');
         } else {
