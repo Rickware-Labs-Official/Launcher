@@ -54,7 +54,7 @@
         if (reward.claimed) html += checkIcon();
         else if (!reward.unlocked) html += lockIcon();
         html += '</div>';
-        html += '<div class="lp-reward-name">' + esc(reward.name) + '</div>';
+        html += '<div class="lp-reward-name" translate="no">' + esc(reward.name) + '</div>';
         html += '</div>';
         return html;
     }
@@ -149,7 +149,47 @@
             hero.classList.toggle('lp-hero-claimable', pending > 0);
             hero.title = pending > 0 ? 'Click to claim all ' + pending + ' available rewards' : 'No rewards ready to claim';
         }
+        renderBuyLevels();
         renderTimeLeft();
+    }
+
+    function renderBuyLevels() {
+        var row = document.getElementById('lpBuyLevelRow');
+        var optionsEl = document.getElementById('lpBuyLevelOptions');
+        if (!row || !optionsEl) return;
+        var info = passState.progress.level_purchase;
+        if (!info || !info.enabled || !info.options || !info.options.length || passState.season.status !== 'active') {
+            row.style.display = 'none';
+            return;
+        }
+        row.style.display = 'flex';
+        optionsEl.innerHTML = info.options.map(function(option) {
+            var affordable = passState.lab_coins >= option.price;
+            var label = option.levels === 1 ? '+1 Level' : '+' + option.levels + ' Levels';
+            return '<button class="lp-buy-level-btn' + (affordable ? '' : ' lp-buy-level-locked') + '" data-buy-levels="' + option.levels + '" title="Buy ' + option.levels + ' level(s) for ' + option.price + ' Lab Coins">' +
+                '<span class="lp-buy-level-count">' + label + '</span>' +
+                '<span class="lp-buy-level-price"><img src="../images/main/lc_coin_96.webp" alt="LC" onerror="this.style.display=\'none\'">' + option.price + ' LC</span>' +
+            '</button>';
+        }).join('');
+    }
+
+    async function buyLevels(count) {
+        if (busy || !passState) return;
+        var info = passState.progress.level_purchase;
+        var option = (info && info.options || []).filter(function(entry) { return entry.levels === count; })[0];
+        if (!option) return;
+        if (passState.lab_coins < option.price) { notify('Not enough Lab Coins. You need ' + option.price + ' LC for ' + count + ' level(s).', 'error'); return; }
+        if (!window.confirm('Buy ' + count + ' Lab-Pass level(s) for ' + option.price + ' Lab Coins? Your balance: ' + passState.lab_coins + ' LC.')) return;
+        busy = true;
+        try {
+            var result = await RWL.apiRequest('/api/season_pass/buy_levels', { method: 'POST', body: { levels: count } });
+            applyPass(result.pass);
+            notify('Bought ' + result.levels + ' level(s) for ' + result.lc_spent + ' LC. New balance: ' + result.lc_balance + ' LC.', 'success');
+        } catch (error) {
+            notify(error.message || 'The level purchase failed.', 'error');
+        } finally {
+            busy = false;
+        }
     }
 
     function renderChallenges() {
@@ -160,7 +200,7 @@
             var percent = Math.max(0, Math.min(100, item.progress / item.target * 100));
             return '<div class="lp-challenge-item" title="' + esc(item.source === 'client' && item.challenge_id !== 'visit_store' && item.challenge_id !== 'browse_tools' && item.challenge_id !== 'share_product' ? 'Tracked by the Rickware - Labs© Launcher' : 'Tracked automatically') + '">' +
                 '<div class="lp-challenge-info">' +
-                    '<span class="lp-challenge-name">' + esc(item.name) + '</span>' +
+                    '<span class="lp-challenge-name" translate="no">' + esc(item.name) + '</span>' +
                     '<div class="lp-challenge-bar-wrap">' +
                         '<div class="lp-challenge-bar-track"><div class="lp-challenge-bar-fill" style="width:' + percent + '%"></div></div>' +
                         '<span class="lp-challenge-prog">' + Math.min(item.progress, item.target) + '/' + item.target + '</span>' +
@@ -320,6 +360,13 @@
         if (priceBtn) priceBtn.addEventListener('click', function() { if (passState && !passState.progress.premium) purchase(false); });
         var bundleBtn = document.getElementById('lpBundleBtn');
         if (bundleBtn) bundleBtn.addEventListener('click', function() { purchase(true); });
+        var buyOptions = document.getElementById('lpBuyLevelOptions');
+        if (buyOptions) {
+            buyOptions.addEventListener('click', function(e) {
+                var btn = e.target.closest('[data-buy-levels]');
+                if (btn) buyLevels(parseInt(btn.getAttribute('data-buy-levels'), 10));
+            });
+        }
         var allButton = document.getElementById('lpAllChallengesBtn');
         if (allButton) {
             allButton.addEventListener('click', function() {

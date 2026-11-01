@@ -34,16 +34,26 @@ async function loadAccountSettings(user) {
     document.getElementById('devicesConnected').textContent = user.devices_connected || 1;
 
     const profileImg = document.getElementById('settingsProfileImage');
-    if (user.profile_picture_base64) {
-        profileImg.src = 'data:image/png;base64,' + user.profile_picture_base64;
-    } else if (user.profile_picture) {
-        profileImg.src = './images/' + user.profile_picture;
-    } else {
-        profileImg.src = '';
-    }
+    if (!pendingProfilePictureFile) profileImg.src = userProfileImageSrc(user);
 }
 
+const PROFILE_PICTURE_LIMIT_MB = 10;
+const PROFILE_PICTURE_HINT = 'PNG, JPG, GIF, WebP, AVIF, BMP or ICO · max ' + PROFILE_PICTURE_LIMIT_MB + ' MB';
 let pendingProfilePictureBase64 = null;
+let pendingProfilePictureFile = null;
+let pendingProfilePreviewUrl = null;
+
+function setProfileImageHint(message, state) {
+    const hint = document.getElementById('profileImageHint');
+    if (!hint) return;
+    hint.textContent = message;
+    hint.classList.toggle('profile-image-error', state === 'error');
+    hint.classList.toggle('profile-image-ready', state === 'ready');
+}
+
+function formatMegabytes(bytes) {
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
 
 function setupProfileUpload() {
     const uploadBtn = document.getElementById('uploadImageBtn');
@@ -55,20 +65,47 @@ function setupProfileUpload() {
 
     imageInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
+        imageInput.value = '';
         if (!file) return;
-        if (!file.type.includes('image')) {
-            showBanner('Only image files are allowed.', 'error');
+        if (file.size > PROFILE_PICTURE_LIMIT_MB * 1024 * 1024) {
+            setProfileImageHint('File too large: ' + formatMegabytes(file.size) + '. The limit is ' + PROFILE_PICTURE_LIMIT_MB + ' MB.', 'error');
+            showBanner('File too large: ' + formatMegabytes(file.size) + '. The limit is ' + PROFILE_PICTURE_LIMIT_MB + ' MB.', 'error');
             return;
         }
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            document.getElementById('settingsProfileImage').src = event.target.result;
-            const base64Full = event.target.result;
-            const base64Data = base64Full.split(',')[1];
-            pendingProfilePictureBase64 = base64Data;
-        };
-        reader.readAsDataURL(file);
+        if (pendingProfilePreviewUrl) URL.revokeObjectURL(pendingProfilePreviewUrl);
+        pendingProfilePictureFile = file;
+        pendingProfilePreviewUrl = URL.createObjectURL(file);
+        document.getElementById('settingsProfileImage').src = pendingProfilePreviewUrl;
+        setProfileImageHint('Ready to upload (' + formatMegabytes(file.size) + '). Click Save Changes.', 'ready');
     });
+}
+
+async function uploadPendingProfilePicture(token) {
+    if (!pendingProfilePictureFile) return true;
+    const form = new FormData();
+    form.append('file', pendingProfilePictureFile, pendingProfilePictureFile.name || 'profile_picture');
+    let response;
+    try {
+        response = await fetch(apiUrl('/api/profile/picture'), {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: form
+        });
+    } catch (error) {
+        setProfileImageHint('The upload failed. Please check your connection and try again.', 'error');
+        showBanner('The upload failed. Please check your connection and try again.', 'error');
+        return false;
+    }
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        const message = RWL.errorDetail(errData, response.status === 413 ? 'File too large (max ' + PROFILE_PICTURE_LIMIT_MB + ' MB)' : 'The picture could not be uploaded.');
+        setProfileImageHint(message, 'error');
+        showBanner(message, 'error');
+        return false;
+    }
+    pendingProfilePictureFile = null;
+    setProfileImageHint(PROFILE_PICTURE_HINT, null);
+    return true;
 }
 
 async function refreshUserData() {
@@ -136,9 +173,7 @@ async function setupSaveCancel() {
             email_newsletter: newsletter
         };
 
-        if (pendingProfilePictureBase64) {
-            newData.profile_picture = newUsername + '/profile_picture.png';
-        }
+        if (!(await uploadPendingProfilePicture(token))) return;
 
         const body = {
             current_data: currentData,

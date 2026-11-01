@@ -117,6 +117,7 @@ display:block;
 
 .spinBtn{
 width:420px;
+max-width:100%;
 padding:18px;
 font-size:20px;
 border:none;
@@ -178,6 +179,7 @@ justify-content:center;
 cursor:pointer;
 background:rgba(255,255,255,0.06);
 border:1px solid rgba(180,80,255,0.3);
+color:#e0aaff;
 z-index:10000;
 }
 
@@ -262,7 +264,151 @@ cursor:not-allowed;
 opacity:0.75;
 animation:none;
 }
+
+.item.category,.box .categoryVisual{
+position:relative;
+}
+
+.item.category span,.box .categoryVisual span{
+position:absolute;
+left:50%;
+bottom:8px;
+transform:translateX(-50%);
+background:rgba(5,5,10,0.72);
+color:#fff;
+font-size:11px;
+font-weight:700;
+padding:3px 9px;
+border-radius:8px;
+white-space:nowrap;
+}
+
+.item .themeStripes,.box .themeStripes{
+width:100%;
+height:100%;
+display:flex;
+}
+
+.item .themeStripes i,.box .themeStripes i{
+flex:1;
+}
+
+.item .labelVisual,.box .labelVisual{
+position:relative;
+width:100%;
+height:100%;
+}
+
+.item .labelVisual img,.box .labelVisual img{
+object-fit:contain;
+padding:6px;
+}
+
+.phaseLabel{
+min-height:22px;
+font-size:14px;
+font-weight:700;
+letter-spacing:0.08em;
+text-transform:uppercase;
+color:#e0aaff;
+text-shadow:0 0 14px rgba(170,0,255,0.6);
+text-align:center;
+}
+
+.actions{
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:12px;
+width:100%;
+}
+
+.openAllBtn{
+width:420px;
+max-width:100%;
+padding:12px;
+font-size:14px;
+font-weight:700;
+letter-spacing:0.04em;
+border-radius:14px;
+border:1px solid rgba(180,80,255,0.45);
+background:rgba(120,0,255,0.12);
+color:#e0aaff;
+cursor:pointer;
+box-shadow:0 0 24px rgba(170,0,255,0.25);
+transition:background .2s,box-shadow .2s,transform .2s;
+}
+
+.openAllBtn:hover{
+background:rgba(150,0,255,0.22);
+box-shadow:0 0 34px rgba(170,0,255,0.45);
+transform:translateY(-1px);
+}
+
+.openAllBtn:disabled{
+cursor:not-allowed;
+opacity:0.5;
+transform:none;
+}
+
+.summary{
+width:min(760px,92vw);
+max-height:78vh;
+border-radius:18px;
+background:rgba(12,6,24,0.92);
+border:1px solid rgba(180,80,255,0.4);
+box-shadow:0 0 120px rgba(170,0,255,0.45);
+padding:22px;
+display:flex;
+flex-direction:column;
+gap:14px;
+overflow:hidden;
+}
+
+.summary h2{
+color:#fff;
+font-size:20px;
+font-weight:800;
+}
+
+.summary .summaryMeta{
+color:rgba(224,170,255,0.85);
+font-size:13px;
+font-weight:600;
+}
+
+.summaryGrid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+gap:10px;
+overflow-y:auto;
+padding-right:4px;
+scrollbar-width:thin;
+scrollbar-color:#9b00cc rgba(255,255,255,0.05);
+}
+
+.summaryEntry{
+display:flex;
+flex-direction:column;
+gap:3px;
+padding:10px;
+border-radius:12px;
+border:1px solid rgba(180,80,255,0.3);
+background:rgba(255,255,255,0.04);
+color:rgba(255,255,255,0.75);
+font-size:11px;
+min-width:0;
+}
+
+.summaryEntry strong{
+color:#fff;
+font-size:13px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
 </style>
+<script src="../js/rwl_boot.js"></script>
 </head>
 
 <body>
@@ -271,6 +417,8 @@ animation:none;
 
 <div class="container">
 
+<div class="phaseLabel" id="phaseLabel"></div>
+
 <div class="frame">
 <div class="viewport">
 <div class="centerLine"></div>
@@ -278,32 +426,48 @@ animation:none;
 </div>
 </div>
 
-<button class="spinBtn" id="spin">SPIN CHEST</button>
+<div class="actions">
+<button class="spinBtn" id="spin" title="Spin the chest: first the category, then the item">SPIN CHEST</button>
+<button class="openAllBtn" id="openAll" title="Open all your chests at once without animation">OPEN ALL CHESTS</button>
+</div>
 </div>
 
 <div class="win" id="win">
-<div class="topBtn back" id="back">←</div>
-<div class="topBtn close" id="close">✕</div>
+<div class="topBtn back" id="back" title="Back to the chest">←</div>
 <div class="box" id="box"></div>
 </div>
 
 <script src="../js/api_client.js"></script>
 <script>
 (function(){
-const idleImages=[
-"../images/assets/inventory/avatar_decos_main.webp",
-"../images/assets/inventory/nameplates_main.webp",
-"../images/assets/inventory/name_colors_main.webp",
-"../images/assets/inventory/themes_main.webp",
-"../images/assets/inventory/licenses_main.webp"
-]
+const CATEGORY_IMAGES={
+avatar_decorations:"../images/assets/inventory/avatar_decos_main.webp",
+nameplates:"../images/assets/inventory/nameplates_main.webp",
+name_colors:"../images/assets/inventory/name_colors_main.webp",
+launcher_themes:"../images/assets/inventory/themes_main.webp",
+licenses:"../images/assets/inventory/licenses_main.webp"
+}
+const CATEGORY_LABELS={
+avatar_decorations:"Avatar Decoration",
+nameplates:"Nameplate",
+name_colors:"Name Color",
+launcher_themes:"Theme",
+licenses:"License"
+}
+const idleImages=Object.keys(CATEGORY_IMAGES).map(function(key){return CATEGORY_IMAGES[key]})
 const ITEM_WIDTH=150
 const ITEM_GAP=14
 const TRACK_PADDING=120
-const SPIN_DURATION_MS=6800
+const CATEGORY_SPIN_MS=4200
+const ITEM_SPIN_MS=6800
+const MEDIA_WINDOW_BEFORE=12
+const MEDIA_WINDOW_AFTER=4
+const KEEP="--rwl-keep:1;"
 
 const track=document.getElementById("track")
 const spin=document.getElementById("spin")
+const openAll=document.getElementById("openAll")
+const phaseLabel=document.getElementById("phaseLabel")
 const win=document.getElementById("win")
 const box=document.getElementById("box")
 const esc=RWL.escapeHtml
@@ -312,19 +476,36 @@ let pos=0
 let raf=null
 let opening=false
 let openedAny=false
+let pendingResult=null
+let lastChests=null
+
+function categoryImage(category){
+return CATEGORY_IMAGES[category]||idleImages[0]
+}
+
+function themeStripesHtml(item){
+const colors=(item.preview||[]).map(function(color){return RWL.sanitizeHex(color,"#7b2cbf")})
+return '<div class="themeStripes">'+(colors.length?colors:["#7b2cbf"]).map(function(color){return '<i style="'+KEEP+'background:'+color+';"></i>'}).join("")+'</div>'
+}
 
 function itemVisualHtml(item,large){
 if(!item)return '<img src="'+idleImages[0]+'" alt="">'
 if(item.category==="name_colors"){
-return '<div class="swatch" style="'+esc(RWL.swatchStyle(item))+'"><span>'+esc(item.name)+'</span></div>'
+return '<div class="swatch" style="'+esc(RWL.swatchStyle(item))+'"><span translate="no">'+esc(item.name)+'</span></div>'
 }
 if(item.category==="nameplates"&&item.asset_url){
 return '<video src="'+esc(item.asset_url)+'" muted loop playsinline preload="'+(large?"auto":"metadata")+'"'+(large?" autoplay":"")+'></video>'
 }
+if(item.category==="launcher_themes"){
+return '<div class="labelVisual">'+themeStripesHtml(item)+'<div class="swatch" style="position:absolute;inset:0;"><span translate="no">'+esc(item.name||"Theme")+'</span></div></div>'
+}
+if(item.category==="licenses"){
+return '<div class="labelVisual"><img class="contain" src="'+categoryImage("licenses")+'" alt=""><div class="swatch" style="position:absolute;inset:0;"><span>'+esc(item.name||"License")+'</span></div></div>'
+}
 if(item.asset_url){
 return '<img class="contain" src="'+esc(item.asset_url)+'" alt="">'
 }
-return '<div class="swatch"><span>'+esc(item.name||"Item")+'</span></div>'
+return '<div class="swatch"><span translate="no">'+esc(item.name||"Item")+'</span></div>'
 }
 
 function buildIdle(){
@@ -351,26 +532,59 @@ buildIdle()
 idleLoop()
 }
 
-function buildReel(reel){
+function buildCategoryReel(reel){
 track.innerHTML=""
-reel.forEach(function(item){
+reel.forEach(function(entry){
 const d=document.createElement("div")
-d.className="item"
-d.style.borderColor=RWL.rarityColor(item&&item.rarity)
-d.innerHTML=itemVisualHtml(item,false)
+d.className="item category"
+d.title=entry.label||CATEGORY_LABELS[entry.category]||"Item"
+d.innerHTML='<img src="'+categoryImage(entry.category)+'" alt="'+esc(d.title)+'">'
 track.appendChild(d)
 })
+}
+
+function lightVisualHtml(item){
+if(!item)return '<img src="'+idleImages[0]+'" alt="">'
+if(item.category==="avatar_decorations"||item.category==="nameplates"){
+return '<img src="'+categoryImage(item.category)+'" alt="">'
+}
+return itemVisualHtml(item,false)
+}
+
+function buildReel(reel,winIndex){
+track.innerHTML=""
+reel.forEach(function(item,index){
+const d=document.createElement("div")
+d.className="item"
+d.style.cssText=KEEP+"border-color:"+RWL.rarityColor(item&&item.rarity)+";"
+const nearWinner=index>=winIndex-MEDIA_WINDOW_BEFORE&&index<=winIndex+MEDIA_WINDOW_AFTER
+d.innerHTML=nearWinner?itemVisualHtml(item,false):lightVisualHtml(item)
+track.appendChild(d)
+})
+}
+
+function preloadReward(reward){
+if(!reward||!reward.asset_url)return
+try{
+if(reward.category==="avatar_decorations"){
+const image=new Image()
+image.decoding="async"
+image.src=reward.asset_url
+}else if(reward.category==="nameplates"){
+fetch(reward.asset_url,{mode:"no-cors"}).catch(function(){})
+}
+}catch(error){}
 }
 
 function easeOutQuart(t){
 return 1-Math.pow(1-t,4)
 }
 
-function animateTo(target,done){
+function animateTo(target,duration,done){
 cancelAnimationFrame(raf)
 const start=performance.now()
 function step(now){
-const progress=Math.min(1,(now-start)/SPIN_DURATION_MS)
+const progress=Math.min(1,(now-start)/duration)
 pos=target*easeOutQuart(progress)
 track.style.transform="translateX("+(-pos)+"px)"
 if(progress<1){
@@ -380,6 +594,13 @@ done()
 }
 }
 raf=requestAnimationFrame(step)
+}
+
+function targetFor(winIndex){
+const viewport=track.parentElement
+const center=viewport.clientWidth/2
+const jitter=(Math.random()-0.5)*(ITEM_WIDTH*0.6)
+return Math.max(0,TRACK_PADDING+winIndex*(ITEM_WIDTH+ITEM_GAP)+ITEM_WIDTH/2-center+jitter)
 }
 
 function setButton(text,disabled){
@@ -393,21 +614,66 @@ if(chests.unlimited)return "SPIN CHEST (∞)"
 return chests.balance>0?"SPIN CHEST ("+chests.balance+" LEFT)":"NO CHESTS LEFT"
 }
 
+function updateOpenAll(chests){
+lastChests=chests||lastChests
+const current=lastChests||{}
+const empty=!current.unlimited&&!(current.balance>0)
+openAll.disabled=empty||opening||!!pendingResult
+openAll.textContent=current.unlimited?"OPEN "+(current.open_all_limit||10)+" CHESTS":(current.balance>0?"OPEN ALL CHESTS ("+current.balance+")":"OPEN ALL CHESTS")
+}
+
+function restoreChestButton(){
+const chests=lastChests||{}
+setButton(chestButtonLabel(chests),!chests.unlimited&&!(chests.balance>0))
+updateOpenAll(chests)
+}
+
 function finish(result){
 const reward=result.reward||{}
 const notes=[]
 if(reward.duplicate){
 notes.push(reward.compensation_lab_coins?"Duplicate · +"+reward.compensation_lab_coins+" LC":"Duplicate · already owned")
 }
-box.style.borderColor=RWL.rarityColor(reward.rarity)
-box.innerHTML='<div class="result">'+itemVisualHtml(reward,true)+'<div class="caption">'+esc(reward.name||"Item")+'<small style="color:'+esc(RWL.rarityColor(reward.rarity))+';">'+esc((reward.rarity||"")+" "+(reward.category_label||""))+'</small>'+(notes.length?'<small>'+esc(notes.join(" · "))+'</small>':"")+'</div></div>'
+if(reward.voucher){
+notes.push("Voucher added to Special Items")
+}
+box.style.cssText=KEEP+"border-color:"+RWL.rarityColor(reward.rarity)+";"
+box.innerHTML='<div class="result">'+itemVisualHtml(reward,true)+'<div class="caption"><span translate="no">'+esc(reward.name||"Item")+'</span><small style="'+KEEP+'color:'+esc(RWL.rarityColor(reward.rarity))+';">'+esc((reward.rarity||"")+" "+(reward.category_label||""))+'</small>'+(notes.length?'<small>'+esc(notes.join(" · "))+'</small>':"")+'</div></div>'
 win.classList.add("active")
-const chests=result.chests||{}
-setButton(chestButtonLabel(chests),!chests.unlimited&&!(chests.balance>0))
+pendingResult=null
+phaseLabel.textContent=""
 opening=false
+restoreChestButton()
+}
+
+function spinItems(){
+if(!pendingResult||opening)return
+opening=true
+setButton("SPINNING...",true)
+updateOpenAll()
+const result=pendingResult
+const reel=Array.isArray(result.reel)&&result.reel.length?result.reel:[result.reward]
+const winIndex=Math.max(0,Math.min(result.win_index||0,reel.length-1))
+buildReel(reel,winIndex)
+pos=0
+track.style.transform="translateX(0px)"
+animateTo(targetFor(winIndex),ITEM_SPIN_MS,function(){finish(result)})
+}
+
+function categoryLanded(result){
+opening=false
+pendingResult=result
+const label=(result.category_label||CATEGORY_LABELS[result.category]||"Item").toUpperCase()
+phaseLabel.textContent="Category: "+(result.category_label||CATEGORY_LABELS[result.category]||"Item")
+setButton("SPIN "+label,false)
+updateOpenAll()
 }
 
 async function spinChest(){
+if(pendingResult){
+spinItems()
+return
+}
 if(opening)return
 if(!RWL.getToken()){
 setButton("LOGIN REQUIRED",true)
@@ -415,6 +681,8 @@ return
 }
 opening=true
 setButton("OPENING...",true)
+updateOpenAll()
+phaseLabel.textContent=""
 let result
 try{
 result=await RWL.apiRequest("/api/chests/open",{method:"POST"})
@@ -422,26 +690,66 @@ result=await RWL.apiRequest("/api/chests/open",{method:"POST"})
 opening=false
 const noChests=error.status===400
 setButton(noChests?"NO CHESTS LEFT":"TRY AGAIN",noChests)
+updateOpenAll()
 if(!noChests)setTimeout(function(){setButton("SPIN CHEST",false)},2500)
 return
 }
 openedAny=true
-const reel=Array.isArray(result.reel)&&result.reel.length?result.reel:[result.reward]
-const winIndex=Math.max(0,Math.min(result.win_index||0,reel.length-1))
-buildReel(reel)
+lastChests=result.chests||lastChests
+preloadReward(result.reward)
+const categoryReel=Array.isArray(result.category_reel)&&result.category_reel.length?result.category_reel:[{category:(result.reward||{}).category,label:result.category_label}]
+const categoryIndex=Math.max(0,Math.min(result.category_win_index||0,categoryReel.length-1))
+setButton("SPINNING...",true)
+buildCategoryReel(categoryReel)
 pos=0
 track.style.transform="translateX(0px)"
-const viewport=track.parentElement
-const center=viewport.clientWidth/2
-const jitter=(Math.random()-0.5)*(ITEM_WIDTH*0.6)
-const target=TRACK_PADDING+winIndex*(ITEM_WIDTH+ITEM_GAP)+ITEM_WIDTH/2-center+jitter
-animateTo(Math.max(0,target),function(){finish(result)})
+animateTo(targetFor(categoryIndex),CATEGORY_SPIN_MS,function(){categoryLanded(result)})
+}
+
+function showSummary(result){
+const rewards=result.rewards||[]
+let html='<div class="summary"><h2>'+esc(String(result.opened||rewards.length))+' chests opened</h2>'
+html+='<div class="summaryMeta">'+(result.lab_coins_awarded?esc("+"+result.lab_coins_awarded+" LC for duplicates · "):"")+'All rewards were added to your inventory.</div>'
+html+='<div class="summaryGrid">'
+rewards.forEach(function(reward){
+const note=reward.duplicate?(reward.compensation_lab_coins?"Duplicate · +"+reward.compensation_lab_coins+" LC":"Duplicate · already owned"):(reward.voucher?"Voucher added to Special Items":"Added to your locker")
+html+='<div class="summaryEntry" style="'+KEEP+'border-color:'+esc(RWL.rarityColor(reward.rarity))+';"><strong translate="no">'+esc(reward.name||"Item")+'</strong><span style="'+KEEP+'color:'+esc(RWL.rarityColor(reward.rarity))+';">'+esc(reward.rarity||"")+'</span><span>'+esc(reward.category_label||"")+'</span><span>'+esc(note)+'</span></div>'
+})
+html+='</div></div>'
+box.style.cssText="width:auto;height:auto;background:transparent;border:none;box-shadow:none;overflow:visible;"
+box.innerHTML=html
+win.classList.add("active")
+}
+
+async function openAllChests(){
+if(opening||pendingResult)return
+if(!RWL.getToken()){
+setButton("LOGIN REQUIRED",true)
+return
+}
+opening=true
+openAll.disabled=true
+openAll.textContent="OPENING..."
+setButton("OPENING...",true)
+try{
+const result=await RWL.apiRequest("/api/chests/open_all",{method:"POST"})
+openedAny=true
+lastChests=result.chests||lastChests
+opening=false
+restoreChestButton()
+showSummary(result)
+}catch(error){
+opening=false
+restoreChestButton()
+phaseLabel.textContent=error.status===429?"You are opening chests too fast. Please wait a moment.":(error.message||"The chests could not be opened.")
+}
 }
 
 function backToChest(){
 win.classList.remove("active")
 box.innerHTML=""
-if(!spin.disabled)startIdle()
+box.style.cssText=""
+if(!spin.disabled&&!pendingResult)startIdle()
 }
 
 function exitChest(){
@@ -452,18 +760,20 @@ window.parent.postMessage({type:"chest_opening_done",opened:openedAny},window.lo
 async function loadSummary(){
 if(!RWL.getToken()){
 setButton("LOGIN REQUIRED",true)
+openAll.disabled=true
 return
 }
 try{
 const chests=await RWL.apiRequest("/api/chests")
-setButton(chestButtonLabel(chests),!chests.unlimited&&!(chests.balance>0))
+lastChests=chests
+restoreChestButton()
 }catch(error){
 setButton("SPIN CHEST",false)
 }
 }
 
 spin.onclick=spinChest
-document.getElementById("close").onclick=exitChest
+openAll.onclick=openAllChests
 document.getElementById("back").onclick=backToChest
 win.onclick=function(e){
 if(e.target===win)backToChest()
@@ -481,5 +791,6 @@ loadSummary()
 })()
 </script>
 
+    <script src="../js/rwl_fx.js"></script>
 </body>
 </html>

@@ -1022,7 +1022,8 @@ function applyConfigDefaults() {
     var sortSel = document.getElementById('sortSelect');
     if (sortSel && config.default_product_filter) {
         var matchedOption = Array.prototype.find.call(sortSel.options, function(o) {
-            return o.textContent.trim() === config.default_product_filter;
+            var label = window.RWLI18n ? RWLI18n.source(o) : o.textContent;
+            return label.trim() === config.default_product_filter;
         });
         if (matchedOption) sortSel.value = matchedOption.value;
     }
@@ -1069,12 +1070,14 @@ async function checkLoginStatus() {
             if (fullUser) sessionStorage.setItem('rickware_user', JSON.stringify(fullUser));
             currentUser = resolvedUser;
             updateUserProfile(resolvedUser);
+            syncAccountPreferences(resolvedUser);
             if (authButtons) authButtons.style.display = 'none';
             if (userProfileBtn) userProfileBtn.style.display = 'flex';
             return;
         }
     }
     if (token && !RWL.getToken()) RWL.clearSession();
+    if (window.RWLTheme && RWLTheme.current()) RWLTheme.clear();
     currentUser = null;
     if (authButtons) authButtons.style.display = 'flex';
     if (userProfileBtn) userProfileBtn.style.display = 'none';
@@ -1100,9 +1103,16 @@ function applyNameColor(el, cosmetics, fallback) {
 }
 
 function userProfileImageSrc(user) {
+    if (user && user.profile_picture_url && /^https?:\/\//.test(user.profile_picture_url)) return user.profile_picture_url;
     if (user && user.profile_picture_base64) return 'data:image/png;base64,' + user.profile_picture_base64;
     if (user && user.profile_picture) return profilePicUrl(user.profile_picture);
     return siteBaseUrl() + 'images/main/logo.webp';
+}
+
+function syncAccountPreferences(user) {
+    if (!user) return;
+    if (window.RWLTheme) RWLTheme.sync(user.equipped_cosmetics || {});
+    if (window.RWLI18n && user.preferred_language && user.preferred_language !== RWLI18n.language()) RWLI18n.setLanguage(user.preferred_language);
 }
 
 function updateUserProfile(user) {
@@ -1308,14 +1318,97 @@ function setupTabs() {
             tabs.forEach(function(b) { b.classList.remove('active'); });
             btn.classList.add('active');
             var key = btn.getAttribute('data-tab');
-            if (key === 'discover') showTab('discoverTab');
+            if (key === 'dashboard') { showTab('dashboardTab'); loadDashboard(); }
+            else if (key === 'discover') showTab('discoverTab');
             else if (key === 'partner') showTab('partnerTab');
             else if (key === 'github') showTab('githubTab');
             else if (key === 'status') { showTab('statusTab'); renderStatusTab(); }
             else if (key === 'news') showTab('newsTab');
             else if (key === 'qa') showTab('qaTab');
+            trackFx('tab', { tab: key });
         });
     });
+}
+
+function trackFx(type, detail) {
+    try { window.dispatchEvent(new CustomEvent('rwl-fx', { detail: Object.assign({ type: type }, detail || {}) })); } catch (e) {}
+}
+
+var dashboardState = { offset: 0, loading: false, query: '', done: false };
+
+function dashboardRankBadge(member) {
+    var type = member.account_type || 'User';
+    return '<span class="dashboard-type-badge" style="' + getAccountTypeBadgeStyle(type) + '">' + escHtml(type) + '</span>';
+}
+
+function buildDashboardCard(member) {
+    var initials = (member.username || '?').split('_').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2) || (member.username || '?')[0].toUpperCase();
+    var avatar = member.profile_picture
+        ? '<img src="' + escHtml(profilePicUrl(member.profile_picture)) + '" class="dashboard-avatar-img" alt="" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'"><div class="dashboard-avatar" style="display:none;">' + escHtml(initials) + '</div>'
+        : '<div class="dashboard-avatar">' + escHtml(initials) + '</div>';
+    var decorationSrc = userDecorationSrc(member);
+    var decorationHtml = decorationSrc ? '<img src="' + escHtml(decorationSrc) + '" alt="" class="dashboard-avatar-decoration">' : '';
+    var permsHtml = (member.account_permissions && member.account_permissions !== '' && member.account_permissions !== 'none')
+        ? '<span class="dashboard-perms-badge">' + escHtml(Array.isArray(member.account_permissions) ? member.account_permissions.join(', ') : member.account_permissions) + '</span>' : '';
+    var card = document.createElement('div');
+    card.className = 'dashboard-member-card' + (member.online ? ' online' : '');
+    card.setAttribute('translate', 'no');
+    card.innerHTML =
+        '<video class="mini-nameplate-bg" autoplay loop muted playsinline src="' + escHtml(userNameplateSrc(member)) + '"></video>' +
+        '<div class="dashboard-card-inner">' +
+            '<div class="dashboard-avatar-wrap">' + avatar + decorationHtml + '<span class="dashboard-presence' + (member.online ? ' online' : '') + '"></span></div>' +
+            '<div class="dashboard-member-info">' +
+                '<span class="dashboard-username" style="' + escHtml(userNameStyle(member)) + '">' + escHtml(member.username) + '</span>' +
+                '<div class="dashboard-badges">' + dashboardRankBadge(member) + permsHtml + '</div>' +
+                '<span class="dashboard-member-since">' + (member.online ? 'Online now' : (member.member_since ? 'Member since ' + escHtml(member.member_since) : '')) + '</span>' +
+            '</div>' +
+        '</div>';
+    var np = card.querySelector('.mini-nameplate-bg');
+    if (np) { np.load(); np.play().catch(function(){}); }
+    return card;
+}
+
+async function loadDashboard(reset) {
+    var grid = document.getElementById('dashboardGrid');
+    if (!grid) return;
+    if (reset) { dashboardState = { offset: 0, loading: false, query: dashboardState.query, done: false }; grid.innerHTML = ''; }
+    if (dashboardState.loading || dashboardState.done) return;
+    dashboardState.loading = true;
+    var loadMore = document.getElementById('dashboardLoadMore');
+    if (dashboardState.offset === 0) grid.innerHTML = '<div class="news-loading">Loading members...</div>';
+    try {
+        var data = await RWL.apiRequest('/api/community/members?offset=' + dashboardState.offset + '&limit=60&q=' + encodeURIComponent(dashboardState.query));
+        if (dashboardState.offset === 0) {
+            grid.innerHTML = '';
+            var countEl = document.getElementById('dashboardOnlineCount');
+            if (countEl) countEl.innerHTML = '<span class="dashboard-online-dot"></span>' + data.online + ' online · ' + data.total + ' members';
+        }
+        (data.members || []).forEach(function(member) { grid.appendChild(buildDashboardCard(member)); });
+        if (!data.members || !data.members.length) {
+            if (dashboardState.offset === 0) grid.innerHTML = '<div class="status-empty">No members found.</div>';
+            dashboardState.done = true;
+        }
+        dashboardState.offset = data.next_offset || dashboardState.offset;
+        dashboardState.done = data.next_offset === null;
+        if (loadMore) loadMore.style.display = dashboardState.done ? 'none' : 'inline-flex';
+    } catch (e) {
+        if (dashboardState.offset === 0) grid.innerHTML = '<div class="status-empty">Members could not be loaded.</div>';
+    } finally {
+        dashboardState.loading = false;
+    }
+}
+
+function setupDashboard() {
+    var search = document.getElementById('dashboardSearch');
+    if (search) {
+        var debounce = null;
+        search.addEventListener('input', function() {
+            if (debounce) clearTimeout(debounce);
+            debounce = setTimeout(function() { dashboardState.query = search.value.trim(); loadDashboard(true); }, 300);
+        });
+    }
+    var loadMore = document.getElementById('dashboardLoadMore');
+    if (loadMore) loadMore.addEventListener('click', function() { loadDashboard(); });
 }
 
 function renderStatusTab() {
@@ -1546,7 +1639,7 @@ async function showBankPage() {
         var popularBadge = pkg.popular ? '<div class="bank-pack-popular">Most Popular</div>' : '';
         return '<div class="bank-coin-pack glass-card' + (pkg.popular ? ' bank-pack-featured' : '') + '" data-pack="' + pkg.id + '">' +
             popularBadge +
-            '<div class="bank-pack-icon"><img src="./images/main/Rickware-Labs_Labs_Coin_LC_Galaxy_Main.png" alt="LC" style="width:48px;height:48px;object-fit:contain;" onerror="this.style.display=\'none\'"></div>' +
+            '<div class="bank-pack-icon"><img src="./images/main/lc_coin_96.webp" alt="LC" decoding="async" style="width:48px;height:48px;object-fit:contain;" onerror="this.style.display=\'none\'"></div>' +
             '<div class="bank-pack-label">' + pkg.label + '</div>' +
             '<div class="bank-pack-coins">' + total + ' <span>LC</span></div>' +
             (pkg.bonus > 0 ? '<div class="bank-pack-bonus">+' + pkg.bonus + ' bonus coins</div>' : '<div class="bank-pack-bonus">&nbsp;</div>') +
@@ -1557,7 +1650,7 @@ async function showBankPage() {
     section.innerHTML =
         '<div class="bank-page">' +
             '<div style="display:flex;align-items:flex-start;gap:24px;">' +
-                '<img src="./images/main/Rickware-Labs_Labs_Coin_LC_Galaxy_Main.png" alt="Lab Coin" style="width:200px;height:200px;object-fit:contain;flex-shrink:0;" onerror="this.style.display=\'none\'">' +
+                '<img src="./images/main/lc_coin_400.webp" alt="Lab Coin" decoding="async" style="width:200px;height:200px;object-fit:contain;flex-shrink:0;" onerror="this.style.display=\'none\'">' +
                 '<div class="bank-page-header glass-card" style="flex:1;">' +
                     '<div class="bank-header-left">' +
                         '<h1><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:10px"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 2 7 22 7"/></svg><span class="shiny-text-js" style="background-image:linear-gradient(120deg,#c97eff 35%,#ffffff 50%,#c97eff 65%);">Lab Bank</span></h1>' +
@@ -1571,7 +1664,7 @@ async function showBankPage() {
                 '</div>' +
             '</div>' +
             '<div class="bank-coin-value-banner glass-card">' +
-                '<div class="bank-coin-icon-big"><img src="./images/main/Rickware-Labs_Labs_Coin_LC_Galaxy_Main.png" alt="LC" style="width:40px;height:40px;object-fit:contain;"></div>' +
+                '<div class="bank-coin-icon-big"><img src="./images/main/lc_coin_96.webp" alt="LC" decoding="async" style="width:40px;height:40px;object-fit:contain;"></div>' +
                 '<div>' +
                     '<div class="bank-coin-value-title"><span class="shiny-text-js" style="background-image:linear-gradient(120deg,#c97eff 35%,#ffffff 50%,#c97eff 65%);">Lab Coin (LC)</span></div>' +
                     '<div class="bank-coin-value-desc">Discord Server XP = <strong style="color:#c97eff">Lab Coins (LC)</strong> &nbsp;|&nbsp; Use coins to purchase tools, licenses and exclusive content</div>' +
@@ -1889,7 +1982,7 @@ function renderCustomerPanelContent() {
                         permsBadgeHtml +
                     '</div>' +
                     '<div class="cp-profile-meta">' +
-                        (fullUser.email_adress ? '<span>' + escHtml(fullUser.email_adress) + '</span>' : '') +
+                        (fullUser.email_adress ? '<span class="cp-email-row"><span class="cp-email-value" id="cpEmailValue" translate="no">' + escHtml(maskedEmail(fullUser.email_adress)) + '</span><button type="button" class="cp-email-toggle" id="cpEmailToggle" title="Show or hide your email address" aria-pressed="false">' + EMAIL_EYE_ICON + '<span>Unhide</span></button></span>' : '') +
                         (fullUser.created_at ? '<span>Member since ' + escHtml(new Date(fullUser.created_at).toLocaleDateString()) + '</span>' : '') +
                     '</div>' +
                 '</div>' +
@@ -1909,10 +2002,109 @@ function renderCustomerPanelContent() {
             '</div>' +
             profileHtml +
             statsHtml +
+            '<div class="cp-section-title"><span class="shiny-text-js" style="background-image:linear-gradient(120deg,#c97eff 35%,#ffffff 50%,#c97eff 65%);">Your Products</span></div>' +
+            ownedProductsHtml(fullUser.owned_products || []) +
             '<div class="cp-section-title"><span class="shiny-text-js" style="background-image:linear-gradient(120deg,#c97eff 35%,#ffffff 50%,#c97eff 65%);">Active Licenses</span></div>' +
             ordersHtml +
         '</div>';
+    setupEmailToggle(section, fullUser.email_adress);
+    setupOwnedProductActions(section, fullUser.owned_products || []);
     applyShinyTextToEls();
+}
+
+function ownedProductsHtml(products) {
+    if (!products.length) {
+        return '<div class="cp-empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(155,0,204,0.4)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><p>You do not own any deliverable products yet.</p></div>';
+    }
+    var rows = products.map(function(p) {
+        var actionHtml;
+        if (p.delivery === 'download') {
+            actionHtml = '<button class="cp-product-btn cp-product-download" data-download-product="' + escHtml(p.product_id) + '" title="Download the source code of this product"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Download</span></button>';
+        } else if (p.delivery === 'launch') {
+            actionHtml = '<button class="cp-product-btn cp-product-launch" data-launch-product="' + escHtml(p.product_id) + '" title="Start this tool through the Rickware - Labs© Launcher"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>Launch</span></button>';
+        } else {
+            actionHtml = '<span class="cp-product-pending">Delivery pending</span>';
+        }
+        return '<div class="cp-product-row" translate="no">' +
+            '<div class="cp-product-meta">' +
+                '<span class="cp-product-name">' + escHtml(p.title) + '</span>' +
+                '<span class="cp-product-cat">' + escHtml(p.category || '') + (p.version ? ' · ' + escHtml(p.version) : '') + '</span>' +
+            '</div>' +
+            '<div class="cp-product-action">' + actionHtml + '</div>' +
+        '</div>';
+    }).join('');
+    return '<div class="cp-products-list">' + rows + '</div>';
+}
+
+function setupOwnedProductActions(section, ownedProducts) {
+    section.querySelectorAll('[data-download-product]').forEach(function(btn) {
+        btn.addEventListener('click', function() { downloadSourceProduct(btn.getAttribute('data-download-product'), btn); });
+    });
+    section.querySelectorAll('[data-launch-product]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var pid = btn.getAttribute('data-launch-product');
+            var owned = (ownedProducts || []).filter(function(p) { return String(p.product_id) === String(pid); })[0];
+            var catalogProduct = (products || []).filter(function(p) { return String(p.product_id) === String(pid); })[0];
+            launchOwnedProduct(catalogProduct || owned || { product_id: pid }, btn);
+        });
+    });
+}
+
+async function downloadSourceProduct(productId, button) {
+    var token = sessionStorage.getItem('rickware_token');
+    if (!token) { showBanner('Please log in to download this product.', 'error'); return; }
+    if (button) button.disabled = true;
+    try {
+        var response = await fetch(apiUrl('/api/product/source'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ product_id: productId, hwid: 'website' })
+        });
+        if (!response.ok) {
+            var detail = 'The download is not available.';
+            try { detail = (await response.json()).detail || detail; } catch (e) {}
+            showBanner(detail, 'error');
+            return;
+        }
+        var fileName = response.headers.get('X-File-Name') || 'rickware-labs-product.zip';
+        var blob = await response.blob();
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(function() { URL.revokeObjectURL(url); }, 4000);
+        showBanner('Download started.', 'success');
+    } catch (e) {
+        showBanner('The download failed. Please try again.', 'error');
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
+var EMAIL_EYE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+var EMAIL_EYE_OFF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function maskedEmail(email) {
+    var value = String(email || '');
+    var at = value.indexOf('@');
+    if (at < 1) return '••••••••••';
+    return '••••••••@' + '•'.repeat(Math.min(Math.max(value.length - at - 1, 6), 12));
+}
+
+function setupEmailToggle(container, email) {
+    var toggle = container ? container.querySelector('#cpEmailToggle') : null;
+    var valueEl = container ? container.querySelector('#cpEmailValue') : null;
+    if (!toggle || !valueEl || !email) return;
+    var visible = false;
+    toggle.addEventListener('click', function() {
+        visible = !visible;
+        valueEl.textContent = visible ? email : maskedEmail(email);
+        toggle.innerHTML = (visible ? EMAIL_EYE_OFF_ICON : EMAIL_EYE_ICON) + '<span>' + (visible ? 'Hide' : 'Unhide') + '</span>';
+        toggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    });
 }
 
 var reviewVotes = {};
@@ -2193,7 +2385,7 @@ function buildCommentHtml(c, postIdx, commentPath) {
                     '<span class="forum-comment-time">' + escHtml(c.time) + '</span>' +
                 '</div>' +
             '</div>' +
-            '<div class="forum-comment-text">' + escHtml(c.text) + '</div>' +
+            '<div class="forum-comment-text" translate="no">' + escHtml(c.text) + '</div>' +
             '<div class="forum-comment-actions">' +
                 '<button class="forum-vote-btn forum-comment-vote' + (c._likedByMe ? ' forum-voted-like' : '') + (!currentUser ? ' vote-disabled' : '') + '" data-vote-cooldown-key="comment-' + postIdx + '-' + commentPath + '-like" ' + (!currentUser ? 'disabled title="Login to vote"' : 'onclick="forumCommentVote(' + postIdx + ',\'' + commentPath + '\',\'like\')"') + '>' +
                     '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>' +
@@ -2251,8 +2443,8 @@ function buildForumPostCard(p, idx) {
                 '</div>' +
             '</div>' +
         '</div>' +
-        '<div class="forum-post-title">' + escHtml(p.title) + '</div>' +
-        '<div class="forum-post-body">' + escHtml(p.body) + '</div>' +
+        '<div class="forum-post-title" translate="no">' + escHtml(p.title) + '</div>' +
+        '<div class="forum-post-body" translate="no">' + escHtml(p.body) + '</div>' +
         '<div class="forum-post-footer">' +
             '<button class="forum-vote-btn' + (p._likedByMe ? ' forum-voted-like' : '') + (!currentUser ? ' vote-disabled' : '') + '" data-vote-cooldown-key="post-' + idx + '-like" ' + (!currentUser ? 'disabled title="Login to vote"' : 'onclick="forumVote(' + idx + ',\'like\')"') + '>' +
                 '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>' +
@@ -2959,15 +3151,15 @@ async function showReviewsPage() {
         card.innerHTML =
             '<div class="review-card-top">' +
                 '<div class="review-stars">' + starsSVG(r.stars, 13) + '</div>' +
-                '<div class="review-product-type">' + escHtml(r.product) + '</div>' +
+                '<div class="review-product-type" translate="no">' + escHtml(r.product) + '</div>' +
             '</div>' +
             '<div class="review-product-meta-header">' +
                 (r.product_type ? '<span class="review-category-label">' + escHtml(r.product_type) + '</span>' : '') +
-                '<span class="review-product-name-label">' + escHtml(r.product || r.product_description || '') + '</span>' +
+                '<span class="review-product-name-label" translate="no">' + escHtml(r.product || r.product_description || '') + '</span>' +
             '</div>' +
             '<div>' +
-                '<div class="review-body-preview" id="rv-preview-'+idx+'">' + escHtml(shortText) + '</div>' +
-                '<div class="review-body-full" id="rv-full-'+idx+'">' + escHtml(r.text) + '</div>' +
+                '<div class="review-body-preview" translate="no" id="rv-preview-'+idx+'">' + escHtml(shortText) + '</div>' +
+                '<div class="review-body-full" translate="no" id="rv-full-'+idx+'">' + escHtml(r.text) + '</div>' +
                 (hasMore ? '<button class="review-read-more" id="rv-btn-'+idx+'" onclick="toggleReviewBody('+idx+')">Read more</button>' : '') +
             '</div>' +
             '<div class="review-user-row">' +
@@ -2997,6 +3189,7 @@ async function showReviewsPage() {
         }
     });
     applyShinyTextToEls();
+    applyAllReviewVoteStates();
     startReviewsLiveRefresh();
 }
 
@@ -3043,51 +3236,59 @@ function applyReviewVoteCooldown(btn, key, seconds) {
     reviewVoteCooldowns[key] = { interval: interval, until: Date.now() + seconds * 1000 };
 }
 
-async function voteReview(idx, type) {
-    if (!canVoteReview(reviewsApiData[idx])) return;
+var reviewVoteInFlight = {};
+
+function applyReviewVoteState(idx, likes, dislikes, myVote) {
     var key = 'rv-' + idx;
-    var likeKey = key + '-like';
-    var dislikeKey = key + '-dislike';
-    var crossKey = type === 'like' ? dislikeKey : likeKey;
-    if (reviewVoteCooldowns[crossKey]) return;
-    var prev = reviewVotes[key];
-    var likeBtn = document.getElementById('rv-like-'+idx);
-    var dislikeBtn = document.getElementById('rv-dislike-'+idx);
-    var likeCount = document.getElementById('rv-like-count-'+idx);
-    var dislikeCount = document.getElementById('rv-dislike-count-'+idx);
-    if (!likeBtn || !dislikeBtn) return;
-    var lc = parseInt(likeCount.textContent) || 0;
-    var dc = parseInt(dislikeCount.textContent) || 0;
-    var action = type;
-    if (prev === type) {
-        reviewVotes[key] = null;
-        likeBtn.classList.remove('voted-like');
-        dislikeBtn.classList.remove('voted-dislike');
-        if (type === 'like') likeCount.textContent = lc - 1;
-        else dislikeCount.textContent = dc - 1;
-        action = type === 'like' ? 'unlike' : 'undislike';
-    } else {
-        if (prev === 'like') { likeBtn.classList.remove('voted-like'); likeCount.textContent = lc - 1; lc--; }
-        if (prev === 'dislike') { dislikeBtn.classList.remove('voted-dislike'); dislikeCount.textContent = dc - 1; dc--; }
-        reviewVotes[key] = type;
-        if (type === 'like') { likeBtn.classList.add('voted-like'); likeCount.textContent = lc + 1; }
-        else { dislikeBtn.classList.add('voted-dislike'); dislikeCount.textContent = dc + 1; }
-        var cooldownBtn = type === 'like' ? dislikeBtn : likeBtn;
-        applyReviewVoteCooldown(cooldownBtn, crossKey, 10);
+    var likeBtn = document.getElementById('rv-like-' + idx);
+    var dislikeBtn = document.getElementById('rv-dislike-' + idx);
+    var likeCount = document.getElementById('rv-like-count-' + idx);
+    var dislikeCount = document.getElementById('rv-dislike-count-' + idx);
+    reviewVotes[key] = myVote || null;
+    if (likeBtn) likeBtn.classList.toggle('voted-like', myVote === 'like');
+    if (dislikeBtn) dislikeBtn.classList.toggle('voted-dislike', myVote === 'dislike');
+    if (likeCount) likeCount.textContent = Math.max(0, parseInt(likes, 10) || 0);
+    if (dislikeCount) dislikeCount.textContent = Math.max(0, parseInt(dislikes, 10) || 0);
+    var review = reviewsApiData[idx];
+    if (review) {
+        review.likes = Math.max(0, parseInt(likes, 10) || 0);
+        review.dislikes = Math.max(0, parseInt(dislikes, 10) || 0);
+        review._likedByMe = myVote === 'like';
+        review._dislikedByMe = myVote === 'dislike';
     }
-    if (currentUser) {
-        var review = reviewsApiData[idx];
-        var token = sessionStorage.getItem('rickware_token');
-        var accountData = getAccountData();
-        if (review && review.review_id && token && accountData) {
-            try {
-                await fetch(apiUrl('/api/reviews/like'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ review_id: review.review_id, action: action })
-                });
-            } catch(e) {}
-        }
+}
+
+function applyAllReviewVoteStates() {
+    reviewsApiData.forEach(function(review, idx) {
+        applyReviewVoteState(idx, review.likes, review.dislikes, review._likedByMe ? 'like' : (review._dislikedByMe ? 'dislike' : null));
+    });
+}
+
+async function voteReview(idx, type) {
+    var review = reviewsApiData[idx];
+    if (!canVoteReview(review) || !review.review_id) return;
+    var key = 'rv-' + idx;
+    if (reviewVoteInFlight[key]) return;
+    var likeCount = document.getElementById('rv-like-count-' + idx);
+    var dislikeCount = document.getElementById('rv-dislike-count-' + idx);
+    if (!likeCount || !dislikeCount) return;
+    var prev = reviewVotes[key] || null;
+    var prevLikes = parseInt(likeCount.textContent, 10) || 0;
+    var prevDislikes = parseInt(dislikeCount.textContent, 10) || 0;
+    var next = prev === type ? null : type;
+    var action = next === null ? (type === 'like' ? 'unlike' : 'undislike') : type;
+    var likes = prevLikes - (prev === 'like' ? 1 : 0) + (next === 'like' ? 1 : 0);
+    var dislikes = prevDislikes - (prev === 'dislike' ? 1 : 0) + (next === 'dislike' ? 1 : 0);
+    applyReviewVoteState(idx, likes, dislikes, next);
+    reviewVoteInFlight[key] = true;
+    try {
+        var data = await RWL.apiRequest('/api/reviews/like', { method: 'POST', body: { review_id: review.review_id, action: action } });
+        if (data && typeof data.likes === 'number') applyReviewVoteState(idx, data.likes, data.dislikes, data.my_vote || null);
+    } catch (error) {
+        applyReviewVoteState(idx, prevLikes, prevDislikes, prev);
+        showBanner(error && error.message ? error.message : 'Your vote could not be saved. Please try again.', 'error');
+    } finally {
+        setTimeout(function() { delete reviewVoteInFlight[key]; }, 600);
     }
 }
 
@@ -3222,9 +3423,21 @@ function getProductImageUrl(url) {
     return './images/products/' + trimmed;
 }
 
+var PRODUCT_CARD_IMAGE_VARIANTS = {
+    'discord_tools/Rickware-Labs_X_Nexus_Discord_Server_Joiner_Main.webp': 'discord_tools/Rickware-Labs_X_Nexus_Discord_Server_Joiner_Main_card.webp',
+    'discord_tools/Rickware-Labs_X_Nexus_Discord_Token_Gen_Main.webp': 'discord_tools/Rickware-Labs_X_Nexus_Discord_Token_Gen_Main_card.webp',
+    'discord_bots/Rickware-Lab_Only_DM_Captcha_Verify_System_Main.webp': 'discord_bots/Rickware-Lab_Only_DM_Captcha_Verify_System_Main_card.webp'
+};
+
+function productCardImageUrl(url) {
+    var trimmed = String(url || '').trim();
+    return getProductImageUrl(PRODUCT_CARD_IMAGE_VARIANTS[trimmed] || url);
+}
+
 function buildPartnerCard(p) {
     var card = document.createElement('div');
     card.className = 'partner-card';
+    trackFx('partner', { id: String(p.title || p.name || '').slice(0, 120) });
 
     var imgArea = document.createElement('div');
     imgArea.className = 'partner-image-area';
@@ -3232,6 +3445,8 @@ function buildPartnerCard(p) {
     if (p.preview_image_url && p.preview_image_url.trim()) {
         var img = document.createElement('img');
         img.className = 'partner-preview-img';
+        img.loading = 'lazy';
+        img.decoding = 'async';
         img.src = getPartnerImageUrl(p.preview_image_url);
         img.alt = p.title;
         img.onerror = function() { img.remove(); };
@@ -3480,8 +3695,11 @@ function setupSearch() {
         return false;
     }
 
+    var searchTrackTimer = null;
     input.addEventListener('input', function() {
         var val = input.value.trim();
+        if (searchTrackTimer) clearTimeout(searchTrackTimer);
+        if (val.length >= 2) searchTrackTimer = setTimeout(function() { trackFx('search', { value: val }); }, 900);
         if (!val || !productsData || !productsData.products) {
             suggestions.style.display = 'none';
             return;
@@ -3559,6 +3777,8 @@ function loadPartnersList() {
                     if (p.preview_image_url && p.preview_image_url.trim()) {
                         var img = document.createElement('img');
                         img.className = 'partner-list-avatar';
+                        img.loading = 'lazy';
+                        img.decoding = 'async';
                         img.src = getPartnerImageUrl(p.preview_image_url);
                         img.alt = p.owner_name || '';
                         img.onerror = function() {
@@ -3639,8 +3859,8 @@ async function loadNews() {
         if (published) html += '<span class="news-date">' + escHtml(published) + '</span>';
         if (type) html += '<span class="news-category">' + escHtml(type) + '</span>';
         html += '</div>';
-        html += '<h2 class="news-card-title"><span class="shiny-text-js" style="background-image:linear-gradient(120deg,#c97eff 35%,#ffffff 50%,#c97eff 65%);">' + escHtml(title) + '</span></h2>';
-        html += '<p class="news-card-body">' + escHtml(description) + '</p>';
+        html += '<h2 class="news-card-title" translate="no"><span class="shiny-text-js" style="background-image:linear-gradient(120deg,#c97eff 35%,#ffffff 50%,#c97eff 65%);">' + escHtml(title) + '</span></h2>';
+        html += '<p class="news-card-body" translate="no">' + escHtml(description) + '</p>';
         if (author) html += '<div class="news-card-footer"><span class="news-author">by ' + escHtml(author) + '</span></div>';
         html += '</div>';
     });
@@ -3668,7 +3888,7 @@ async function loadQA() {
     items.forEach(function(item) {
         html += '<div class="qa-item">';
         html += '<button class="qa-toggle"><span>' + escHtml(item.title || '') + '</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>';
-        html += '<div class="qa-answer">' + escHtml(item.description || '') + '</div>';
+        html += '<div class="qa-answer" translate="no">' + escHtml(item.description || '') + '</div>';
         html += '</div>';
     });
     list.innerHTML = html;
@@ -3808,6 +4028,7 @@ async function loadGithubTab() {
         grid.appendChild(buildProductCard(p, false));
     });
     applyShinyTextToEls();
+    populateViewCounts(grid);
 }
 
 function renderGithubProfileStats(container, udata, username, profileEntry) {
@@ -3902,6 +4123,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     applyConfigVisibility();
     setupNavigation();
     setupTabs();
+    setupDashboard();
     setupLoginRegisterButtons();
     setupProfileSidebar();
     updateLanguage();
@@ -3935,10 +4157,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    loadPartners();
-    loadPartnersList();
-    loadNews();
-    loadQA();
+    runWhenVisible(document.getElementById('partnerTab'), function() { loadPartners(); loadPartnersList(); });
+    runWhenVisible(document.getElementById('newsTab'), loadNews);
+    runWhenVisible(document.getElementById('qaTab'), loadQA);
     setupDropdowns();
     setupMobileMenu();
     setupQAToggles();
@@ -3971,6 +4192,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     applyShinyTextToEls();
     setTimeout(applyShinyTextToEls, 800);
 });
+
+function runWhenVisible(element, callback) {
+    if (!element) return;
+    if (!('IntersectionObserver' in window)) {
+        callback();
+        return;
+    }
+    var observer = new IntersectionObserver(function(entries) {
+        var visible = entries.some(function(entry) { return entry.isIntersecting; });
+        if (!visible) return;
+        observer.disconnect();
+        callback();
+    }, { rootMargin: '200px' });
+    observer.observe(element);
+}
 
 function setupMobileMenu() {
     var btn = document.getElementById('mobileMenuBtn');
@@ -4161,6 +4397,7 @@ function showMaintenanceScreen() {
 }
 
 async function loadProducts() {
+    if (!document.getElementById('productsGrid')) return;
     if (config.maintenance_mode === true) {
         showMaintenanceScreen();
         return;
@@ -4221,6 +4458,7 @@ function buildCategoryTabs() {
         var btn = document.createElement('button');
         btn.className = 'category-tab';
         btn.setAttribute('data-category', name);
+        btn.setAttribute('translate', 'no');
         btn.textContent = name;
         btn.addEventListener('click', function() {
             document.querySelectorAll('.category-tab').forEach(function(b) { b.classList.remove('active'); });
@@ -4254,6 +4492,25 @@ function buildCategoryTabs() {
             renderProducts('coming-soon');
         });
         scroll.appendChild(soonBtn);
+    }
+    if (currentUser) {
+        var ownedBtn = document.createElement('button');
+        ownedBtn.className = 'category-tab category-tab-owned';
+        ownedBtn.setAttribute('data-category', 'owned');
+        ownedBtn.title = 'Products you own or can use with your account';
+        ownedBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg><span>Owned</span>';
+        ownedBtn.addEventListener('click', function() {
+            document.querySelectorAll('.category-tab').forEach(function(b) { b.classList.remove('active'); });
+            ownedBtn.classList.add('active');
+            currentCategory = 'owned';
+            currentPage = 1;
+            searchActiveQuery = '';
+            ownedSearchQuery = '';
+            var si = document.getElementById('searchInput');
+            if (si) si.value = '';
+            renderProducts('owned');
+        });
+        scroll.insertBefore(ownedBtn, scroll.firstChild);
     }
     var allBtn2 = scroll.querySelector('[data-category="all"]');
     if (allBtn2) {
@@ -4387,6 +4644,8 @@ function formatCompactCount(rawValue) {
 function buildProductStatsHtml(p, iconSize) {
     var totalUsers = formatCompactCount(p.total_users);
     var totalDownloads = formatCompactCount(p.total_downloads);
+    var viewsKey = isGithubProduct(p) ? normalizeGithubUrl(p.github_url) : String(p.product_id || '');
+    var viewsType = isGithubProduct(p) ? 'github' : 'product';
     return '<div class="product-stats-inline">' +
         '<span class="product-stat-item" title="Active users (total licenses)">' +
         '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
@@ -4394,7 +4653,26 @@ function buildProductStatsHtml(p, iconSize) {
         '<span class="product-stat-item" title="Total downloads">' +
         '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
         '<span class="product-stat-value">' + totalDownloads + '</span></span>' +
+        (viewsKey ? '<span class="product-stat-item product-stat-views" title="Unique views" data-views-type="' + viewsType + '" data-views-key="' + escHtml(viewsKey) + '">' +
+        '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+        '<span class="product-stat-value">0</span></span>' : '') +
         '</div>';
+}
+
+function populateViewCounts(root) {
+    if (!window.RWLViews) return;
+    var scope = root || document;
+    ['product', 'github'].forEach(function(type) {
+        var nodes = scope.querySelectorAll('[data-views-type="' + type + '"]');
+        if (!nodes.length) return;
+        RWLViews.load(type).then(function(views) {
+            nodes.forEach(function(node) {
+                var value = views[node.getAttribute('data-views-key')] || 0;
+                var valueEl = node.querySelector('.product-stat-value');
+                if (valueEl) valueEl.textContent = formatCompactCount(value);
+            });
+        });
+    });
 }
 
 function buildGithubIconSvg(iconSize) {
@@ -4423,7 +4701,8 @@ function toggleWishlistProduct(p) {
     renderWishlistDropdown();
 }
 
-function buildProductCard(p, showCategory) {
+function buildProductCard(p, showCategory, mode) {
+    var ownedMode = mode === 'owned';
     var card = document.createElement('div');
     card.className = 'product-card';
     if (p.id) card.setAttribute('data-product-id', String(p.id));
@@ -4434,7 +4713,9 @@ function buildProductCard(p, showCategory) {
     if (p.preview_image_url && p.preview_image_url.trim()) {
         var img = document.createElement('img');
         img.className = 'product-preview-img';
-        img.src = getProductImageUrl(p.preview_image_url);
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.src = productCardImageUrl(p.preview_image_url);
         img.alt = p.title;
         img.onerror = function() { img.remove(); };
         imgArea.appendChild(img);
@@ -4452,6 +4733,7 @@ function buildProductCard(p, showCategory) {
     if (p.banner && p.banner.trim()) {
         var bannerEl = document.createElement('div');
         bannerEl.className = 'product-banner-label';
+        bannerEl.setAttribute('translate', 'no');
         if (p.banner_color && p.banner_color.trim()) {
             bannerEl.style.backgroundColor = p.banner_color.trim();
         }
@@ -4469,6 +4751,7 @@ function buildProductCard(p, showCategory) {
     if (p.version && p.version.trim()) {
         var verEl = document.createElement('div');
         verEl.className = 'product-version-label';
+        verEl.setAttribute('translate', 'no');
         verEl.textContent = p.version;
         imgArea.appendChild(verEl);
     }
@@ -4510,11 +4793,13 @@ function buildProductCard(p, showCategory) {
     titleEl.className = 'product-title-row';
     var titleText = document.createElement('div');
     titleText.className = 'product-title';
+    titleText.setAttribute('translate', 'no');
     titleText.innerHTML = '<span class="shiny-text-js" style="background-image:linear-gradient(120deg,#c97eff 35%,#ffffff 50%,#c97eff 65%);">' + escHtml(p.title) + '</span>';
     titleEl.appendChild(titleText);
     if (showCategory && p.category) {
         var catBadge = document.createElement('span');
         catBadge.className = 'product-card-category-badge';
+        catBadge.setAttribute('translate', 'no');
         catBadge.textContent = p.category;
         titleEl.appendChild(catBadge);
     }
@@ -4523,6 +4808,7 @@ function buildProductCard(p, showCategory) {
     if (p.description && p.description.trim()) {
         var desc = document.createElement('div');
         desc.className = 'product-description';
+        desc.setAttribute('translate', 'no');
         desc.textContent = p.description;
         body.appendChild(desc);
     }
@@ -4567,6 +4853,32 @@ function buildProductCard(p, showCategory) {
     actions.className = 'product-card-actions';
 
     var isFree = isFreeProduct(p);
+
+    if (ownedMode) {
+        var launchBtn = document.createElement('button');
+        launchBtn.className = 'product-btn product-btn-launch';
+        launchBtn.title = isGithubProduct(p) ? 'Open the GitHub repository in a new tab' : 'Install or start this tool in the Rickware - Labs© Launcher';
+        launchBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 4 20 12 6 20 6 4"/></svg> Launch';
+        launchBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            launchOwnedProduct(p, launchBtn);
+        });
+        actions.appendChild(launchBtn);
+        if (p.discord_url && p.discord_url.trim()) {
+            var ownedDiscordBtn = document.createElement('a');
+            ownedDiscordBtn.className = 'product-btn product-btn-discord';
+            ownedDiscordBtn.href = p.discord_url;
+            ownedDiscordBtn.target = '_blank';
+            ownedDiscordBtn.rel = 'noopener noreferrer';
+            ownedDiscordBtn.title = 'Open the Discord server of this product';
+            ownedDiscordBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.3087 23.0133 30.1353 26.2532 30.1067 30.1693C30.1067 34.1136 27.2801 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9006 23.0133 53.7272 26.2532 53.6986 30.1693C53.6986 34.1136 50.9006 37.3253 47.3178 37.3253Z"/></svg>';
+            ownedDiscordBtn.addEventListener('click', function(e) { e.stopPropagation(); });
+            actions.appendChild(ownedDiscordBtn);
+        }
+        card.appendChild(actions);
+        card.addEventListener('click', function() { openProductModal(p, { infoOnly: true }); });
+        return card;
+    }
 
     var wishBtn = document.createElement('button');
     wishBtn.className = 'product-btn product-btn-wishlist' + (isInWishlist(p) ? ' active' : '');
@@ -4634,9 +4946,145 @@ function buildProductCard(p, showCategory) {
     return card;
 }
 
+var ownedSearchQuery = '';
+
+function isComingSoonProduct(p) {
+    var banner = (p.banner || '').toLowerCase().trim();
+    return banner.indexOf('soon') >= 0 || banner.indexOf('coming soon') >= 0;
+}
+
+function hasAllProductsAccess(user) {
+    if (!user) return false;
+    if (user.all_products_access === true || user.all_products_access === false) return user.all_products_access;
+    var role = String(user.role || '').toLowerCase();
+    return role === 'admin' || role === 'unlockall';
+}
+
+function ownedProductList() {
+    if (!productsData || !productsData.products || !currentUser) return [];
+    var available = productsData.products.filter(function(p) { return !isComingSoonProduct(p); });
+    if (hasAllProductsAccess(currentUser)) return available;
+    var owned = {};
+    if (Array.isArray(currentUser.owned_product_ids)) {
+        currentUser.owned_product_ids.forEach(function(productId) { owned[String(productId)] = true; });
+    } else {
+        (currentUser.license_keys || []).forEach(function(entry) {
+            if (entry && entry.is_valid && entry.product_id) owned[String(entry.product_id)] = true;
+        });
+    }
+    return available.filter(function(p) { return p.product_id && owned[String(p.product_id)]; });
+}
+
+function ownedCategoryOrder() {
+    var order = [];
+    if (productsData && productsData.categorys && productsData.categorys[0]) {
+        var categories = productsData.categorys[0];
+        Object.keys(categories).forEach(function(key) { if (order.indexOf(categories[key]) < 0) order.push(categories[key]); });
+    }
+    return order;
+}
+
+function launchOwnedProduct(p, button) {
+    if (isGithubProduct(p)) {
+        openGithubProductPage(p.github_url);
+        return;
+    }
+    if (!window.RWLLauncher || !RWLLauncher.isLauncher()) {
+        showBanner('Open the Rickware - Labs© Launcher to install and start this tool.', 'info');
+        return;
+    }
+    if (!p.product_id) {
+        showBanner('This product cannot be started from the launcher.', 'error');
+        return;
+    }
+    if (button) button.disabled = true;
+    RWLLauncher.runAction(p.product_id).then(function() {
+        if (button) button.disabled = false;
+    });
+}
+
+function renderOwnedResults(grid) {
+    var toolbar = grid.querySelector('.owned-toolbar');
+    while (toolbar && toolbar.nextSibling) grid.removeChild(toolbar.nextSibling);
+    var list = ownedProductList();
+    var query = ownedSearchQuery.trim().toLowerCase();
+    if (query) {
+        list = list.filter(function(p) {
+            return [p.title, p.description, p.full_description, p.category].some(function(value) {
+                return value && String(value).toLowerCase().indexOf(query) >= 0;
+            });
+        });
+    }
+    var countEl = grid.querySelector('.owned-count');
+    if (countEl) countEl.textContent = list.length + (list.length === 1 ? ' product' : ' products');
+    if (!list.length) {
+        var empty = document.createElement('div');
+        empty.className = 'owned-empty';
+        empty.textContent = query ? 'No owned products match your search.' : 'You do not own any products yet. Licenses from purchases, the Lab-Pass and Mystery Chest vouchers appear here.';
+        grid.appendChild(empty);
+        return;
+    }
+    var sortVal = document.getElementById('sortSelect') ? document.getElementById('sortSelect').value : 'all';
+    var groups = {};
+    list.forEach(function(p) {
+        var key = p.category || 'Other';
+        (groups[key] = groups[key] || []).push(p);
+    });
+    var order = ownedCategoryOrder();
+    var keys = Object.keys(groups).sort(function(left, right) {
+        var leftIndex = order.indexOf(left);
+        var rightIndex = order.indexOf(right);
+        if (leftIndex < 0) leftIndex = 999;
+        if (rightIndex < 0) rightIndex = 999;
+        return leftIndex - rightIndex || left.localeCompare(right);
+    });
+    keys.forEach(function(key) {
+        var items = groups[key].slice();
+        if (sortVal === 'price-low' || sortVal === 'price-high') {
+            items.sort(function(a, b) {
+                var ai = getProductPriceInfo(a), bi = getProductPriceInfo(b);
+                var av = ai.type === 'free' ? 0 : (sortVal === 'price-low' ? (ai.min || ai.price || 0) : (ai.max || ai.price || 0));
+                var bv = bi.type === 'free' ? 0 : (sortVal === 'price-low' ? (bi.min || bi.price || 0) : (bi.max || bi.price || 0));
+                return sortVal === 'price-low' ? av - bv : bv - av;
+            });
+        }
+        var title = document.createElement('div');
+        title.className = 'owned-group-title';
+        title.innerHTML = '<b translate="no">' + escHtml(key) + '</b><span>(' + items.length + ')</span>';
+        grid.appendChild(title);
+        items.forEach(function(p) { grid.appendChild(buildProductCard(p, false, 'owned')); });
+    });
+    applyShinyTextToEls();
+    populateViewCounts(grid);
+}
+
+function renderOwnedProducts() {
+    var grid = document.getElementById('productsGrid');
+    if (!grid) return;
+    if (searchActiveQuery) ownedSearchQuery = searchActiveQuery.slice(0, 100);
+    grid.innerHTML = '';
+    var toolbar = document.createElement('div');
+    toolbar.className = 'owned-toolbar';
+    toolbar.innerHTML = '<label class="owned-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><input type="text" id="ownedSearchInput" placeholder="Search your products" autocomplete="off"></label>' +
+        '<div><span class="owned-count"></span>' + (hasAllProductsAccess(currentUser) ? '<span class="owned-access-badge" title="Your account can use every product">All Products Unlocked</span>' : '') + '</div>';
+    grid.appendChild(toolbar);
+    var input = toolbar.querySelector('#ownedSearchInput');
+    input.value = ownedSearchQuery;
+    input.addEventListener('input', function() {
+        ownedSearchQuery = input.value.slice(0, 100);
+        renderOwnedResults(grid);
+    });
+    renderOwnedResults(grid);
+    renderPagination(0, 0);
+}
+
 function renderProducts(category) {
     var grid = document.getElementById('productsGrid');
     if (!grid || !productsData || !productsData.products) return;
+    if (category === 'owned') {
+        renderOwnedProducts();
+        return;
+    }
 
     var isComingSoon = function(p) {
         var b = (p.banner || '').toLowerCase().trim();
@@ -4716,6 +5164,7 @@ function renderProducts(category) {
     });
     renderPagination(totalPages, currentPage);
     applyShinyTextToEls();
+    populateViewCounts(grid);
 }
 
 function renderPagination(totalPages, page) {
@@ -4742,7 +5191,15 @@ function goToPage(n) {
     if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function singleLicenseKey(p) {
+    if (p.price !== null && p.price !== undefined && p.price !== '') return null;
+    var cats = p.license_categories && p.license_categories[0] ? p.license_categories[0] : {};
+    var keys = Object.keys(cats);
+    return keys.length === 1 ? keys[0] : null;
+}
+
 function addToCart(p, licenseKey) {
+    if (!licenseKey) licenseKey = singleLicenseKey(p);
     var uid = p.category + '_' + p.id + (licenseKey ? '_' + licenseKey : '');
     var existing = cart.find(function(c) { return c._uid === uid; });
     if (existing) {
@@ -4764,10 +5221,13 @@ function addToCart(p, licenseKey) {
 
 var selectedLicenseKey = null;
 
-function openProductModal(p) {
+function openProductModal(p, options) {
+    var infoOnly = !!(options && options.infoOnly);
     selectedLicenseKey = null;
     window._rwlActiveProduct = p;
     RWL.trackEvent('browse_tools', String(p.product_id || p.id || '').slice(0, 40));
+    if (isGithubProduct(p)) trackFx('github', { id: normalizeGithubUrl(p.github_url) });
+    else trackFx('product', { id: String(p.product_id || p.id || '') });
     var overlay = document.getElementById('productModalOverlay');
     var inner = document.getElementById('productModalInner');
     if (!overlay || !inner) return;
@@ -4798,7 +5258,7 @@ function openProductModal(p) {
             html += '<img class="modal-gallery-img' + (idx === 0 ? ' active' : '') + '" src="' + src + '" alt="Image ' + (idx+1) + '" style="object-fit:contain;">';
         });
         if (p.banner && p.banner.trim()) {
-            html += '<div class="modal-gallery-banner-label">' + escHtml(p.banner) + '</div>';
+            html += '<div class="modal-gallery-banner-label" translate="no">' + escHtml(p.banner) + '</div>';
         }
         if (images.length > 1) {
             html += '<button class="modal-gallery-nav modal-gallery-prev" id="galleryPrev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>';
@@ -4809,15 +5269,19 @@ function openProductModal(p) {
     }
 
     html += '<div class="modal-header">';
-    html += '<div class="modal-title">' + escHtml(p.title) + '</div>';
+    html += '<div class="modal-title" translate="no">' + escHtml(p.title) + '</div>';
     html += '<div class="modal-badges">';
-    if (p.version) html += '<span class="modal-version-badge">' + escHtml(p.version) + '</span>';
-    if (p.category) html += '<span class="modal-category-badge">' + escHtml(p.category) + '</span>';
+    if (p.version) html += '<span class="modal-version-badge" translate="no">' + escHtml(p.version) + '</span>';
+    if (p.category) html += '<span class="modal-category-badge" translate="no">' + escHtml(p.category) + '</span>';
     html += '</div></div>';
+
+    if (infoOnly) {
+        html += '<div class="modal-info-note"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg><span>You own this product. Launch it with the Rickware - Labs© Launcher.</span></div>';
+    }
 
     var descText = (p.full_description && p.full_description.trim()) ? p.full_description : (p.description || '');
     if (descText) {
-        html += '<div class="modal-description">' + formatDescription(descText) + '</div>';
+        html += '<div class="modal-description" translate="no">' + formatDescription(descText) + '</div>';
     }
 
     html += '<div class="modal-toggles">';
@@ -4834,7 +5298,7 @@ function openProductModal(p) {
     html += buildProductStatsHtml(p, 15);
     html += '</div>';
 
-    if (!isFree && hasMultiLicense) {
+    if (!infoOnly && !isFree && hasMultiLicense) {
         html += '<div class="modal-section-title">Select License</div>';
         html += '<div class="modal-license-grid" id="modalLicenseGrid">';
         licKeys.forEach(function(k) {
@@ -4858,17 +5322,24 @@ function openProductModal(p) {
             html += '</div>';
         });
         html += '</div>';
-    } else if (!isFree && licKeys.length === 1) {
+    } else if (!infoOnly && !isFree && licKeys.length === 1) {
         selectedLicenseKey = licKeys[0];
     }
 
-    if (hasCoupon && !isFree) {
+    if (!infoOnly && hasCoupon && !isFree) {
         html += '<div class="modal-section-title">Coupon Code</div>';
         html += '<div class="modal-coupon-row"><input class="modal-coupon-input" id="modalCouponInput" type="text" placeholder="Enter coupon code..."><button class="modal-coupon-btn" id="modalCouponApply">Apply</button></div>';
     }
 
     html += '<div class="modal-actions" id="modalActions">';
-    if (isFree) {
+    if (infoOnly) {
+        if (isGithubProduct(p)) {
+            var ownedGithubUrl = p.github_url && p.github_url.trim() ? p.github_url : '#';
+            html += '<a class="modal-btn modal-btn-download" id="modalOwnedGithubBtn" title="Open the GitHub repository in a new tab" href="' + escHtml(ownedGithubUrl) + '" target="_blank" rel="noopener noreferrer">' + buildGithubIconSvg(15) + ' Launch</a>';
+        } else {
+            html += '<button class="modal-btn modal-btn-download" id="modalDlBtn" title="Install or start this tool in the Rickware - Labs© Launcher"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 4 20 12 6 20 6 4"/></svg> Launch</button>';
+        }
+    } else if (isFree) {
         if (isGithubProduct(p)) {
             var ghUrl2 = p.github_url && p.github_url.trim() ? p.github_url : '#';
             html += '<a class="modal-btn modal-btn-download" id="modalDlBtn" title="Open the GitHub repository in a new tab" href="' + escHtml(ghUrl2) + '" target="_blank" rel="noopener noreferrer">' + buildGithubIconSvg(15) + ' Download via GitHub</a>';
@@ -4879,7 +5350,7 @@ function openProductModal(p) {
         html += '<button class="modal-btn modal-btn-buy" id="modalBuyBtn">Buy Now</button>';
         html += '<button class="modal-btn modal-btn-cart" id="modalCartBtn"' + (hasMultiLicense ? ' disabled' : '') + '><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Add to Cart</button>';
     }
-    html += '<button class="modal-btn modal-btn-wishlist' + (inWL ? ' active' : '') + '" id="modalWishBtn" title="Wishlist"><svg width="16" height="16" viewBox="0 0 24 24" fill="' + (inWL ? '#e74c3c' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>';
+    if (!infoOnly) html += '<button class="modal-btn modal-btn-wishlist' + (inWL ? ' active' : '') + '" id="modalWishBtn" title="Wishlist"><svg width="16" height="16" viewBox="0 0 24 24" fill="' + (inWL ? '#e74c3c' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>';
     if (p.discord_url && p.discord_url.trim()) {
         html += '<a class="modal-btn modal-btn-discord" href="' + p.discord_url + '" target="_blank" rel="noopener noreferrer"><svg width="14" height="14" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.3087 23.0133 30.1353 26.2532 30.1067 30.1693C30.1067 34.1136 27.2801 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9006 23.0133 53.7272 26.2532 53.6986 30.1693C53.6986 34.1136 50.9006 37.3253 47.3178 37.3253Z"/></svg></a>';
     }
@@ -4907,7 +5378,7 @@ function openProductModal(p) {
     if (changeLogText && String(changeLogText).trim()) {
         html += '<div class="modal-changelog-section">';
         html += '<button class="modal-changelog-toggle" id="modalChangelogToggle"><span>Changelog</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>';
-        html += '<div class="modal-changelog-content" id="modalChangelogContent">' + escHtml(String(changeLogText).replace(/\\n/g, '\n')) + '</div>';
+        html += '<div class="modal-changelog-content" translate="no" id="modalChangelogContent">' + escHtml(String(changeLogText).replace(/\\n/g, '\n')) + '</div>';
         html += '</div>';
     }
 
@@ -5064,6 +5535,7 @@ var githubLangColors = {
 };
 
 function loadGithubRepoInfo(repo, container) {
+    trackFx('github', { id: String(repo || '') });
     var readmeEl = container.querySelector('#githubReadmeContent');
     var contributorsList = container.querySelector('#githubContributorsList');
     var languagesList = container.querySelector('#githubLanguagesList');
@@ -5427,6 +5899,8 @@ function wishlistMoveToCart(idx) {
     var existing = cart.find(function(c) { return c._uid === uid; });
     if (existing) {
         existing.qty = (existing.qty || 1) + 1;
+    } else if (!item.licenseKey && item.title && singleLicenseKey(item)) {
+        addToCart(item);
     } else {
         cart.push(Object.assign({ qty: 1 }, item));
     }

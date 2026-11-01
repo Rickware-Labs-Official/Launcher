@@ -64,8 +64,17 @@
         'name-colors': { catalog: 'name_colors', field: 'name_color', label: 'Name Color' },
         'nameplates': { catalog: 'nameplates', field: 'nameplate', label: 'Nameplate' }
     };
+    var NEW_MARKER_KEYS = {
+        'themes': 'launcher_themes',
+        'avatar-decos': 'avatar_decorations',
+        'name-colors': 'name_colors',
+        'nameplates': 'nameplates',
+        'special-items': 'license_vouchers',
+        'coupons': 'reward_coupons'
+    };
     var LOCK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
     var CHEST_IMAGE = '../images/assets/lab_pass/rickware-labs_chest.webp';
+    var KEEP_STYLE = '--rwl-keep:1;';
 
     var state = {
         inventory: null,
@@ -73,10 +82,66 @@
         catalogRequests: {},
         dropRates: null,
         activeCategory: null,
-        products: null
+        products: null,
+        newItems: {},
+        openAllResult: null,
+        openingAll: false
     };
+    var pendingSeen = {};
+    var seenTimer = null;
 
     var esc = RWL.escapeHtml;
+
+    function newSet(key) {
+        var set = {};
+        ((state.newItems || {})[key] || []).forEach(function(itemId) { set[itemId] = true; });
+        return set;
+    }
+
+    function isNew(key, itemId) {
+        return !!key && ((state.newItems || {})[key] || []).indexOf(itemId) >= 0;
+    }
+
+    function newCount(key) {
+        return ((state.newItems || {})[key] || []).length;
+    }
+
+    function totalNewCount() {
+        return Object.keys(state.newItems || {}).reduce(function(sum, key) { return sum + newCount(key); }, 0);
+    }
+
+    function flushSeen(keepalive) {
+        clearTimeout(seenTimer);
+        seenTimer = null;
+        var batches = pendingSeen;
+        pendingSeen = {};
+        Object.keys(batches).forEach(function(key) {
+            var ids = batches[key];
+            for (var start = 0; start < ids.length; start += 200) {
+                var body = JSON.stringify({ category: key, item_ids: ids.slice(start, start + 200) });
+                try {
+                    fetch(RWL.apiUrl('/api/inventory/seen'), { method: 'POST', headers: RWL.authHeaders(), body: body, keepalive: !!keepalive }).catch(function() {});
+                } catch (error) {}
+            }
+        });
+    }
+
+    function markSeen(key, itemId) {
+        if (!isNew(key, itemId)) return;
+        state.newItems[key] = state.newItems[key].filter(function(entry) { return entry !== itemId; });
+        if (!state.newItems[key].length) delete state.newItems[key];
+        (pendingSeen[key] = pendingSeen[key] || []).push(itemId);
+        clearTimeout(seenTimer);
+        seenTimer = setTimeout(function() { flushSeen(false); }, 600);
+        document.querySelectorAll('[data-new-key="' + key + '"][data-new-id]').forEach(function(slot) {
+            if (slot.getAttribute('data-new-id') !== itemId) return;
+            slot.classList.remove('inv-slot-new');
+            var badge = slot.querySelector('.inv-item-new');
+            if (badge) badge.remove();
+        });
+        renderGrids();
+        renderHeaderStats();
+    }
 
     function toast(message, type) {
         var existing = document.getElementById('invToast');
@@ -162,9 +227,25 @@
         return 0;
     }
 
+    function renderHeaderStats() {
+        var inventory = state.inventory;
+        if (!inventory) return;
+        var itemsEl = document.getElementById('invStatItems');
+        var chestsEl = document.getElementById('invStatChests');
+        var newEl = document.getElementById('invStatNew');
+        var owned = inventory.owned_counts || {};
+        var totalOwned = Object.keys(owned).reduce(function(sum, key) { return sum + (owned[key] || 0); }, 0);
+        var chests = chestSummary();
+        if (itemsEl) itemsEl.textContent = formatNumber(totalOwned);
+        if (chestsEl) chestsEl.textContent = chests.unlimited ? '∞' : formatNumber(chests.balance || 0);
+        if (newEl) newEl.textContent = formatNumber(totalNewCount());
+    }
+
     function renderCategoryCard(cat) {
+        var newKey = NEW_MARKER_KEYS[cat.id];
         var html = '<div class="inv-category-card" data-category="' + cat.id + '">';
         html += '<div class="inv-category-count">' + esc(String(categoryCount(cat))) + '</div>';
+        if (newKey && newCount(newKey)) html += '<div class="inv-category-new" title="' + esc(formatNumber(newCount(newKey))) + ' new">NEW</div>';
         html += '<img class="inv-category-image" src="../images/assets/inventory/' + cat.image + '" alt="' + esc(cat.name) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
         html += '<div class="inv-category-fallback" style="display:none;">' + cat.icon + '<span>' + esc(cat.name) + '</span></div>';
         html += '</div>';
@@ -208,8 +289,16 @@
         return '<div class="inv-empty-note">' + esc(text) + '</div>';
     }
 
-    function cosmeticSlotHtml(catalogKey, item, owned, equipped) {
-        var classes = 'inv-slot inv-slot-item' + (owned ? '' : ' inv-slot-locked') + (equipped ? ' inv-slot-equipped' : '');
+    function themePreviewHtml(item) {
+        var colors = (item.preview || []).map(function(color) { return RWL.sanitizeHex(color, '#7b2cbf'); });
+        if (!colors.length) colors = ['#7b2cbf'];
+        return '<div class="inv-theme-preview">' + colors.map(function(color) {
+            return '<span style="' + KEEP_STYLE + 'background:' + color + ';"></span>';
+        }).join('') + '</div>';
+    }
+
+    function cosmeticSlotHtml(catalogKey, item, owned, equipped, fresh) {
+        var classes = 'inv-slot inv-slot-item' + (owned ? '' : ' inv-slot-locked') + (equipped ? ' inv-slot-equipped' : '') + (fresh ? ' inv-slot-new' : '');
         var visual;
         if (catalogKey === 'name_colors') {
             visual = '<div class="inv-item-swatch" style="' + esc(RWL.swatchStyle(item)) + '"></div>';
@@ -217,13 +306,16 @@
             visual = '<video class="inv-item-media" muted loop playsinline preload="none" data-src="' + esc(item.asset_url || '') + '"></video>';
         } else if (catalogKey === 'avatar_decorations') {
             visual = '<img class="inv-item-media inv-item-media-contain" alt="" loading="lazy" data-src="' + esc(item.asset_url || '') + '">';
+        } else if (catalogKey === 'launcher_themes') {
+            visual = themePreviewHtml(item);
         } else {
             visual = '<div class="inv-slot-text">' + esc(item.name) + '</div>';
         }
-        return '<div class="' + classes + '" style="border-color:' + esc(RWL.rarityColor(item.rarity)) + ';" data-item-id="' + esc(item.item_id) + '" data-owned="' + (owned ? '1' : '0') + '" title="' + esc(item.name + ' · ' + item.rarity + (owned ? (equipped ? ' · Equipped' : ' · Click to equip') : ' · Locked')) + '">' +
+        return '<div class="' + classes + '" style="' + KEEP_STYLE + 'border-color:' + esc(RWL.rarityColor(item.rarity)) + ';" data-item-id="' + esc(item.item_id) + '" data-owned="' + (owned ? '1' : '0') + '" data-new-key="' + esc(catalogKey) + '" data-new-id="' + esc(item.item_id) + '" title="' + esc(item.name + ' · ' + item.rarity + (owned ? (equipped ? ' · Equipped' : ' · Click to equip') : ' · Locked')) + '">' +
             '<div class="inv-item-visual">' + visual + '</div>' +
-            '<div class="inv-item-name">' + esc(item.name) + '</div>' +
+            '<div class="inv-item-name" translate="no">' + esc(item.name) + '</div>' +
             (equipped ? '<div class="inv-item-badge">Equipped</div>' : '') +
+            (fresh ? '<div class="inv-item-new">NEW</div>' : '') +
             (owned ? '' : '<div class="inv-item-lock">' + LOCK_SVG + '</div>') +
         '</div>';
     }
@@ -233,12 +325,14 @@
         var catalog = state.catalogs[cosmetic.catalog];
         var owned = ownedSet(cosmetic.catalog);
         var equippedId = ((state.inventory && state.inventory.equipped) || {})[cosmetic.field];
+        var fresh = newSet(cosmetic.catalog);
         var ownedItems = catalog.items.filter(function(item) { return isOwned(cosmetic.catalog, item.item_id, owned); });
+        ownedItems.sort(function(left, right) { return (fresh[right.item_id] ? 1 : 0) - (fresh[left.item_id] ? 1 : 0); });
         var ownedHtml = ownedItems.length
-            ? ownedItems.map(function(item) { return cosmeticSlotHtml(cosmetic.catalog, item, true, item.item_id === equippedId); }).join('')
+            ? ownedItems.map(function(item) { return cosmeticSlotHtml(cosmetic.catalog, item, true, item.item_id === equippedId, !!fresh[item.item_id]); }).join('')
             : emptyNote(catalog.items.length ? 'No ' + cosmetic.label.toLowerCase() + 's yet. Open Mystery Chests or progress the Lab-Pass to unlock them.' : 'No ' + cosmetic.label.toLowerCase() + 's are available yet.');
         var indexHtml = catalog.items.length
-            ? catalog.items.map(function(item) { var has = isOwned(cosmetic.catalog, item.item_id, owned); return cosmeticSlotHtml(cosmetic.catalog, item, has, has && item.item_id === equippedId); }).join('')
+            ? catalog.items.map(function(item) { var has = isOwned(cosmetic.catalog, item.item_id, owned); return cosmeticSlotHtml(cosmetic.catalog, item, has, has && item.item_id === equippedId, has && !!fresh[item.item_id]); }).join('')
             : emptyNote('No ' + cosmetic.label.toLowerCase() + 's are available yet.');
         return { owned: ownedHtml, index: indexHtml, ownedCount: ownedItems.length, total: catalog.items.length };
     }
@@ -257,6 +351,51 @@
         return slot;
     }
 
+    function chestActionsHtml() {
+        var chests = chestSummary();
+        var empty = !chests.unlimited && !chests.balance;
+        var html = '<div class="inv-chest-actions">';
+        html += '<button type="button" class="inv-chest-action-btn" data-chest-open="1"' + (empty ? ' disabled' : '') + ' title="Open one chest with the double spin">Open Chest</button>';
+        html += '<button type="button" class="inv-chest-action-btn inv-chest-action-secondary" data-chest-open-all="1"' + (empty || state.openingAll ? ' disabled' : '') + ' title="Open all chests at once without animation">' + (state.openingAll ? 'Opening...' : 'Open All Chests') + '</button>';
+        html += '</div>';
+        return html;
+    }
+
+    function openAllSummaryHtml() {
+        var result = state.openAllResult;
+        if (!result) return '';
+        var html = '<div class="inv-open-all-summary">';
+        html += '<div class="inv-open-all-title">' + esc(formatNumber(result.opened)) + ' chests opened' + (result.lab_coins_awarded ? ' · +' + esc(formatNumber(result.lab_coins_awarded)) + ' LC' : '') + '</div>';
+        html += '<div class="inv-open-all-grid">';
+        (result.rewards || []).forEach(function(reward) {
+            var note = reward.duplicate ? (reward.compensation_lab_coins ? 'Duplicate · +' + reward.compensation_lab_coins + ' LC' : 'Duplicate · already owned') : (reward.voucher ? 'Voucher in Special Items' : 'Added to your locker');
+            html += '<div class="inv-open-all-entry" style="' + KEEP_STYLE + 'border-color:' + esc(RWL.rarityColor(reward.rarity)) + ';">';
+            html += '<strong translate="no">' + esc(reward.name || 'Item') + '</strong>';
+            html += '<span style="' + KEEP_STYLE + 'color:' + esc(RWL.rarityColor(reward.rarity)) + ';">' + esc(reward.rarity || '') + '</span>';
+            html += '<span>' + esc(reward.category_label || '') + '</span>';
+            html += '<span>' + esc(note) + '</span>';
+            html += '</div>';
+        });
+        html += '</div></div>';
+        return html;
+    }
+
+    async function openAllChests() {
+        if (state.openingAll) return;
+        state.openingAll = true;
+        if (state.activeCategory === 'mystery-chests') renderCategoryModal('mystery-chests', true);
+        try {
+            var result = await RWL.apiRequest('/api/chests/open_all', { method: 'POST' });
+            state.openAllResult = result;
+            toast(formatNumber(result.opened) + ' chests opened. Your rewards were added to your inventory.', 'success');
+        } catch (error) {
+            toast(error.status === 429 ? 'You are opening chests too fast. Please wait a moment.' : (error.message || 'The chests could not be opened.'), 'error');
+        } finally {
+            state.openingAll = false;
+        }
+        await refreshInventory();
+    }
+
     function dropRatesHtml() {
         var rates = state.dropRates;
         if (!rates) return emptyNote('Loading drop rates...');
@@ -270,7 +409,7 @@
             });
             html += '</div>';
         });
-        html += '<div class="inv-drop-rates-note">Every roll happens on our server. Category chance × rarity chance = overall chance. Duplicates are converted into Lab Coins. New accounts receive 1 chest, Unlock All accounts receive 10 chests once, more chests are earned through the Lab-Pass.</div>';
+        html += '<div class="inv-drop-rates-note">Every roll happens on our server. Each chest first spins the category and then the item inside that category. Category chance × rarity chance = overall chance. Duplicates are converted into Lab Coins. License drops arrive as vouchers in Special Items and can be redeemed for any paid product. New accounts receive 1 chest, Unlock All accounts receive 10 chests once, more chests are earned through the Lab-Pass.</div>';
         html += '</div>';
         return html;
     }
@@ -297,11 +436,14 @@
         var coupons = (state.inventory && state.inventory.coupons) || [];
         var list = onlyActive ? coupons.filter(function(entry) { return entry.active; }) : coupons;
         if (!list.length) return emptyNote(onlyActive ? 'No active coupons. Earn coupons through the Lab-Pass.' : 'No coupons yet.');
+        var fresh = newSet('reward_coupons');
         return list.map(function(entry) {
             var status = entry.active ? 'Active' : (entry.used ? 'Used' : 'Expired');
             var color = entry.active ? '#22c55e' : '#9ca3af';
-            return '<div class="inv-slot inv-slot-item inv-slot-wide' + (entry.active ? '' : ' inv-slot-locked') + '" data-copy="' + esc(entry.code) + '" title="Click to copy the coupon code" style="border-color:' + color + ';">' +
+            var isFresh = !!fresh[entry.code];
+            return '<div class="inv-slot inv-slot-item inv-slot-wide' + (entry.active ? '' : ' inv-slot-locked') + (isFresh ? ' inv-slot-new' : '') + '" data-copy="' + esc(entry.code) + '" data-new-key="reward_coupons" data-new-id="' + esc(entry.code) + '" title="Click to copy the coupon code" style="border-color:' + color + ';">' +
                 '<div class="inv-slot-text"><strong>' + esc(String(entry.percent)) + '% OFF</strong><br>' + esc(entry.code) + '<br><span style="color:' + color + ';">' + status + '</span>' + (entry.valid_until ? ' · until ' + esc(new Date(entry.valid_until).toLocaleDateString()) : '') + '</div>' +
+                (isFresh ? '<div class="inv-item-new">NEW</div>' : '') +
             '</div>';
         }).join('');
     }
@@ -309,12 +451,16 @@
     function voucherSlotsHtml(onlyActive) {
         var vouchers = (state.inventory && state.inventory.license_vouchers) || [];
         var list = onlyActive ? activeVouchers() : vouchers;
-        if (!list.length) return emptyNote(onlyActive ? 'No special items yet. License vouchers are earned through the Lab-Pass.' : 'No special items yet.');
+        if (!list.length) return emptyNote(onlyActive ? 'No special items yet. License vouchers are earned through the Lab-Pass and Mystery Chests.' : 'No special items yet.');
+        var fresh = newSet('license_vouchers');
+        list = list.slice().sort(function(left, right) { return (fresh[right.voucher_id] ? 1 : 0) - (fresh[left.voucher_id] ? 1 : 0); });
         return list.map(function(voucher) {
             var redeemable = !voucher.redeemed && !voucher.expired;
             var status = voucher.redeemed ? 'Redeemed' : (voucher.expired ? 'Expired' : 'Click to redeem');
-            return '<div class="inv-slot inv-slot-item inv-slot-wide' + (redeemable ? '' : ' inv-slot-locked') + '"' + (redeemable ? ' data-voucher-id="' + esc(voucher.voucher_id) + '"' : '') + ' title="' + esc(voucher.label) + '" style="border-color:' + (redeemable ? '#c97eff' : '#6b7280') + ';">' +
+            var isFresh = !!fresh[voucher.voucher_id];
+            return '<div class="inv-slot inv-slot-item inv-slot-wide' + (redeemable ? '' : ' inv-slot-locked') + (isFresh ? ' inv-slot-new' : '') + '"' + (redeemable ? ' data-voucher-id="' + esc(voucher.voucher_id) + '"' : '') + ' data-new-key="license_vouchers" data-new-id="' + esc(voucher.voucher_id) + '" title="' + esc(voucher.label) + '" style="border-color:' + (redeemable ? '#c97eff' : '#6b7280') + ';">' +
                 '<div class="inv-slot-text"><strong>' + esc(voucher.label) + '</strong><br>' + esc(status) + (voucher.expires_at && redeemable ? '<br>until ' + esc(new Date(voucher.expires_at).toLocaleDateString()) : '') + '</div>' +
+                (isFresh ? '<div class="inv-item-new">NEW</div>' : '') +
             '</div>';
         }).join('');
     }
@@ -471,7 +617,7 @@
         } else if (categoryId === 'mystery-chests') {
             var chests = chestSummary();
             modalHeader(cat, chests.unlimited ? 'Unlimited chests' : formatNumber(chests.balance || 0) + (chests.balance === 1 ? ' chest available' : ' chests available'));
-            bodyEl.innerHTML = tabbedBodyHtml(chestSlotHtml(true), chestSlotHtml(false) + dropRatesHtml(), 'Owned', 'Drop Rates');
+            bodyEl.innerHTML = tabbedBodyHtml(chestSlotHtml(true) + chestActionsHtml() + openAllSummaryHtml(), chestSlotHtml(false) + dropRatesHtml(), 'Owned', 'Drop Rates');
             if (!state.dropRates) {
                 RWL.apiRequest('/api/chests/drop_rates').then(function(rates) {
                     state.dropRates = rates;
@@ -510,6 +656,7 @@
         overlay.classList.remove('inv-open');
         document.body.style.overflow = '';
         state.activeCategory = null;
+        state.openAllResult = null;
     }
 
     async function copyText(text, label) {
@@ -554,6 +701,7 @@
                 state.inventory.equipped_cosmetics = result.account.equipped_cosmetics || state.inventory.equipped_cosmetics;
                 try { sessionStorage.setItem('rickware_user', JSON.stringify(result.account)); } catch (error) {}
             }
+            if (cosmetic.field === 'launcher_theme' && window.RWLTheme) RWLTheme.sync(state.inventory.equipped_cosmetics || {});
             updateEquippedSlots(document.getElementById('invModalBody'), cosmetic.field, nextValue);
             renderEquippedPanel();
             toast((nextValue ? 'Equipped ' : 'Unequipped ') + itemName(cosmetic.catalog, itemId) + '.', 'success');
@@ -618,7 +766,12 @@
                 renderCategoryModal('special-items', false);
                 return;
             }
-            var chestSlot = e.target.closest('[data-chest-slot]');
+            var openAllButton = e.target.closest('[data-chest-open-all]');
+            if (openAllButton) {
+                if (!openAllButton.disabled) openAllChests();
+                return;
+            }
+            var chestSlot = e.target.closest('[data-chest-slot],[data-chest-open]');
             if (chestSlot) {
                 var chests = chestSummary();
                 if (!chests.enabled && chests.enabled !== undefined) { toast('Mystery Chests are currently disabled.', 'error'); return; }
@@ -626,6 +779,8 @@
                 openChestIframe();
                 return;
             }
+            var freshSlot = e.target.closest('[data-new-key][data-new-id]');
+            if (freshSlot) markSeen(freshSlot.getAttribute('data-new-key'), freshSlot.getAttribute('data-new-id'));
             var redeemSlot = e.target.closest('[data-redeem-product]');
             if (redeemSlot) { redeemVoucher(redeemSlot); return; }
             var launchSlot = e.target.closest('[data-launch-product]');
@@ -731,7 +886,10 @@
             toast('Your locker could not be loaded. Please try again shortly.', 'error');
             return;
         }
+        state.newItems = state.inventory.new_items || {};
+        if (window.RWLTheme) RWLTheme.sync(state.inventory.equipped_cosmetics || {});
         renderGrids();
+        renderHeaderStats();
         renderEquippedPanel();
         if (state.activeCategory) renderCategoryModal(state.activeCategory, true);
         ['launcher_themes', 'avatar_decorations', 'nameplates', 'name_colors'].forEach(function(catalogKey) {
@@ -772,6 +930,7 @@
         setupViewAllButton();
         setupLabPassButtons();
         setupChestIframeEvents();
+        window.addEventListener('pagehide', function() { flushSeen(true); });
         checkAuthAndInit();
     });
 })();

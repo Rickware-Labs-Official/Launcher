@@ -32,33 +32,69 @@ async function getCurrentUser() {
     return null;
 }
 
+function preferenceElement(id) {
+    return document.getElementById(id);
+}
+
+function setPreferenceValue(id, value) {
+    const element = preferenceElement(id);
+    if (element) element.value = value;
+}
+
+function setPreferenceChecked(id, value) {
+    const element = preferenceElement(id);
+    if (element) element.checked = !!value;
+}
+
+function preferenceValue(id, fallback) {
+    const element = preferenceElement(id);
+    return element ? element.value : fallback;
+}
+
+function preferenceChecked(id, fallback) {
+    const element = preferenceElement(id);
+    return element ? element.checked : fallback;
+}
+
+function activeLanguage(user) {
+    if (window.RWLI18n) return RWLI18n.language();
+    return (user && user.preferred_language) || userPreferences.language || 'en';
+}
+
 function loadPreferences(user) {
-    userPreferences = JSON.parse(localStorage.getItem('user_preferences') || '{}');
+    try {
+        userPreferences = JSON.parse(localStorage.getItem('user_preferences') || '{}') || {};
+    } catch (error) {
+        userPreferences = {};
+    }
 
-    document.getElementById('preferredLanguage').value = userPreferences.language || 'en';
-    document.getElementById('timeZone').value = user.user_time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    setPreferenceValue('preferredLanguage', activeLanguage(user));
+    setPreferenceValue('timeZone', user.user_time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone);
 
-    document.getElementById('emailNotifications').checked = userPreferences.emailNotifications !== false;
-    document.getElementById('productUpdates').checked = userPreferences.productUpdates !== false;
-    document.getElementById('promotionalEmails').checked = user.email_newsletter || false;
-    document.getElementById('discordNotifications').checked = userPreferences.discordNotifications || false;
+    setPreferenceChecked('emailNotifications', userPreferences.emailNotifications !== false);
+    setPreferenceChecked('productUpdates', userPreferences.productUpdates !== false);
+    setPreferenceChecked('promotionalEmails', user.email_newsletter || false);
+    setPreferenceChecked('discordNotifications', userPreferences.discordNotifications || false);
 
-    document.getElementById('showOnlineStatus').checked = userPreferences.showOnlineStatus !== false;
-    document.getElementById('allowDataCollection').checked = userPreferences.allowDataCollection !== false;
+    setPreferenceChecked('showOnlineStatus', userPreferences.showOnlineStatus !== false);
+    setPreferenceChecked('allowDataCollection', userPreferences.allowDataCollection !== false);
 
-    document.getElementById('themeSelect').value = userPreferences.theme || 'dark';
-    document.getElementById('compactMode').checked = userPreferences.compactMode || false;
-    document.getElementById('animationsEnabled').checked = userPreferences.animationsEnabled !== false;
+    setPreferenceValue('themeSelect', userPreferences.theme || 'dark');
+    setPreferenceChecked('compactMode', userPreferences.compactMode || false);
+    setPreferenceChecked('animationsEnabled', userPreferences.animationsEnabled !== false);
 
-    document.getElementById('autoInstall').checked = userPreferences.autoInstall || false;
-    document.getElementById('pauseDownloads').checked = userPreferences.pauseDownloads || false;
+    setPreferenceChecked('autoInstall', userPreferences.autoInstall || false);
+    setPreferenceChecked('pauseDownloads', userPreferences.pauseDownloads || false);
 
-    document.getElementById('currentAccountType').textContent = user.account_type || 'User';
-    document.getElementById('memberSince').textContent = user.user_last_login ? new Date(user.user_last_login).toLocaleDateString() : 'Unknown';
+    const accountType = preferenceElement('currentAccountType');
+    if (accountType) accountType.textContent = user.account_type || 'User';
+    const memberSince = preferenceElement('memberSince');
+    if (memberSince) memberSince.textContent = (user.created_at || user.user_last_login) ? new Date(user.created_at || user.user_last_login).toLocaleDateString() : 'Unknown';
 
     let totalPurchases = 0;
     if (user.purchased_products) totalPurchases = user.purchased_products.length;
-    document.getElementById('totalPurchases').textContent = totalPurchases;
+    const purchases = preferenceElement('totalPurchases');
+    if (purchases) purchases.textContent = totalPurchases;
 }
 
 async function refreshUserData() {
@@ -87,22 +123,48 @@ async function setupSaveCancel() {
         const user = await getCurrentUser();
         if (!user) return;
 
+        const previousLanguage = activeLanguage(user);
         const preferences = {
-            language: document.getElementById('preferredLanguage').value,
-            emailNotifications: document.getElementById('emailNotifications').checked,
-            productUpdates: document.getElementById('productUpdates').checked,
-            promotionalEmails: document.getElementById('promotionalEmails').checked,
-            discordNotifications: document.getElementById('discordNotifications').checked,
-            showOnlineStatus: document.getElementById('showOnlineStatus').checked,
-            allowDataCollection: document.getElementById('allowDataCollection').checked,
-            theme: document.getElementById('themeSelect').value,
-            compactMode: document.getElementById('compactMode').checked,
-            animationsEnabled: document.getElementById('animationsEnabled').checked,
-            autoInstall: document.getElementById('autoInstall').checked,
-            pauseDownloads: document.getElementById('pauseDownloads').checked
+            language: preferenceValue('preferredLanguage', previousLanguage),
+            emailNotifications: preferenceChecked('emailNotifications', true),
+            productUpdates: preferenceChecked('productUpdates', true),
+            promotionalEmails: preferenceChecked('promotionalEmails', false),
+            discordNotifications: preferenceChecked('discordNotifications', false),
+            showOnlineStatus: preferenceChecked('showOnlineStatus', true),
+            allowDataCollection: preferenceChecked('allowDataCollection', true),
+            theme: preferenceValue('themeSelect', userPreferences.theme || 'dark'),
+            compactMode: preferenceChecked('compactMode', false),
+            animationsEnabled: preferenceChecked('animationsEnabled', true),
+            autoInstall: preferenceChecked('autoInstall', false),
+            pauseDownloads: preferenceChecked('pauseDownloads', false)
         };
 
         localStorage.setItem('user_preferences', JSON.stringify(preferences));
+
+        if (preferences.language !== previousLanguage || preferences.language !== user.preferred_language) {
+            try {
+                const languageResponse = await fetch(apiUrl('/api/profile/update'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ new_data: { preferred_language: preferences.language } })
+                });
+                if (languageResponse.ok) {
+                    const languageResult = await languageResponse.json();
+                    if (languageResult.account) sessionStorage.setItem('rickware_user', JSON.stringify(languageResult.account));
+                } else {
+                    const languageError = await languageResponse.json().catch(() => ({}));
+                    showBanner(RWL.errorDetail(languageError, 'The language could not be saved.'), 'error');
+                    return;
+                }
+            } catch (error) {
+                showBanner('The language could not be saved. Please try again.', 'error');
+                return;
+            }
+            if (window.RWLI18n) await RWLI18n.setLanguage(preferences.language);
+        }
 
         if (preferences.promotionalEmails !== user.email_newsletter) {
             const publicFields = [
@@ -139,11 +201,8 @@ async function setupSaveCancel() {
             }
         }
 
+        userPreferences = preferences;
         alert('Preferences saved successfully!');
-
-        if (preferences.language !== userPreferences.language) {
-            window.location.reload();
-        }
     });
 
     document.getElementById('cancelPreferencesBtn').addEventListener('click', () => {

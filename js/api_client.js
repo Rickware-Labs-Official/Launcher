@@ -5,6 +5,7 @@
     var USER_KEY = 'rickware_user';
     var REMEMBER_KEY = 'rickware_remember_me';
     var HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
+    var KEEP_COLORS_STYLE = '--rwl-keep:1;';
     var AUTH_ENDPOINT_PATTERN = /\/api\/(refresh|login|logout|register|oauth\/|forgot_password|confirm_reset)/;
     var RARITY_COLORS = {
         'Common': '#b8b8c8',
@@ -49,6 +50,7 @@
             sessionStorage.removeItem(key);
             localStorage.removeItem(key);
         });
+        if (global.RWLTheme) global.RWLTheme.clear();
     }
 
     function refreshAccessToken() {
@@ -167,11 +169,11 @@
             var gradient = gradientCss(data.name_color_gradient);
             if (gradient) {
                 var seconds = Math.max(1, Math.min(parseInt(data.name_color_animation_seconds, 10) || 4, 20));
-                return 'background-image:' + gradient + ';background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:rwlNameRgb ' + seconds + 's linear infinite;';
+                return KEEP_COLORS_STYLE + 'background-image:' + gradient + ';background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:rwlNameRgb ' + seconds + 's linear infinite;';
             }
         }
-        if (data.name_color_hex) return 'color:' + sanitizeHex(data.name_color_hex, fallback) + ';';
-        return 'color:' + sanitizeHex(fallback, '#ffffff') + ';';
+        if (data.name_color_hex) return KEEP_COLORS_STYLE + 'color:' + sanitizeHex(data.name_color_hex, fallback) + ';';
+        return KEEP_COLORS_STYLE + 'color:' + sanitizeHex(fallback, '#ffffff') + ';';
     }
 
     function swatchStyle(item) {
@@ -180,10 +182,10 @@
             var gradient = gradientCss(item.gradient);
             if (gradient) {
                 var seconds = Math.max(1, Math.min(parseInt(item.animation_seconds, 10) || 4, 20));
-                return 'background-image:' + gradient + ';background-size:300% 100%;animation:rwlNameRgb ' + seconds + 's linear infinite;';
+                return KEEP_COLORS_STYLE + 'background-image:' + gradient + ';background-size:300% 100%;animation:rwlNameRgb ' + seconds + 's linear infinite;';
             }
         }
-        return 'background:' + sanitizeHex(item && item.hex, '#7b2cbf') + ';';
+        return KEEP_COLORS_STYLE + 'background:' + sanitizeHex(item && item.hex, '#7b2cbf') + ';';
     }
 
     function todayKey() {
