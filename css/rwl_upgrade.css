@@ -1,0 +1,840 @@
+:root {
+    --bg-primary: #000000 !important;
+    --bg-secondary: #0a0a0d !important;
+    --bg-tertiary: #121216 !important;
+    --bg-hover: #1b1b21 !important;
+    --border-color: #27272e !important;
+    --text-secondary: #c4c4cc !important;
+    --text-tertiary: #94949e !important;
+    --inv-bg-primary: #000000 !important;
+    --rwl-scroll-thumb: #7b2cbf;
+    --rwl-scroll-thumb-hover: #9d4edd;
+}
+
+@property --rwl-a {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+
+html,
+body {
+    background-color: #000000 !important;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rwl-scroll-thumb) transparent !important;
+}
+
+::-webkit-scrollbar {
+    width: 8px !important;
+    height: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #7b2cbf, #9d4edd) !important;
+    border-radius: 8px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #9d4edd, #e0aaff) !important;
+    background-clip: padding-box !important;
+}
+
+.rwl-retinting *,
+.rwl-retinting *::before,
+.rwl-retinting *::after {
+    transition: none !important;
+}
+
+.rwl-scene-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 2147482000;
+    contain: strict;
+}
+
+.rwl-low-fx *,
+.rwl-low-fx *::before,
+.rwl-low-fx *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.rwl-low-fx .product-image-area::after,
+.rwl-low-fx .partner-image-area::after,
+.rwl-low-fx .discord-join-btn::before,
+.rwl-low-fx .support-boxes-wave .glass-card::after {
+    animation: none !important;
+    opacity: 0 !important;
+}
+
+.rwl-low-fx .shiny-text,
+.rwl-low-fx .shiny-text-js,
+.rwl-low-fx .rwl-small-button,
+.rwl-low-fx .rwl-security-button,
+.rwl-low-fx .rwl-lightbox-button,
+.rwl-low-fx .rwl-reveal-button {
+    animation: none !important;
+}
+
+.rwl-low-fx .glass-card,
+.rwl-low-fx .product-card {
+    box-shadow: none !important;
+}
+
+.download-status svg {
+    color: #9d4edd !important;
+    stroke: #9d4edd !important;
+    filter: drop-shadow(0 0 4px rgba(157, 78, 221, 0.6));
+}
+
+.download-status {
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s ease;
+    border-radius: 10px;
+}
+
+.download-status:hover {
+    background: rgba(157, 78, 221, 0.14);
+}
+
+.rwl-download-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #9d4edd;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+}
+
+.rwl-download-popup {
+    position: fixed;
+    left: 12px;
+    bottom: 64px;
+    width: min(380px, calc(100vw - 24px));
+    max-height: min(520px, 70vh);
+    display: flex;
+    flex-direction: column;
+    background: #08080b;
+    border: 1px solid rgba(157, 78, 221, 0.45);
+    border-radius: 14px;
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.8), 0 0 24px rgba(123, 44, 191, 0.25);
+    z-index: 100000;
+    overflow: hidden;
+}
+
+.rwl-download-popup[hidden] {
+    display: none;
+}
+
+.rwl-download-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid #1f1f26;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.rwl-download-close {
+    background: none;
+    border: none;
+    color: #c4c4cc;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+
+.rwl-download-close:hover {
+    background: #1b1b21;
+    color: #ffffff;
+}
+
+.rwl-download-body {
+    overflow-y: auto;
+    padding: 8px 10px 12px;
+}
+
+.rwl-download-group {
+    margin: 8px 4px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #a78bda;
+}
+
+.rwl-download-item {
+    background: #101015;
+    border: 1px solid #22222a;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+}
+
+.rwl-download-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.rwl-download-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+    color: #b6b6c0;
+    font-size: 11px;
+}
+
+.rwl-progress {
+    height: 6px;
+    margin-top: 8px;
+    border-radius: 6px;
+    background: #1d1d24;
+    overflow: hidden;
+}
+
+.rwl-progress span {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #7b2cbf, #e0aaff);
+    transition: width 0.3s ease;
+}
+
+.rwl-download-empty {
+    color: #94949e;
+    font-size: 12px;
+    text-align: center;
+    padding: 18px 8px;
+}
+
+.rwl-small-button {
+    background: linear-gradient(135deg, #7b2cbf, #9d4edd);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    transition: filter 0.2s ease, transform 0.15s ease;
+    animation: rwlButtonGlow 3.6s ease-in-out infinite;
+}
+
+.rwl-small-button:hover {
+    filter: brightness(1.2);
+    transform: translateY(-1px);
+}
+
+.rwl-small-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
+@keyframes rwlButtonGlow {
+    0%, 100% { box-shadow: 0 0 6px rgba(157, 78, 221, 0.35); }
+    50% { box-shadow: 0 0 13px rgba(157, 78, 221, 0.7); }
+}
+
+.product-stat-live {
+    position: relative;
+    color: #4ade80;
+}
+
+.rwl-no-live .product-stat-live {
+    display: none;
+}
+
+.product-live-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    margin-right: 2px;
+    animation: rwlLivePulse 1.6s ease-in-out infinite;
+}
+
+@keyframes rwlLivePulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+    60% { opacity: 0.55; box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+}
+
+.rwl-security-blocked body > *:not(.rwl-security-overlay) {
+    filter: blur(14px);
+    pointer-events: none !important;
+    user-select: none;
+}
+
+.rwl-security-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.72);
+}
+
+.rwl-security-card {
+    width: min(460px, 100%);
+    background: #08080b;
+    border: 1px solid rgba(255, 77, 109, 0.5);
+    border-radius: 18px;
+    padding: 28px;
+    text-align: center;
+    color: #ffffff;
+    box-shadow: 0 0 60px rgba(255, 77, 109, 0.22);
+}
+
+.rwl-security-card h2 {
+    margin: 0 0 10px;
+    font-size: 22px;
+}
+
+.rwl-security-card p {
+    margin: 0 0 18px;
+    color: #d4d4dc;
+    line-height: 1.55;
+}
+
+.rwl-security-button {
+    display: inline-block;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #7b2cbf, #9d4edd);
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 20px;
+    text-decoration: none;
+    animation: rwlButtonGlow 3.6s ease-in-out infinite;
+}
+
+.rwl-turnstile-overlay {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    z-index: 2147483601;
+}
+
+.rwl-turnstile-overlay.rwl-turnstile-visible {
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.modal-gallery-img {
+    cursor: zoom-in;
+}
+
+.rwl-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    background: rgba(0, 0, 0, 0.94);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    touch-action: none;
+}
+
+.rwl-lightbox img {
+    max-width: 92vw;
+    max-height: 90vh;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+    transition: transform 0.12s ease-out;
+    cursor: grab;
+}
+
+.rwl-lightbox img.rwl-dragging {
+    cursor: grabbing;
+    transition: none;
+}
+
+.rwl-lightbox-button {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid rgba(157, 78, 221, 0.6);
+    background: rgba(20, 10, 34, 0.85);
+    color: #ffffff;
+    font-size: 20px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+    animation: rwlButtonGlow 3.6s ease-in-out infinite;
+}
+
+.rwl-lightbox-button:hover {
+    background: #7b2cbf;
+    transform: scale(1.06);
+}
+
+.rwl-lightbox-prev { left: 18px; top: 50%; margin-top: -23px; }
+.rwl-lightbox-next { right: 18px; top: 50%; margin-top: -23px; }
+.rwl-lightbox-close { right: 18px; top: 18px; }
+.rwl-lightbox-zoom-in { right: 74px; top: 18px; }
+.rwl-lightbox-zoom-out { right: 130px; top: 18px; }
+
+.rwl-lightbox-counter {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    color: #e0e0e8;
+    font-size: 13px;
+    background: rgba(20, 10, 34, 0.75);
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+.avatar-decoration {
+    width: 34px !important;
+    height: 34px !important;
+}
+
+.avatar-decoration-large {
+    width: 68px !important;
+    height: 68px !important;
+}
+
+.mini-avatar-decoration {
+    width: 120% !important;
+    height: 120% !important;
+}
+
+.review-avatar-decoration {
+    width: 38px !important;
+    height: 38px !important;
+}
+
+.forum-post-avatar-decoration {
+    width: 43px !important;
+    height: 43px !important;
+}
+
+.dashboard-avatar-decoration {
+    inset: -4px !important;
+    width: 54px !important;
+    height: 54px !important;
+}
+
+.review-user-row {
+    width: fit-content;
+    max-width: min(100%, 360px);
+    padding: 7px 14px 7px 12px !important;
+    border-radius: 10px;
+}
+
+.forum-identity-box {
+    width: fit-content;
+    max-width: min(100%, 460px);
+    min-height: 58px;
+    padding: 8px 18px 8px 14px !important;
+    border-radius: 10px;
+}
+
+.forum-comment-identity {
+    min-height: 52px;
+    max-width: min(100%, 420px);
+}
+
+.rwl-frame {
+    position: relative;
+    isolation: isolate;
+}
+
+.rwl-frame::before,
+.rwl-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 4;
+    padding: var(--rwl-fw, 2px);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+}
+
+.rwl-frame::after {
+    display: none;
+}
+
+.rwl-frame-orbit::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1));
+    animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-comet::before {
+    background: conic-gradient(from var(--rwl-a), transparent 0deg, transparent 250deg, var(--rwl-f2) 320deg, #ffffff 358deg, transparent 360deg);
+    animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-pulse::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2));
+    animation: rwlFrameFade var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-dash::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 14deg, transparent 14deg 28deg);
+    animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 2) linear infinite;
+}
+
+.rwl-frame-neon::before {
+    background: var(--rwl-f1);
+    box-shadow: none;
+    animation: rwlFrameNeon var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-flow::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1));
+    background-size: 300% 100%;
+    animation: rwlFrameFlow var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-rainbow::before {
+    background: conic-gradient(from var(--rwl-a), #ff004c, #ff9500, #ffe600, #2bff00, #00e5ff, #7a00ff, #ff004c);
+    animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-frost::before {
+    background: linear-gradient(120deg, #ffffff, var(--rwl-f1), #caf0f8, var(--rwl-f2), #ffffff);
+    background-size: 250% 250%;
+    animation: rwlFrameFlow var(--rwl-fs, 6s) ease-in-out infinite alternate;
+}
+
+.rwl-frame-ember::before {
+    background: linear-gradient(0deg, #ff2d00, #ff9500, #ffe066, var(--rwl-f1));
+    background-size: 100% 300%;
+    animation: rwlFrameRise calc(var(--rwl-fs, 6s) * 0.5) linear infinite, rwlFrameFlicker 1.1s steps(3) infinite;
+}
+
+.rwl-frame-plasma::before {
+    background: conic-gradient(from var(--rwl-a) at 30% 30%, var(--rwl-f1), var(--rwl-f3), var(--rwl-f2), var(--rwl-f1));
+    animation: rwlFrameSpin var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-circuit::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 6deg, transparent 6deg 18deg, var(--rwl-f2) 18deg 22deg, transparent 22deg 40deg);
+    animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 1.5) steps(36) infinite;
+}
+
+.rwl-frame-holo::before {
+    background: conic-gradient(from var(--rwl-a), #ffb3f0, #b3f0ff, #d4ffb3, #fff0b3, #ffb3f0);
+    animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-heartbeat::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f3));
+    animation: rwlFrameBeat var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-stardust::before {
+    background: radial-gradient(circle, #ffffff 0 1px, transparent 1.5px) 0 0 / 9px 9px, linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2));
+    animation: rwlFrameTwinkle var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-twin::before {
+    background: conic-gradient(from var(--rwl-a), transparent 0deg 300deg, var(--rwl-f1) 360deg);
+    animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-twin::after {
+    display: block;
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f2) 0deg, transparent 60deg 360deg);
+    animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite reverse;
+}
+
+.rwl-frame-storm::before {
+    background: linear-gradient(135deg, var(--rwl-f1), #ffffff, var(--rwl-f2));
+    animation: rwlFrameStorm var(--rwl-fs, 6s) linear infinite;
+}
+
+@keyframes rwlFrameSpin {
+    to { --rwl-a: 360deg; }
+}
+
+@keyframes rwlFrameFade {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 1; }
+}
+
+@keyframes rwlFrameFlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+}
+
+@keyframes rwlFrameRise {
+    0% { background-position: 50% 0%; }
+    100% { background-position: 50% 300%; }
+}
+
+@keyframes rwlFrameFlicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.72; }
+}
+
+@keyframes rwlFrameNeon {
+    0%, 18%, 22%, 62%, 64%, 100% { opacity: 1; }
+    20%, 63% { opacity: 0.3; }
+}
+
+@keyframes rwlFrameBeat {
+    0%, 40%, 100% { opacity: 0.45; }
+    10%, 26% { opacity: 1; }
+    18% { opacity: 0.6; }
+}
+
+@keyframes rwlFrameTwinkle {
+    0%, 100% { opacity: 0.7; background-position: 0 0, 0 0; }
+    50% { opacity: 1; background-position: 9px 9px, 0 0; }
+}
+
+@keyframes rwlFrameStorm {
+    0%, 90%, 94%, 100% { opacity: 0.4; }
+    91%, 95% { opacity: 1; }
+}
+
+.rwl-low-fx .rwl-frame::before,
+.rwl-low-fx .rwl-frame::after {
+    animation-duration: calc(var(--rwl-fs, 6s) * 2.5) !important;
+}
+
+.rwl-rarity-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    height: 15px;
+    line-height: 15px;
+    padding: 0 6px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+    color: #000000;
+    border-radius: inherit;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+.bank-exchange-card {
+    margin-bottom: 14px;
+    background: #08080b;
+    border: 1px solid rgba(157, 78, 221, 0.4);
+    border-radius: 14px;
+    padding: 16px;
+}
+
+.bank-exchange-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    color: #ffffff;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.bank-exchange-rate {
+    color: #c4c4cc;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.bank-exchange-balances {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 12px;
+    color: #e0e0e8;
+    font-size: 13px;
+}
+
+.bank-exchange-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.bank-exchange-input {
+    flex: 1 1 160px;
+    min-width: 120px;
+    background: #000000;
+    border: 1px solid #2c2c35;
+    border-radius: 9px;
+    color: #ffffff;
+    padding: 9px 12px;
+    font-size: 13px;
+}
+
+.bank-exchange-input.rwl-invalid {
+    border-color: #ff4d6d;
+}
+
+.bank-exchange-quote {
+    width: 100%;
+    color: #c4c4cc;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+.bank-exchange-note {
+    color: #c4c4cc;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.rwl-inline-error {
+    color: #ff8fa3;
+    font-size: 12px;
+    width: 100%;
+    margin-top: 6px;
+}
+
+.dashboard-last-online {
+    display: block;
+    color: #a9a9b4;
+    font-size: 11px;
+}
+
+.rwl-personal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.rwl-personal-item {
+    background: #0b0b0f;
+    border: 1px solid #23232b;
+    border-radius: 10px;
+    padding: 10px 12px;
+    min-width: 0;
+}
+
+.rwl-personal-label {
+    color: #9c9ca8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.rwl-personal-value {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: #ffffff;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.rwl-personal-value.rwl-concealed span {
+    filter: blur(5px);
+    user-select: none;
+}
+
+.rwl-reveal-button {
+    flex-shrink: 0;
+    background: rgba(157, 78, 221, 0.18);
+    border: 1px solid rgba(157, 78, 221, 0.5);
+    border-radius: 7px;
+    color: #e0aaff;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 3px 8px;
+    animation: rwlButtonGlow 3.6s ease-in-out infinite;
+}
+
+.rwl-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid #23232b;
+    border-radius: 10px;
+    background: #0b0b0f;
+    color: #ffffff;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.rwl-toggle-row small {
+    display: block;
+    color: #9c9ca8;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.rwl-toggle-row input {
+    width: 18px;
+    height: 18px;
+    accent-color: #9d4edd;
+    cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rwl-frame::before,
+    .rwl-frame::after,
+    .rwl-small-button,
+    .rwl-security-button,
+    .product-live-dot {
+        animation: none !important;
+    }
+}

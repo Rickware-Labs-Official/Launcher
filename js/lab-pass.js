@@ -151,13 +151,14 @@
         }
         renderBuyLevels();
         renderTimeLeft();
+        renderClaimAll();
     }
 
     function renderBuyLevels() {
         var row = document.getElementById('lpBuyLevelRow');
         var optionsEl = document.getElementById('lpBuyLevelOptions');
         if (!row || !optionsEl) return;
-        var info = passState.progress.level_purchase;
+        var info = passState.level_purchase;
         if (!info || !info.enabled || !info.options || !info.options.length || passState.season.status !== 'active') {
             row.style.display = 'none';
             return;
@@ -175,7 +176,7 @@
 
     async function buyLevels(count) {
         if (busy || !passState) return;
-        var info = passState.progress.level_purchase;
+        var info = passState.level_purchase;
         var option = (info && info.options || []).filter(function(entry) { return entry.levels === count; })[0];
         if (!option) return;
         if (passState.lab_coins < option.price) { notify('Not enough Lab Coins. You need ' + option.price + ' LC for ' + count + ' level(s).', 'error'); return; }
@@ -207,6 +208,7 @@
                     '</div>' +
                 '</div>' +
                 '<div class="lp-challenge-reward">' +
+                    (item.swappable && passState.daily_challenges.swaps_left > 0 ? '<button type="button" class="lp-quest-swap" data-swap-quest="' + esc(item.challenge_id) + '" title="Swap this quest for another one (' + passState.daily_challenges.swaps_left + ' swaps left in the last 24 hours)">↻</button>' : '') +
                     (item.completed ? '<svg class="lp-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
                     '<span class="lp-xp-reward">' + item.xp + ' XP</span>' +
                 '</div>' +
@@ -214,6 +216,97 @@
         }).join('') || '<div class="lp-challenge-item"><div class="lp-challenge-info"><span class="lp-challenge-name">All daily challenges completed. Come back tomorrow!</span></div></div>';
         var allButton = document.getElementById('lpAllChallengesBtn');
         if (allButton) allButton.textContent = showAllChallenges ? 'Hide Completed' : 'All Challenges';
+        renderSwapInfo();
+    }
+
+    function renderSwapInfo() {
+        var list = document.getElementById('lpChallengesList');
+        if (!list || !passState) return;
+        var info = document.getElementById('lpSwapInfo');
+        if (!info) {
+            info = document.createElement('div');
+            info.id = 'lpSwapInfo';
+            info.className = 'lp-swap-info';
+            list.parentNode.insertBefore(info, list);
+        }
+        var daily = passState.daily_challenges;
+        info.textContent = 'Quest swaps left: ' + daily.swaps_left + ' / ' + daily.swaps_per_day + (daily.next_swap_in_seconds ? ' · Next swap in ' + formatDuration(daily.next_swap_in_seconds) : '');
+    }
+
+    async function swapQuest(challengeId) {
+        if (busy) return;
+        busy = true;
+        try {
+            var result = await RWL.apiRequest('/api/season_pass/quests/swap', { method: 'POST', body: { challenge_id: challengeId } });
+            applyPass(result.pass);
+            notify('The quest was swapped.', 'success');
+        } catch (error) {
+            notify(error.message || 'The quest could not be swapped.', 'error');
+        } finally {
+            busy = false;
+        }
+    }
+
+    function renderClaimAll() {
+        var pending = claimableCount();
+        var button = document.getElementById('lpClaimAllBtn');
+        if (!button) {
+            var hero = document.getElementById('lpHeroChest');
+            if (!hero || !hero.parentNode) return;
+            button = document.createElement('button');
+            button.type = 'button';
+            button.id = 'lpClaimAllBtn';
+            button.className = 'lp-claim-all';
+            button.title = 'Claim every unlocked reward at once';
+            hero.parentNode.insertBefore(button, hero.nextSibling);
+            button.addEventListener('click', function() {
+                if (claimableCount() > 0) claim({ claim_all: true }, true);
+            });
+        }
+        button.textContent = pending > 0 ? 'Claim All (' + pending + ')' : 'Nothing To Claim';
+        button.disabled = pending === 0;
+    }
+
+    function rewardRevealEntries(claims, labCoins) {
+        var entries = [];
+        if (labCoins) entries.push({ title: labCoins + ' LC', subtitle: 'Lab Coins', rarity: 'Rare' });
+        claims.forEach(function(claim) {
+            if (claim.items) {
+                claim.items.forEach(function(item) {
+                    if (item.fallback_lab_coins) return;
+                    entries.push({ title: item.name || claim.name, subtitle: item.duplicate ? 'Duplicate' : (item.category_label || claim.name), rarity: item.rarity || 'Rare' });
+                });
+            } else if (claim.type !== 'lab_coins') {
+                entries.push({ title: claim.name, subtitle: 'Level ' + claim.level, rarity: 'Rare' });
+            }
+        });
+        return entries;
+    }
+
+    function showRewardReveal(claims, labCoins) {
+        var entries = rewardRevealEntries(claims, labCoins);
+        if (!entries.length) return;
+        var overlay = document.createElement('div');
+        overlay.className = 'lp-reveal-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        var capped = entries.slice(0, 60);
+        overlay.innerHTML = '<div class="lp-reveal-card"><h2>' + esc(entries.length + ' Rewards Claimed') + '</h2><div class="lp-reveal-grid">' + capped.map(function(entry, index) {
+            var color = RWL.rarityColor(entry.rarity);
+            return '<div class="lp-reveal-item" style="--rwl-keep:1;border-color:' + esc(color) + ';animation-delay:' + Math.min(index * 45, 1400) + 'ms;"><strong translate="no">' + esc(entry.title) + '</strong><span>' + esc(entry.subtitle) + '</span></div>';
+        }).join('') + '</div>' + (entries.length > capped.length ? '<div class="lp-reveal-more">+' + (entries.length - capped.length) + ' more</div>' : '') + '<button type="button" class="lp-claim-all" title="Close this overview">Continue</button></div>';
+        function close() {
+            overlay.remove();
+            document.removeEventListener('keydown', onKey);
+        }
+        function onKey(event) {
+            if (event.key === 'Escape') close();
+        }
+        overlay.addEventListener('click', function(event) {
+            if (event.target === overlay || event.target.closest('.lp-claim-all')) close();
+        });
+        document.addEventListener('keydown', onKey);
+        document.body.appendChild(overlay);
     }
 
     function updateChallengeTimer() {
@@ -299,13 +392,14 @@
         return unique + (parts.length > 6 ? ' and ' + (parts.length - 6) + ' more' : '');
     }
 
-    async function claim(body) {
+    async function claim(body, reveal) {
         if (busy) return;
         busy = true;
         try {
             var result = await RWL.apiRequest('/api/season_pass/claim', { method: 'POST', body: body });
             applyPass(result.pass);
-            notify('Claimed: ' + describeClaims(result.claimed || [], result.lab_coins_awarded || 0), 'success');
+            if (reveal) showRewardReveal(result.claimed || [], result.lab_coins_awarded || 0);
+            else notify('Claimed: ' + describeClaims(result.claimed || [], result.lab_coins_awarded || 0), 'success');
         } catch (error) {
             notify(error.message || 'The reward could not be claimed.', 'error');
         } finally {
@@ -351,7 +445,7 @@
         var hero = document.getElementById('lpHeroChest');
         if (hero) {
             hero.addEventListener('click', function() {
-                if (claimableCount() > 0) claim({ claim_all: true });
+                if (claimableCount() > 0) claim({ claim_all: true }, true);
             });
         }
         var activateBtn = document.getElementById('lpActivateBtn');
@@ -365,6 +459,13 @@
             buyOptions.addEventListener('click', function(e) {
                 var btn = e.target.closest('[data-buy-levels]');
                 if (btn) buyLevels(parseInt(btn.getAttribute('data-buy-levels'), 10));
+            });
+        }
+        var questList = document.getElementById('lpChallengesList');
+        if (questList) {
+            questList.addEventListener('click', function(e) {
+                var swap = e.target.closest('[data-swap-quest]');
+                if (swap) swapQuest(swap.getAttribute('data-swap-quest'));
             });
         }
         var allButton = document.getElementById('lpAllChallengesBtn');

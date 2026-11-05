@@ -29,7 +29,7 @@ async function loadAccountSettings(user) {
     document.getElementById('phoneNumber').value = user.phone_number || '';
     document.getElementById('emailNewsletter').checked = user.email_newsletter || false;
     document.getElementById('accountType').textContent = user.account_type || 'User';
-    document.getElementById('memberSince').textContent = user.user_created_at ? new Date(user.user_created_at).toLocaleDateString() : 'Unknown';
+    document.getElementById('memberSince').textContent = (user.created_at || user.user_created_at) ? new Date(user.created_at || user.user_created_at).toLocaleDateString() : 'Unknown';
     document.getElementById('lastLogin').textContent = user.user_last_login ? new Date(user.user_last_login).toLocaleString() : 'Unknown';
     document.getElementById('devicesConnected').textContent = user.devices_connected || 1;
 
@@ -95,12 +95,15 @@ function setupProfileUpload() {
 }
 
 function uploadWithProgress(token, file) {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
         const form = new FormData();
         form.append('file', file, file.name || 'profile_picture');
         const request = new XMLHttpRequest();
-        request.open('POST', apiUrl('/api/profile/picture'));
+        const uploadUrl = apiUrl('/api/profile/picture');
+        request.open('POST', uploadUrl);
         request.setRequestHeader('Authorization', 'Bearer ' + token);
+        const signing = await RWL.signingHeaders('POST', uploadUrl, '', true, token);
+        if (signing) Object.keys(signing).forEach((name) => request.setRequestHeader(name, signing[name]));
         request.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable) {
                 const percent = Math.round(event.loaded / event.total * 100);

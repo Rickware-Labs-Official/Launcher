@@ -425,6 +425,8 @@
         var bandMax = clampNumber(raw.band_max, 0, 359, 330);
         return {
             animation: normalizeAnimation(raw.animation),
+            scene: raw.scene && typeof raw.scene === 'object' ? raw.scene : null,
+            speed: Math.max(0.5, Math.min(2, parseFloat(raw.speed) || 1)),
             item_id: String(raw.item_id).slice(0, 64),
             name: String(raw.name || '').slice(0, 80),
             hue: clampNumber(raw.hue, 0, 359, 285),
@@ -641,11 +643,118 @@
         themeObserver = null;
     }
 
-    var ANIMATION_STEP_MS = 700;
-    var ANIMATION_SLOW_STEP_MS = 1800;
+    var ANIMATION_STEP_MS = 1400;
+    var ANIMATION_SLOW_STEP_MS = 3200;
+    var ANIMATION_VERY_SLOW_STEP_MS = 7000;
+    var INTERACTION_QUIET_MS = 450;
+    var HUE_QUANTIZE = 4;
+    var AUTO_LOW_FX_MIN_FPS = 28;
+    var AUTO_LOW_FX_SAMPLE_MS = 2500;
+    var AUTO_LOW_FX_DELAY_MS = 3000;
+    var AUTO_LOW_FX_DAYS = 14;
     var animationTimer = null;
     var animationBase = null;
     var animationStep = ANIMATION_STEP_MS;
+    var lastInteraction = 0;
+    var bootScript = document.currentScript;
+    var baseUrl = bootScript && bootScript.src ? bootScript.src.replace(/js\/rwl_boot\.js.*$/, '') : '';
+    var scenesRequested = false;
+    var pendingScene = null;
+
+    function markInteraction() {
+        lastInteraction = Date.now();
+    }
+
+    ['scroll', 'wheel', 'pointermove', 'pointerdown', 'keydown', 'touchmove'].forEach(function (eventName) {
+        global.addEventListener(eventName, markInteraction, { passive: true, capture: true });
+    });
+
+    function loadUpgradeStyles() {
+        if (!baseUrl || document.getElementById('rwlUpgradeStyles')) return;
+        var link = document.createElement('link');
+        link.id = 'rwlUpgradeStyles';
+        link.rel = 'stylesheet';
+        link.href = baseUrl + 'css/rwl_upgrade.css';
+        (document.head || document.documentElement).appendChild(link);
+    }
+
+    function lowEndDevice() {
+        var navigatorInfo = global.navigator || {};
+        return (navigatorInfo.deviceMemory && navigatorInfo.deviceMemory <= 2) || (navigatorInfo.hardwareConcurrency && navigatorInfo.hardwareConcurrency <= 2);
+    }
+
+    function reducedEffects() {
+        return readStorage('rwl_reduced_effects') === '1';
+    }
+
+    function applyEffectPreference() {
+        var reduced = reducedEffects();
+        global.RWL_REDUCED_EFFECTS = reduced;
+        document.documentElement.classList.toggle('rwl-low-fx', reduced || lowEndDevice() || autoLowEffectsActive());
+    }
+
+    function syncScene(theme) {
+        var scene = theme && theme.scene;
+        pendingScene = scene ? { scene: scene, speed: theme.speed || 1 } : null;
+        if (!scene) {
+            if (global.RWLScenes) global.RWLScenes.clear();
+            return;
+        }
+        if (global.RWLScenes) {
+            whenBodyReady(function () { if (pendingScene) global.RWLScenes.set(pendingScene.scene, pendingScene.speed); });
+            return;
+        }
+        if (scenesRequested || !baseUrl) return;
+        scenesRequested = true;
+        var script = document.createElement('script');
+        script.src = baseUrl + 'js/rwl_scenes.js';
+        script.onload = function () {
+            whenBodyReady(function () { if (pendingScene && global.RWLScenes) global.RWLScenes.set(pendingScene.scene, pendingScene.speed); });
+        };
+        (document.head || document.documentElement).appendChild(script);
+    }
+
+    function whenBodyReady(callback) {
+        if (document.body) callback();
+        else document.addEventListener('DOMContentLoaded', callback, { once: true });
+    }
+
+    function setAutoLowEffects() {
+        writeStorage('rwl_auto_low_fx', String(Date.now()));
+        document.documentElement.classList.add('rwl-low-fx');
+    }
+
+    function autoLowEffectsActive() {
+        var stored = parseInt(readStorage('rwl_auto_low_fx'), 10);
+        return !isNaN(stored) && Date.now() - stored < AUTO_LOW_FX_DAYS * 86400000;
+    }
+
+    function measurePerformance() {
+        if (autoLowEffectsActive() || !global.requestAnimationFrame) return;
+        var frames = 0;
+        var started = 0;
+        function tick(now) {
+            if (document.hidden) {
+                started = 0;
+                frames = 0;
+                global.requestAnimationFrame(tick);
+                return;
+            }
+            if (!started) started = now;
+            frames += 1;
+            if (now - started < AUTO_LOW_FX_SAMPLE_MS) {
+                global.requestAnimationFrame(tick);
+                return;
+            }
+            if (frames / ((now - started) / 1000) < AUTO_LOW_FX_MIN_FPS) setAutoLowEffects();
+        }
+        global.setTimeout(function () { global.requestAnimationFrame(tick); }, AUTO_LOW_FX_DELAY_MS);
+    }
+
+    loadUpgradeStyles();
+    applyEffectPreference();
+    if (autoLowEffectsActive()) document.documentElement.classList.add('rwl-low-fx');
+    measurePerformance();
 
     function reducedMotion() {
         try { return global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (error) { return false; }
@@ -653,6 +762,8 @@
 
     function retint() {
         colorCache = new Map();
+        var root = document.documentElement;
+        root.classList.add('rwl-retinting');
         for (var index = 0; index < themedDeclarations.length; index++) {
             var entry = themedDeclarations[index];
             try { entry.style.setProperty(entry.property, transformValue(entry.original), entry.priority); } catch (error) {}
@@ -663,11 +774,12 @@
                 if (nodes[node].hasAttribute(THEMED_ATTRIBUTES[attribute])) processThemeAttribute(nodes[node], THEMED_ATTRIBUTES[attribute]);
             }
         }
+        global.requestAnimationFrame(function () { global.requestAnimationFrame(function () { root.classList.remove('rwl-retinting'); }); });
     }
 
     function animationFrame() {
         if (!activeTheme || !animationBase || !activeTheme.animation) return;
-        if (document.hidden) return;
+        if (document.hidden || Date.now() - lastInteraction < INTERACTION_QUIET_MS || reducedEffects()) return;
         var animation = activeTheme.animation;
         var seconds = (Date.now() / 1000) % animation.period_seconds;
         var progress = seconds / animation.period_seconds;
@@ -677,12 +789,15 @@
         } else {
             offset = ((Math.sin(progress * Math.PI * 2 - Math.PI / 2) + 1) / 2) * (animation.hue_to - animationBase.hue);
         }
-        activeTheme.hue = Math.round(animationBase.hue + offset + 720) % 360;
-        activeTheme.background_hue = Math.round(animationBase.background_hue + offset * (animation.mode === 'cycle' ? 1 : 0.6) + 720) % 360;
+        var nextHue = Math.round((animationBase.hue + offset + 720) / HUE_QUANTIZE) * HUE_QUANTIZE % 360;
+        var nextBackground = Math.round((animationBase.background_hue + offset * (animation.mode === 'cycle' ? 1 : 0.6) + 720) / HUE_QUANTIZE) * HUE_QUANTIZE % 360;
+        if (nextHue === activeTheme.hue && nextBackground === activeTheme.background_hue) return;
+        activeTheme.hue = nextHue;
+        activeTheme.background_hue = nextBackground;
         var started = (global.performance && performance.now) ? performance.now() : Date.now();
         retint();
         var elapsed = ((global.performance && performance.now) ? performance.now() : Date.now()) - started;
-        var nextStep = elapsed > 35 ? ANIMATION_SLOW_STEP_MS : ANIMATION_STEP_MS;
+        var nextStep = elapsed > 90 ? ANIMATION_VERY_SLOW_STEP_MS : (elapsed > 30 ? ANIMATION_SLOW_STEP_MS : ANIMATION_STEP_MS);
         if (nextStep !== animationStep) {
             animationStep = nextStep;
             startThemeAnimation();
@@ -706,6 +821,7 @@
         if (activeTheme && theme && activeTheme.item_id === theme.item_id && !theme.animation && JSON.stringify(activeTheme) === JSON.stringify(theme)) return;
         stopThemeAnimation();
         animationBase = theme ? JSON.parse(JSON.stringify(theme)) : null;
+        syncScene(theme);
         restoreDeclarations();
         colorCache = new Map();
         activeTheme = theme;
@@ -737,6 +853,13 @@
 
     global.RWLTheme = {
         apply: function (theme) { applyTheme(theme, true); },
+        preview: function (theme) { applyTheme(theme, false); },
+        setReducedEffects: function (enabled) {
+            writeStorage('rwl_reduced_effects', enabled ? '1' : null);
+            applyEffectPreference();
+            syncScene(activeTheme);
+            if (enabled && global.RWLScenes) global.RWLScenes.clear();
+        },
         clear: function () { applyTheme(null, true); },
         current: function () { return activeTheme; },
         keepMarker: KEEP_MARKER,
@@ -746,6 +869,17 @@
         }
     };
 
-    var initialTheme = storedTheme();
+    var previewMode = /[?&]rwl_preview=1/.test(global.location.search);
+    if (previewMode) {
+        document.documentElement.classList.add('rwl-preview-frame');
+        global.RWLTheme.apply = function () {};
+        global.RWLTheme.sync = function () {};
+        global.RWLTheme.clear = function () {};
+        global.addEventListener('message', function (event) {
+            if (event.origin !== global.location.origin || !event.data || event.data.type !== 'rwl_theme_preview') return;
+            applyTheme(event.data.theme || null, false);
+        });
+    }
+    var initialTheme = previewMode ? null : storedTheme();
     if (initialTheme) applyTheme(initialTheme, false);
 })(window);

@@ -207,7 +207,7 @@
       "auto_setup": true,
       "enabled_setup": true,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -274,7 +274,7 @@
       "auto_setup": true,
       "enabled_setup": true,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -341,7 +341,7 @@
       "auto_setup": true,
       "enabled_setup": true,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -388,7 +388,7 @@
       "auto_setup": true,
       "enabled_setup": true,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V5: *Features:*\n--------------------Fixed--------------------\n- Adjustments for recent platform changes\n- Rate limit handling and retry logic\n- Multi platform path fixes for Windows, macOS and Linux\n\n\n\n- V4: *Features:*\n--------------------Updated--------------------\n+ Log Menu with read only viewer and clear function\n+ Launcher integration with one click start\n+ Improved error messages inside the interface\n\n\n\n- V3: *Features:*\n--------------------Fixed--------------------\n- Crashes on invalid config values\n- Terminal output freezing during long runs\n- Proxy handling with unusual formats\n- Stability fixes for long sessions\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt interface with animations and tooltips\n+ Program settings with live config synchronization\n+ Faster start and lower memory usage\n+ Better account and proxy validation\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -488,7 +488,7 @@
       "auto_setup": true,
       "enabled_setup": true,
       "coupon_codes": false,
-      "change_log": ""
+      "change_log": "- V4: *Features:*\n--------------------Updated--------------------\n+ Log Menu with read only viewer and clear function\n+ Launcher integration with one click start\n+ Improved error messages inside the interface\n\n\n\n- V3: *Features:*\n--------------------Fixed--------------------\n- Crashes on invalid config values\n- Terminal output freezing during long runs\n- Proxy handling with unusual formats\n- Stability fixes for long sessions\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt interface with animations and tooltips\n+ Program settings with live config synchronization\n+ Faster start and lower memory usage\n+ Better account and proxy validation\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -539,7 +539,7 @@
       "auto_setup": false,
       "enabled_setup": true,
       "coupon_codes": false,
-      "change_log": ""
+      "change_log": "- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -590,7 +590,7 @@
       "auto_setup": true,
       "enabled_setup": true,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V3: *Features:*\n--------------------Fixed--------------------\n- Crashes on invalid config values\n- Terminal output freezing during long runs\n- Proxy handling with unusual formats\n- Stability fixes for long sessions\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt interface with animations and tooltips\n+ Program settings with live config synchronization\n+ Faster start and lower memory usage\n+ Better account and proxy validation\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -641,7 +641,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": ""
+      "change_log": "- V3.8.3: *Features:*\n--------------------Fixed--------------------\n- Adjustments for recent platform changes\n- Rate limit handling and retry logic\n- Multi platform path fixes for Windows, macOS and Linux\n\n\n\n- V3.8: *Features:*\n--------------------Updated--------------------\n+ Log Menu with read only viewer and clear function\n+ Launcher integration with one click start\n+ Improved error messages inside the interface\n\n\n\n- V3: *Features:*\n--------------------Fixed--------------------\n- Crashes on invalid config values\n- Terminal output freezing during long runs\n- Proxy handling with unusual formats\n- Stability fixes for long sessions\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt interface with animations and tooltips\n+ Program settings with live config synchronization\n+ Faster start and lower memory usage\n+ Better account and proxy validation\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -693,7 +693,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": ""
+      "change_log": "- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -764,7 +764,7 @@
       "auto_setup": true,
       "enabled_setup": true,
       "coupon_codes": true,
-      "change_log": "Soon"
+      "change_log": "- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -835,7 +835,7 @@
       "auto_setup": true,
       "enabled_setup": true,
       "coupon_codes": true,
-      "change_log": "Soon"
+      "change_log": "- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 
@@ -889,7 +889,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V4: *Features:*\n--------------------Updated--------------------\n+ More configuration options for every module\n+ Better rate limit handling for large servers\n\n\n\n- V3: *Features:*\n--------------------Fixed--------------------\n- Interaction timeouts during high activity\n- Missing permission handling\n- Data files are saved crash safe\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt panels with buttons and modals\n+ Live config reload without a restart\n+ Cleaner embed design\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Slash commands with permission checks\n- Configurable embeds in JSON files\n- Log channels and error logging"
     },
 
 
@@ -941,7 +941,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V3: *Features:*\n--------------------Fixed--------------------\n- Interaction timeouts during high activity\n- Missing permission handling\n- Data files are saved crash safe\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt panels with buttons and modals\n+ Live config reload without a restart\n+ Cleaner embed design\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Slash commands with permission checks\n- Configurable embeds in JSON files\n- Log channels and error logging"
     },
 
 
@@ -993,7 +993,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt panels with buttons and modals\n+ Live config reload without a restart\n+ Cleaner embed design\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Slash commands with permission checks\n- Configurable embeds in JSON files\n- Log channels and error logging"
     },
 
 
@@ -1047,7 +1047,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt panels with buttons and modals\n+ Live config reload without a restart\n+ Cleaner embed design\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Slash commands with permission checks\n- Configurable embeds in JSON files\n- Log channels and error logging"
     },
 
 
@@ -1100,7 +1100,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V3: *Features:*\n--------------------Fixed--------------------\n- Interaction timeouts during high activity\n- Missing permission handling\n- Data files are saved crash safe\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt panels with buttons and modals\n+ Live config reload without a restart\n+ Cleaner embed design\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Slash commands with permission checks\n- Configurable embeds in JSON files\n- Log channels and error logging"
     },
 
 
@@ -1153,7 +1153,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V4: *Features:*\n--------------------Updated--------------------\n+ More configuration options for every module\n+ Better rate limit handling for large servers\n\n\n\n- V3: *Features:*\n--------------------Fixed--------------------\n- Interaction timeouts during high activity\n- Missing permission handling\n- Data files are saved crash safe\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt panels with buttons and modals\n+ Live config reload without a restart\n+ Cleaner embed design\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Slash commands with permission checks\n- Configurable embeds in JSON files\n- Log channels and error logging"
     },
 
 
@@ -1205,7 +1205,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Slash commands with permission checks\n- Configurable embeds in JSON files\n- Log channels and error logging"
     },
 
 
@@ -1257,7 +1257,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt panels with buttons and modals\n+ Live config reload without a restart\n+ Cleaner embed design\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Slash commands with permission checks\n- Configurable embeds in JSON files\n- Log channels and error logging"
     },
 
 
@@ -1309,7 +1309,7 @@
       "auto_setup": false,
       "enabled_setup": false,
       "coupon_codes": false,
-      "change_log": "Soon"
+      "change_log": "- V3: *Features:*\n--------------------Fixed--------------------\n- Interaction timeouts during high activity\n- Missing permission handling\n- Data files are saved crash safe\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt panels with buttons and modals\n+ Live config reload without a restart\n+ Cleaner embed design\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Slash commands with permission checks\n- Configurable embeds in JSON files\n- Log channels and error logging"
     },
 
 
@@ -1380,7 +1380,7 @@
       "auto_setup": true,
       "enabled_setup": true,
       "coupon_codes": true,
-      "change_log": "Soon"
+      "change_log": "- V3: *Features:*\n--------------------Fixed--------------------\n- Crashes on invalid config values\n- Terminal output freezing during long runs\n- Proxy handling with unusual formats\n- Stability fixes for long sessions\n\n\n\n- V2: *Features:*\n--------------------Updated--------------------\n+ Rebuilt interface with animations and tooltips\n+ Program settings with live config synchronization\n+ Faster start and lower memory usage\n+ Better account and proxy validation\n\n\n\n- V1: *Features:*\n--------------------Features--------------------\n- First public release\n- Modern dark interface with sidebar and live terminal output\n- Account and proxy management with import support\n- Automatic configuration files in the config folder\n- Error and main log files in the logs folder"
     },
 
 

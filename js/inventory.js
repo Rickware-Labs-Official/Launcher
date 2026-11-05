@@ -1,4 +1,4 @@
-(function() {
+(function(global) {
     var lockerCategories = [
         {
             id: 'themes',
@@ -27,6 +27,20 @@
             section: 'locker',
             image: 'nameplates_main.webp',
             icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="7" cy="12" r="2"/><path d="M12 10h7M12 14h5"/></svg>'
+        },
+        {
+            id: 'nameplate-outlines',
+            name: 'Nameplate Outlines',
+            section: 'locker',
+            image: 'nameplate_outlines_main.webp',
+            icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="3"/><rect x="5" y="9" width="14" height="6" rx="1.5" stroke-dasharray="2 2"/></svg>'
+        },
+        {
+            id: 'content-borders',
+            name: 'Content Borders',
+            section: 'locker',
+            image: 'content_borders_main.webp',
+            icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>'
         },
         {
             id: 'mystery-chests',
@@ -62,13 +76,39 @@
         'themes': { catalog: 'launcher_themes', field: 'launcher_theme', label: 'Theme' },
         'avatar-decos': { catalog: 'avatar_decorations', field: 'avatar_decoration', label: 'Avatar Decoration' },
         'name-colors': { catalog: 'name_colors', field: 'name_color', label: 'Name Color' },
-        'nameplates': { catalog: 'nameplates', field: 'nameplate', label: 'Nameplate' }
+        'nameplates': { catalog: 'nameplates', field: 'nameplate', label: 'Nameplate' },
+        'nameplate-outlines': { catalog: 'nameplate_outlines', field: 'nameplate_outline', label: 'Nameplate Outline' },
+        'content-borders': { catalog: 'content_borders', field: 'content_border', label: 'Content Border' }
     };
+    var GRID_LAYOUTS = {
+        launcher_themes: { minWidth: 118, height: 124 },
+        name_colors: { minWidth: 118, height: 124 },
+        avatar_decorations: { minWidth: 112, height: 134 },
+        nameplates: { minWidth: 280, height: 104, mediaRatio: 448 / 84, chromeHeight: 42 },
+        nameplate_outlines: { minWidth: 240, height: 100 },
+        content_borders: { minWidth: 220, height: 124 }
+    };
+    var GRID_GAP = 9;
+    var GRID_BUFFER_ROWS = 2;
+    var CONFIGURABLE_CATALOGS = { name_colors: true, nameplates: true, avatar_decorations: true, launcher_themes: true, nameplate_outlines: true, content_borders: true };
+    var DIRECTION_LABELS = { ltr: 'Left To Right', rtl: 'Right To Left', ttb: 'Top To Bottom', btt: 'Bottom To Top', center_out: 'Center To Outside', edge_in: 'Outside To Center' };
+    var HOVER_DELAY_MS = 220;
+    var THEME_PREVIEW_WIDTH = 1280;
+    var THEME_PREVIEW_HEIGHT = 720;
+    var THEME_PREVIEW_SCALE = 0.3;
+    var activeGrids = [];
+    var hoverTimer = null;
+    var previewBox = null;
+    var themeFrame = null;
+    var themeFrameReady = false;
+    var pendingPreviewTheme = null;
     var NEW_MARKER_KEYS = {
         'themes': 'launcher_themes',
         'avatar-decos': 'avatar_decorations',
         'name-colors': 'name_colors',
         'nameplates': 'nameplates',
+        'nameplate-outlines': 'nameplate_outlines',
+        'content-borders': 'content_borders',
         'special-items': 'license_vouchers',
         'coupons': 'reward_coupons'
     };
@@ -167,7 +207,7 @@
     }
 
     function displayNameFromId(itemId) {
-        return String(itemId || '').replace(/\.(webm|png)$/i, '').replace(/_/g, ' ').replace(/\b\w/g, function(char) { return char.toUpperCase(); });
+        return String(itemId || '').replace(/\.(webm|png|webp)$/i, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/(^|[\s(])(\S)/g, function(match, lead, char) { return lead + char.toUpperCase(); });
     }
 
     function itemName(catalogKey, itemId) {
@@ -306,45 +346,177 @@
     }
 
     function cosmeticSlotHtml(catalogKey, item, owned, equipped, fresh) {
-        var classes = 'inv-slot inv-slot-item' + (owned ? '' : ' inv-slot-locked') + (equipped ? ' inv-slot-equipped' : '') + (fresh ? ' inv-slot-new' : '');
+        var classes = 'inv-slot inv-slot-item inv-slot-visible' + (owned ? '' : ' inv-slot-locked') + (equipped ? ' inv-slot-equipped' : '') + (fresh ? ' inv-slot-new' : '') + ' inv-slot-' + catalogKey.replace(/_/g, '-');
+        var settings = itemSettings(catalogKey, item.item_id);
         var visual;
         if (catalogKey === 'name_colors') {
-            visual = '<div class="inv-item-swatch" style="' + esc(RWL.swatchStyle(item)) + '"></div>';
+            var swatchItem = Object.assign({}, item, { speed: settings.speed, direction: settings.direction });
+            visual = '<div class="inv-item-swatch" style="' + esc(RWL.swatchStyle(swatchItem)) + '"></div>';
         } else if (catalogKey === 'nameplates') {
-            visual = '<video class="inv-item-media" muted loop playsinline preload="none" data-src="' + esc(item.asset_url || '') + '"></video>';
+            visual = '<video class="inv-item-media" muted loop playsinline preload="none" data-rwl-speed="' + settings.speed + '" data-src="' + esc(item.asset_url || '') + '"></video>';
         } else if (catalogKey === 'avatar_decorations') {
-            visual = '<img class="inv-item-media inv-item-media-contain" alt="" loading="lazy" data-src="' + esc(item.asset_url || '') + '">';
+            visual = '<img class="inv-item-media inv-item-media-contain" alt="" decoding="async" data-src="' + esc(item.thumb_url || item.asset_url || '') + '">';
         } else if (catalogKey === 'launcher_themes') {
             visual = themePreviewHtml(item);
+        } else if (catalogKey === 'nameplate_outlines') {
+            visual = '<div class="inv-frame-sample inv-frame-plate' + RWL.frameClasses(item) + '" style="' + esc(RWL.frameStyle(Object.assign({}, item, { speed: settings.speed }))) + '"><span translate="no">' + esc(item.name) + '</span></div>';
+        } else if (catalogKey === 'content_borders') {
+            visual = '<div class="inv-frame-sample inv-frame-box' + RWL.frameClasses(item) + '" style="' + esc(RWL.frameStyle(Object.assign({}, item, { speed: settings.speed }))) + '"><span></span><span></span><span></span></div>';
         } else {
             visual = '<div class="inv-slot-text">' + esc(item.name) + '</div>';
         }
         return '<div class="' + classes + '" style="' + KEEP_STYLE + 'border-color:' + esc(RWL.rarityColor(item.rarity)) + ';" data-item-id="' + esc(item.item_id) + '" data-owned="' + (owned ? '1' : '0') + '" data-new-key="' + esc(catalogKey) + '" data-new-id="' + esc(item.item_id) + '" title="' + esc(item.name + ' · ' + item.rarity + (owned ? (equipped ? ' · Equipped' : ' · Click to equip') : ' · Locked')) + '">' +
+            '<div class="rwl-rarity-banner" style="' + KEEP_STYLE + 'background:' + esc(RWL.rarityColor(item.rarity)) + ';">' + esc(item.rarity) + '</div>' +
             '<div class="inv-item-visual">' + visual + '</div>' +
             '<div class="inv-item-name" translate="no">' + esc(item.name) + '</div>' +
+            (owned && item.animated && CONFIGURABLE_CATALOGS[catalogKey] && !item.is_default ? '<button type="button" class="inv-item-config" data-config-item="' + esc(item.item_id) + '" title="Change the playback speed' + (catalogKey === 'name_colors' ? ' and direction' : '') + '" aria-label="Item settings">⚙</button>' : '') +
             (equipped ? '<div class="inv-item-badge">Equipped</div>' : '') +
             (fresh ? '<div class="inv-item-new">NEW</div>' : '') +
             (owned ? '' : '<div class="inv-item-lock">' + LOCK_SVG + '</div>') +
         '</div>';
     }
 
+    function itemSettings(catalogKey, itemId) {
+        var stored = ((state.inventory && state.inventory.cosmetic_settings) || {})[catalogKey + ':' + itemId];
+        return {
+            speed: stored && stored.speed ? Math.max(0.5, Math.min(2, parseFloat(stored.speed) || 1)) : 1,
+            direction: stored && stored.direction ? stored.direction : 'ltr'
+        };
+    }
+
     function cosmeticGrids(categoryId) {
         var cosmetic = COSMETIC_CATEGORIES[categoryId];
         var catalog = state.catalogs[cosmetic.catalog];
         var owned = ownedSet(cosmetic.catalog);
-        var equippedId = ((state.inventory && state.inventory.equipped) || {})[cosmetic.field];
         var fresh = newSet(cosmetic.catalog);
         var ownedItems = catalog.items.filter(function(item) { return isOwned(cosmetic.catalog, item.item_id, owned); });
         ownedItems.sort(function(left, right) { return (fresh[right.item_id] ? 1 : 0) - (fresh[left.item_id] ? 1 : 0); });
         var isThemes = cosmetic.catalog === 'launcher_themes';
-        var defaultSlot = isThemes ? cosmeticSlotHtml(cosmetic.catalog, DEFAULT_THEME, true, !equippedId, false) : '';
-        var ownedHtml = ownedItems.length
-            ? defaultSlot + ownedItems.map(function(item) { return cosmeticSlotHtml(cosmetic.catalog, item, true, item.item_id === equippedId, !!fresh[item.item_id]); }).join('')
-            : defaultSlot + emptyNote(catalog.items.length ? 'No ' + cosmetic.label.toLowerCase() + 's yet. Open Mystery Chests or progress the Lab-Pass to unlock them.' : 'No ' + cosmetic.label.toLowerCase() + 's are available yet.');
-        var indexHtml = catalog.items.length
-            ? defaultSlot + catalog.items.map(function(item) { var has = isOwned(cosmetic.catalog, item.item_id, owned); return cosmeticSlotHtml(cosmetic.catalog, item, has, has && item.item_id === equippedId, has && !!fresh[item.item_id]); }).join('')
-            : defaultSlot + emptyNote('No ' + cosmetic.label.toLowerCase() + 's are available yet.');
-        return { owned: ownedHtml, index: indexHtml, ownedCount: ownedItems.length, total: catalog.items.length };
+        var leading = isThemes ? [DEFAULT_THEME] : [];
+        var emptyText = catalog.items.length ? 'No ' + cosmetic.label.toLowerCase() + 's yet. Open Mystery Chests or progress the Lab-Pass to unlock them.' : 'No ' + cosmetic.label.toLowerCase() + 's are available yet.';
+        return {
+            ownedItems: leading.concat(ownedItems),
+            indexItems: leading.concat(catalog.items),
+            emptyOwned: ownedItems.length || leading.length ? '' : emptyText,
+            emptyIndex: catalog.items.length || leading.length ? '' : emptyText,
+            ownedCount: ownedItems.length,
+            total: catalog.items.length
+        };
+    }
+
+    function slotForItem(cosmetic, item, cache) {
+        var owned = cache.owned;
+        var equippedId = ((state.inventory && state.inventory.equipped) || {})[cosmetic.field];
+        var fresh = cache.fresh;
+        if (item.is_default) return cosmeticSlotHtml(cosmetic.catalog, item, true, !equippedId, false);
+        var has = isOwned(cosmetic.catalog, item.item_id, owned);
+        return cosmeticSlotHtml(cosmetic.catalog, item, has, has && item.item_id === equippedId, has && !!fresh[item.item_id]);
+    }
+
+    function VirtualGrid(viewport, items, cosmetic) {
+        this.viewport = viewport;
+        this.items = items;
+        this.cosmetic = cosmetic;
+        this.layout = GRID_LAYOUTS[cosmetic.catalog] || { minWidth: 118, height: 124 };
+        this.columns = 1;
+        this.renderedStart = -1;
+        this.renderedEnd = -1;
+        this.frame = null;
+        this.spacer = document.createElement('div');
+        this.spacer.className = 'inv-virtual-spacer';
+        this.layer = document.createElement('div');
+        this.layer.className = 'inv-slots-grid inv-virtual-layer';
+        this.spacer.appendChild(this.layer);
+        viewport.innerHTML = '';
+        viewport.appendChild(this.spacer);
+        var self = this;
+        this.onScroll = function() { self.schedule(); };
+        viewport.addEventListener('scroll', this.onScroll, { passive: true });
+        if (global.ResizeObserver) {
+            this.resizeObserver = new ResizeObserver(function() { self.measure(); self.schedule(true); });
+            this.resizeObserver.observe(viewport);
+        }
+        this.measure();
+        this.render(true);
+    }
+
+    VirtualGrid.prototype.measure = function() {
+        var width = this.viewport.clientWidth - 16;
+        if (width <= 0) return;
+        this.columns = Math.max(1, Math.floor((width + GRID_GAP) / (this.layout.minWidth + GRID_GAP)));
+        var columnWidth = (width - GRID_GAP * (this.columns - 1)) / this.columns;
+        var slotHeight = this.layout.mediaRatio ? Math.ceil(columnWidth / this.layout.mediaRatio) + this.layout.chromeHeight : this.layout.height;
+        this.rowHeight = slotHeight + GRID_GAP;
+        this.layer.style.gridTemplateColumns = 'repeat(' + this.columns + ', minmax(0, 1fr))';
+        this.layer.style.gridAutoRows = slotHeight + 'px';
+        var rows = Math.ceil(this.items.length / this.columns);
+        this.spacer.style.height = Math.max(0, rows * this.rowHeight - GRID_GAP) + 'px';
+    };
+
+    VirtualGrid.prototype.schedule = function(force) {
+        var self = this;
+        if (force) this.renderedStart = -1;
+        if (this.frame) return;
+        this.frame = global.requestAnimationFrame(function() {
+            self.frame = null;
+            self.render(false);
+        });
+    };
+
+    VirtualGrid.prototype.render = function(force) {
+        if (!this.viewport.offsetParent) return;
+        if (force || !this.rowHeight) this.measure();
+        if (!this.rowHeight) return;
+        var firstRow = Math.max(0, Math.floor(this.viewport.scrollTop / this.rowHeight) - GRID_BUFFER_ROWS);
+        var visibleRows = Math.ceil(this.viewport.clientHeight / this.rowHeight) + GRID_BUFFER_ROWS * 2 + 1;
+        var start = firstRow * this.columns;
+        var end = Math.min(this.items.length, start + visibleRows * this.columns);
+        if (!force && start === this.renderedStart && end === this.renderedEnd) return;
+        this.renderedStart = start;
+        this.renderedEnd = end;
+        this.layer.style.transform = 'translateY(' + (firstRow * this.rowHeight) + 'px)';
+        var html = '';
+        var cache = { owned: ownedSet(this.cosmetic.catalog), fresh: newSet(this.cosmetic.catalog) };
+        for (var index = start; index < end; index++) html += slotForItem(this.cosmetic, this.items[index], cache);
+        releaseMedia(this.layer);
+        this.layer.innerHTML = html;
+        var slots = this.layer.querySelectorAll('.inv-slot');
+        for (var position = 0; position < slots.length; position++) activateSlotMedia(slots[position]);
+    };
+
+    VirtualGrid.prototype.refresh = function() {
+        this.render(true);
+    };
+
+    VirtualGrid.prototype.destroy = function() {
+        this.viewport.removeEventListener('scroll', this.onScroll);
+        if (this.resizeObserver) this.resizeObserver.disconnect();
+        if (this.frame) global.cancelAnimationFrame(this.frame);
+        releaseMedia(this.layer);
+    };
+
+    function releaseMedia(root) {
+        var videos = root.querySelectorAll('video');
+        for (var index = 0; index < videos.length; index++) {
+            videos[index].pause();
+            videos[index].removeAttribute('src');
+            videos[index].load();
+        }
+    }
+
+    function destroyGrids() {
+        activeGrids.forEach(function(grid) { grid.destroy(); });
+        activeGrids = [];
+    }
+
+    function mountVirtualGrid(panelName, items, cosmetic, emptyText) {
+        var panel = document.querySelector('.inv-tab-panel[data-tab-panel="' + panelName + '"] .inv-slots-viewport');
+        if (!panel) return;
+        if (emptyText) {
+            panel.innerHTML = '<div class="inv-slots-grid">' + emptyNote(emptyText) + '</div>';
+            return;
+        }
+        activeGrids.push(new VirtualGrid(panel, items, cosmetic));
     }
 
     function chestSlotHtml(clickable) {
@@ -366,7 +538,7 @@
         var empty = !chests.unlimited && !chests.balance;
         var html = '<div class="inv-chest-actions">';
         html += '<button type="button" class="inv-chest-action-btn" data-chest-open="1"' + (empty ? ' disabled' : '') + ' title="Open one chest with the double spin">Open Chest</button>';
-        html += '<button type="button" class="inv-chest-action-btn inv-chest-action-secondary" data-chest-open-all="1"' + (empty || state.openingAll ? ' disabled' : '') + ' title="Open all chests at once without animation">' + (state.openingAll ? 'Opening...' : 'Open All Chests') + '</button>';
+        if (!chests.unlimited) html += '<button type="button" class="inv-chest-action-btn inv-chest-action-secondary" data-chest-open-all="1"' + (empty || state.openingAll ? ' disabled' : '') + ' title="Open all your chests at once without animation">' + (state.openingAll ? 'Opening...' : 'Open Max') + '</button>';
         html += '</div>';
         return html;
     }
@@ -487,7 +659,10 @@
                 for (var k = 0; k < panels.length; k++) {
                     var isActive = panels[k].getAttribute('data-tab-panel') === target;
                     panels[k].classList.toggle('inv-tab-panel-active', isActive);
-                    if (isActive) observeSlots(panels[k]);
+                    if (isActive) {
+                        observeSlots(panels[k]);
+                        activeGrids.forEach(function(grid) { grid.schedule(true); });
+                    }
                 }
             });
         }
@@ -500,10 +675,11 @@
         if (!source) return;
         if (media.tagName === 'VIDEO') {
             media.muted = true;
-            media.preload = 'auto';
+            media.preload = 'metadata';
             media.autoplay = true;
             media.src = source;
-            media.play().catch(function() {});
+            var startPlayback = media.play();
+            if (startPlayback && startPlayback.catch) startPlayback.catch(function() {});
         } else {
             media.src = source;
         }
@@ -607,6 +783,8 @@
         if (!cat || !bodyEl) return;
         var previousTab = keepTab ? activeTabName(bodyEl) : 'owned';
         var cosmetic = COSMETIC_CATEGORIES[categoryId];
+        destroyGrids();
+        hideHoverPreview();
         if (cosmetic) {
             if (!state.catalogs[cosmetic.catalog]) {
                 modalHeader(cat, 'Loading items...');
@@ -624,7 +802,13 @@
             var grids = cosmeticGrids(categoryId);
             var everything = state.inventory && state.inventory.owns_all_cosmetics;
             modalHeader(cat, everything ? 'All ' + formatNumber(grids.total) + ' items unlocked' : formatNumber(grids.ownedCount) + ' of ' + formatNumber(grids.total) + ' items owned');
-            bodyEl.innerHTML = tabbedBodyHtml(grids.owned, grids.index);
+            bodyEl.innerHTML = tabbedBodyHtml('', '') + '<div class="inv-config-bar" id="invConfigBar" hidden></div>';
+            setupModalTabEvents(bodyEl);
+            mountVirtualGrid('owned', grids.ownedItems, cosmetic, grids.emptyOwned);
+            mountVirtualGrid('index', grids.indexItems, cosmetic, grids.emptyIndex);
+            restoreTab(bodyEl, previousTab);
+            activeGrids.forEach(function(grid) { grid.schedule(true); });
+            return;
         } else if (categoryId === 'mystery-chests') {
             var chests = chestSummary();
             modalHeader(cat, chests.unlimited ? 'Unlimited chests' : formatNumber(chests.balance || 0) + (chests.balance === 1 ? ' chest available' : ' chests available'));
@@ -668,6 +852,8 @@
         document.body.style.overflow = '';
         state.activeCategory = null;
         state.openAllResult = null;
+        destroyGrids();
+        hideHoverPreview();
     }
 
     async function copyText(text, label) {
@@ -677,6 +863,224 @@
         } catch (error) {
             toast('Copy failed. Please copy it manually: ' + text, 'error');
         }
+    }
+
+    function selectedConfigItem(itemId) {
+        var cosmetic = COSMETIC_CATEGORIES[state.activeCategory];
+        var catalog = cosmetic && state.catalogs[cosmetic.catalog];
+        return catalog ? catalog.byId[itemId] : null;
+    }
+
+    function openConfigBar(itemId) {
+        var bar = document.getElementById('invConfigBar');
+        var cosmetic = COSMETIC_CATEGORIES[state.activeCategory];
+        var item = selectedConfigItem(itemId);
+        if (!bar || !cosmetic || !item) return;
+        var settings = itemSettings(cosmetic.catalog, itemId);
+        var directionHtml = '';
+        if (cosmetic.catalog === 'name_colors') {
+            directionHtml = '<label class="inv-config-field"><span>Direction</span><select id="invConfigDirection" title="Choose the direction of the animation">' + Object.keys(DIRECTION_LABELS).map(function(key) {
+                return '<option value="' + key + '"' + (key === settings.direction ? ' selected' : '') + '>' + esc(DIRECTION_LABELS[key]) + '</option>';
+            }).join('') + '</select></label>';
+        }
+        bar.innerHTML = '<div class="inv-config-name" translate="no">' + esc(item.name) + '</div>' +
+            '<label class="inv-config-field"><span>Speed <strong id="invConfigSpeedValue">' + settings.speed.toFixed(2) + 'x</strong></span><input type="range" id="invConfigSpeed" min="0.5" max="2" step="0.25" value="' + settings.speed + '" title="Slower or faster playback"></label>' +
+            directionHtml +
+            '<button type="button" class="inv-chest-action-btn" id="invConfigSave" title="Save these settings, they apply everywhere">Save</button>' +
+            '<button type="button" class="inv-chest-action-btn inv-chest-action-secondary" id="invConfigClose" title="Close the settings">Close</button>';
+        bar.hidden = false;
+        bar.setAttribute('data-item-id', itemId);
+        var speedInput = bar.querySelector('#invConfigSpeed');
+        speedInput.addEventListener('input', function() {
+            bar.querySelector('#invConfigSpeedValue').textContent = parseFloat(speedInput.value).toFixed(2) + 'x';
+        });
+        bar.querySelector('#invConfigClose').addEventListener('click', function() { bar.hidden = true; });
+        bar.querySelector('#invConfigSave').addEventListener('click', function(event) { saveConfig(itemId, cosmetic, event.currentTarget); });
+    }
+
+    async function saveConfig(itemId, cosmetic, button) {
+        var bar = document.getElementById('invConfigBar');
+        var directionInput = bar.querySelector('#invConfigDirection');
+        var payload = { category: cosmetic.catalog, item_id: itemId, speed: parseFloat(bar.querySelector('#invConfigSpeed').value) };
+        if (directionInput) payload.direction = directionInput.value;
+        button.disabled = true;
+        try {
+            var result = await RWL.apiRequest('/api/cosmetics/settings', { method: 'POST', body: payload });
+            var stored = state.inventory.cosmetic_settings = state.inventory.cosmetic_settings || {};
+            stored[cosmetic.catalog + ':' + itemId] = result.settings;
+            state.inventory.equipped_cosmetics = result.equipped_cosmetics || state.inventory.equipped_cosmetics;
+            if (window.RWLTheme && cosmetic.catalog === 'launcher_themes') RWLTheme.sync(state.inventory.equipped_cosmetics || {});
+            activeGrids.forEach(function(grid) { grid.refresh(); });
+            renderEquippedPanel();
+            bar.hidden = true;
+            toast('Saved. The settings apply everywhere.', 'success');
+        } catch (error) {
+            toast(error.message || 'The settings could not be saved.', 'error');
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    function hoverPreviewBox() {
+        if (previewBox) return previewBox;
+        previewBox = document.createElement('div');
+        previewBox.className = 'inv-hover-preview';
+        previewBox.hidden = true;
+        document.body.appendChild(previewBox);
+        return previewBox;
+    }
+
+    function positionPreview(slot, width, height) {
+        var box = hoverPreviewBox();
+        var rect = slot.getBoundingClientRect();
+        var left = rect.right + 12;
+        if (left + width > window.innerWidth - 10) left = Math.max(10, rect.left - width - 12);
+        var top = Math.max(10, Math.min(window.innerHeight - height - 10, rect.top + rect.height / 2 - height / 2));
+        box.style.left = left + 'px';
+        box.style.top = top + 'px';
+        box.style.width = width + 'px';
+    }
+
+    function postThemePreview(theme) {
+        pendingPreviewTheme = theme;
+        if (!themeFrame || !themeFrameReady || !themeFrame.contentWindow) return;
+        themeFrame.contentWindow.postMessage({ type: 'rwl_theme_preview', theme: theme }, window.location.origin);
+    }
+
+    function themeFrameElement() {
+        if (themeFrame) return themeFrame;
+        themeFrame = document.createElement('iframe');
+        themeFrame.className = 'inv-theme-frame';
+        themeFrame.title = 'Theme preview';
+        themeFrame.setAttribute('tabindex', '-1');
+        themeFrame.setAttribute('aria-hidden', 'true');
+        themeFrame.width = THEME_PREVIEW_WIDTH;
+        themeFrame.height = THEME_PREVIEW_HEIGHT;
+        themeFrame.src = '../index.html?rwl_preview=1';
+        themeFrame.addEventListener('load', function() {
+            themeFrameReady = true;
+            postThemePreview(pendingPreviewTheme);
+        });
+        return themeFrame;
+    }
+
+    function showThemePreview(slot, item) {
+        var box = hoverPreviewBox();
+        var width = Math.round(THEME_PREVIEW_WIDTH * THEME_PREVIEW_SCALE);
+        var height = Math.round(THEME_PREVIEW_HEIGHT * THEME_PREVIEW_SCALE);
+        var frame = themeFrameElement();
+        if (frame.parentNode !== box) {
+            box.innerHTML = '';
+            var holder = document.createElement('div');
+            holder.className = 'inv-theme-frame-holder';
+            holder.style.height = height + 'px';
+            holder.appendChild(frame);
+            box.appendChild(holder);
+            var caption = document.createElement('div');
+            caption.className = 'inv-hover-caption';
+            box.appendChild(caption);
+        }
+        frame.style.transform = 'scale(' + THEME_PREVIEW_SCALE + ')';
+        box.querySelector('.inv-hover-caption').textContent = item.name;
+        box.hidden = false;
+        positionPreview(slot, width, height + 30);
+        postThemePreview(item.is_default ? null : item);
+    }
+
+    function profileStripHtml(cosmetics) {
+        var account = (state.inventory && state.inventory.account_preview) || {};
+        var username = account.username || 'Username';
+        var avatar = account.profile_picture_url || '';
+        var outlineData = cosmetics.nameplate_outline_data;
+        var outlineClass = RWL.frameClasses(outlineData);
+        var outlineStyle = outlineData ? ' style="' + esc(RWL.frameStyle(outlineData)) + '"' : '';
+        var plate = cosmetics.nameplate_url ? '<video class="inv-strip-plate" autoplay loop muted playsinline data-rwl-speed="' + (cosmetics.nameplate_speed || 1) + '" src="' + esc(cosmetics.nameplate_url) + '"></video>' : '';
+        var picture = avatar ? '<img class="inv-strip-avatar" src="' + esc(avatar) + '" alt="">' : '<div class="inv-strip-avatar inv-strip-initial">' + esc(username.charAt(0).toUpperCase()) + '</div>';
+        var decoration = cosmetics.avatar_decoration_url ? '<img class="inv-strip-deco" src="' + esc(cosmetics.avatar_decoration_url) + '" alt="">' : '';
+        var permission = account.account_permissions ? '<span class="inv-strip-badge inv-strip-perm">' + esc(account.account_permissions) + '</span>' : '';
+        return '<div class="inv-profile-strip' + outlineClass + '"' + outlineStyle + '>' + plate +
+            '<div class="inv-strip-avatar-wrap">' + picture + decoration + '</div>' +
+            '<div class="inv-strip-text"><span class="inv-strip-name" style="' + esc(RWL.nameColorStyle(cosmetics, '#ffffff')) + '" translate="no">' + esc(username) + '</span>' +
+            '<div class="inv-strip-badges"><span class="inv-strip-badge">' + esc(account.account_type || 'User') + '</span>' + permission + '</div></div></div>';
+    }
+
+    function previewCosmetics(catalogKey, item) {
+        var equipped = Object.assign({}, (state.inventory && state.inventory.equipped_cosmetics) || {});
+        var settings = itemSettings(catalogKey, item.item_id);
+        if (catalogKey === 'nameplates') {
+            equipped.nameplate_url = item.asset_url;
+            equipped.nameplate_speed = settings.speed;
+        } else if (catalogKey === 'avatar_decorations') {
+            equipped.avatar_decoration_url = item.thumb_url || item.asset_url;
+        } else if (catalogKey === 'name_colors') {
+            equipped.name_color_hex = item.hex;
+            equipped.name_color_animated = !!(item.animated && item.gradient);
+            equipped.name_color_gradient = item.gradient;
+            equipped.name_color_animation_seconds = item.animation_seconds;
+            equipped.name_color_effect = item.effect;
+            equipped.name_color_speed = settings.speed;
+            equipped.name_color_direction = settings.direction;
+        } else if (catalogKey === 'nameplate_outlines') {
+            equipped.nameplate_outline_data = Object.assign({}, item, { speed: settings.speed });
+        }
+        return equipped;
+    }
+
+    function showProfilePreview(slot, catalogKey, item) {
+        var box = hoverPreviewBox();
+        if (themeFrame && themeFrame.parentNode) themeFrame.parentNode.removeChild(themeFrame);
+        themeFrameReady = false;
+        themeFrame = null;
+        if (catalogKey === 'content_borders') {
+            var frameStyle = esc(RWL.frameStyle(Object.assign({}, item, { speed: itemSettings(catalogKey, item.item_id).speed })));
+            box.innerHTML = '<div class="inv-border-demo' + RWL.frameClasses(item) + '" style="' + frameStyle + '"><strong translate="no">' + esc(item.name) + '</strong><span>Reviews, forum posts, comments and replies use this border.</span></div>';
+        } else {
+            box.innerHTML = profileStripHtml(previewCosmetics(catalogKey, item));
+        }
+        box.hidden = false;
+        positionPreview(slot, 340, 100);
+    }
+
+    function hideHoverPreview() {
+        clearTimeout(hoverTimer);
+        hoverTimer = null;
+        if (previewBox) {
+            previewBox.hidden = true;
+            var strip = previewBox.querySelector('video');
+            if (strip) {
+                strip.pause();
+                strip.removeAttribute('src');
+                strip.load();
+            }
+        }
+    }
+
+    function setupHoverPreview() {
+        var bodyEl = document.getElementById('invModalBody');
+        if (!bodyEl || !window.matchMedia || !window.matchMedia('(hover: hover)').matches) return;
+        bodyEl.addEventListener('mouseover', function(event) {
+            var slot = event.target.closest('.inv-slot-item[data-item-id]');
+            if (!slot || slot.contains(event.relatedTarget)) return;
+            var cosmetic = COSMETIC_CATEGORIES[state.activeCategory];
+            if (!cosmetic) return;
+            clearTimeout(hoverTimer);
+            hoverTimer = setTimeout(function() {
+                var itemId = slot.getAttribute('data-item-id');
+                var catalog = state.catalogs[cosmetic.catalog];
+                var item = itemId === DEFAULT_THEME_ID ? DEFAULT_THEME : (catalog && catalog.byId[itemId]);
+                if (!item || !slot.isConnected) return;
+                if (cosmetic.catalog === 'launcher_themes') {
+                    if (!document.documentElement.classList.contains('rwl-low-fx')) showThemePreview(slot, item);
+                } else {
+                    showProfilePreview(slot, cosmetic.catalog, item);
+                }
+            }, HOVER_DELAY_MS);
+        });
+        bodyEl.addEventListener('mouseout', function(event) {
+            var slot = event.target.closest('.inv-slot-item[data-item-id]');
+            if (slot && !slot.contains(event.relatedTarget)) hideHoverPreview();
+        });
+        bodyEl.addEventListener('scroll', hideHoverPreview, { passive: true, capture: true });
     }
 
     function updateEquippedSlots(bodyEl, field, itemId) {
@@ -718,7 +1122,7 @@
                 try { sessionStorage.setItem('rickware_user', JSON.stringify(result.account)); } catch (error) {}
             }
             if (cosmetic.field === 'launcher_theme' && window.RWLTheme) RWLTheme.sync(state.inventory.equipped_cosmetics || {});
-            updateEquippedSlots(document.getElementById('invModalBody'), cosmetic.field, nextValue);
+            activeGrids.forEach(function(grid) { grid.refresh(); });
             renderEquippedPanel();
             if (itemId === DEFAULT_THEME_ID) toast('The default theme is active again.', 'success');
             else toast((nextValue ? 'Equipped ' : 'Unequipped ') + itemName(cosmetic.catalog, itemId) + '.', 'success');
@@ -779,6 +1183,13 @@
         var bodyEl = document.getElementById('invModalBody');
         if (!bodyEl) return;
         bodyEl.addEventListener('click', function(e) {
+            var configButton = e.target.closest('[data-config-item]');
+            if (configButton) {
+                e.stopPropagation();
+                openConfigBar(configButton.getAttribute('data-config-item'));
+                return;
+            }
+            if (e.target.closest('#invConfigBar')) return;
             if (e.target.closest('[data-voucher-back]')) {
                 renderCategoryModal('special-items', false);
                 return;
@@ -909,7 +1320,7 @@
         renderHeaderStats();
         renderEquippedPanel();
         if (state.activeCategory) renderCategoryModal(state.activeCategory, true);
-        ['launcher_themes', 'avatar_decorations', 'nameplates', 'name_colors'].forEach(function(catalogKey) {
+        ['launcher_themes', 'avatar_decorations', 'nameplates', 'name_colors', 'nameplate_outlines', 'content_borders'].forEach(function(catalogKey) {
             loadCatalog(catalogKey).then(renderEquippedPanel).catch(function() {});
         });
     }
@@ -943,6 +1354,7 @@
         if (window.RWLLauncher) RWLLauncher.setNotifier(toast);
         setupModalEvents();
         setupModalBodyEvents();
+        setupHoverPreview();
         setupCardEvents();
         setupViewAllButton();
         setupLabPassButtons();
@@ -950,4 +1362,4 @@
         window.addEventListener('pagehide', function() { flushSeen(true); });
         checkAuthAndInit();
     });
-})();
+})(window);

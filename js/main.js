@@ -1361,16 +1361,18 @@ function buildDashboardCard(member) {
     var permsHtml = (member.account_permissions && member.account_permissions !== '' && member.account_permissions !== 'none')
         ? '<span class="dashboard-perms-badge">' + escHtml(Array.isArray(member.account_permissions) ? member.account_permissions.join(', ') : member.account_permissions) + '</span>' : '';
     var card = document.createElement('div');
-    card.className = 'dashboard-member-card' + (member.online ? ' online' : '');
+    card.className = 'dashboard-member-card' + (member.online ? ' online' : '') + outlineClasses(member);
+    if (member.nameplate_outline_data) card.style.cssText += RWL.frameStyle(member.nameplate_outline_data);
     card.setAttribute('translate', 'no');
     card.innerHTML =
-        '<video class="mini-nameplate-bg" autoplay loop muted playsinline src="' + escHtml(userNameplateSrc(member)) + '"></video>' +
+        nameplateVideoHtml(member) +
         '<div class="dashboard-card-inner">' +
             '<div class="dashboard-avatar-wrap">' + avatar + decorationHtml + '<span class="dashboard-presence' + (member.online ? ' online' : '') + '"></span></div>' +
             '<div class="dashboard-member-info">' +
                 '<span class="dashboard-username" style="' + escHtml(userNameStyle(member)) + '">' + escHtml(member.username) + '</span>' +
                 '<div class="dashboard-badges">' + dashboardRankBadge(member) + permsHtml + '</div>' +
                 '<span class="dashboard-member-since">' + (member.online ? 'Online now' : (member.member_since ? 'Member since ' + escHtml(member.member_since) : '')) + '</span>' +
+                (!member.online && member.last_online ? '<span class="dashboard-last-online" data-rwl-time="' + escHtml(member.last_online) + '">Last online: ' + escHtml(new Date(member.last_online).toLocaleString()) + '</span>' : '') +
             '</div>' +
         '</div>';
     var np = card.querySelector('.mini-nameplate-bg');
@@ -1387,6 +1389,15 @@ async function loadDashboard(reset) {
     var loadMore = document.getElementById('dashboardLoadMore');
     if (dashboardState.offset === 0) grid.innerHTML = '<div class="news-loading">Loading members...</div>';
     try {
+        if (dashboardState.query && dashboardState.query.length >= 2) {
+            var found = await RWL.apiRequest('/api/community/search?q=' + encodeURIComponent(dashboardState.query));
+            grid.innerHTML = '';
+            (found.results || []).forEach(function(member) { grid.appendChild(buildDashboardCard(member)); });
+            if (!found.results || !found.results.length) grid.innerHTML = '<div class="status-empty">No members found. Discord details only match accounts with a linked Discord account.</div>';
+            dashboardState.done = true;
+            if (loadMore) loadMore.style.display = 'none';
+            return;
+        }
         var data = await RWL.apiRequest('/api/community/members?offset=' + dashboardState.offset + '&limit=60&q=' + encodeURIComponent(dashboardState.query));
         if (dashboardState.offset === 0) {
             grid.innerHTML = '';
@@ -1683,10 +1694,11 @@ async function showBankPage() {
             '<div class="bank-xp-exchange-section">' +
                 '<button class="bank-xp-exchange-toggle" id="bankXpExchangeToggle">' +
                     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
-                    '<span>How to exchange Discord Server XP to Lab Coins (LC)</span>' +
+                    '<span>How to exchange Discord Server XP to Lab Coins (LC) on the Discord server</span>' +
                     '<svg class="bank-xp-toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>' +
                 '</button>' +
                 '<div class="bank-xp-exchange-content" id="bankXpExchangeContent">' +
+                    '<div class="bank-xp-step bank-xp-step-tip"><span class="bank-xp-step-num" style="background:rgba(99,0,138,0.35);border-color:rgba(99,0,138,0.6);">i</span><div><strong>Website or Discord server</strong><br>To exchange XP here on the website your Discord account must be linked with your Rickware - Labs account. Alternatively you can also exchange your XP directly on our Discord server, as explained below.</div></div>' +
                     '<div class="bank-xp-step"><span class="bank-xp-step-num">1</span><div><strong>New users — DM Captcha Verification</strong><br>If you are new to our Discord server, you first need to complete the DM captcha verification. After joining, you will automatically receive a DM with a captcha challenge. Complete it to unlock full server access and the ability to use the bank system.</div></div>' +
                     '<div class="bank-xp-step"><span class="bank-xp-step-num">2</span><div><strong>Already verified members</strong><br>If you are already a verified member of our community Discord server, you can skip the verification step and use the bank channel directly.</div></div>' +
                     '<div class="bank-xp-step"><span class="bank-xp-step-num">3</span><div><strong>Use the <code>#ricks-bank</code> channel</strong><br>Navigate to the <code>#ricks-bank</code> text channel in our Discord server. In this channel you can:<br><br>• Check your XP balance and Lab Coin (LC) balance by entering your username or user ID.<br>• Trade your Discord Server XP for Lab Coins (LC) directly in the channel.<br><br>Simply follow all instructions posted in the <code>#ricks-bank</code> channel — all commands and exchange rates are listed there.</div></div>' +
@@ -2149,7 +2161,7 @@ async function loadReviewsData() {
     } catch(e) {}
 }
 
-var COSMETIC_PAYLOAD_FIELDS = ['nameplate', 'nameplate_url', 'avatar_decoration', 'avatar_decoration_url', 'name_color', 'name_color_hex', 'name_color_rarity', 'name_color_animated', 'name_color_gradient', 'name_color_animation_seconds'];
+var COSMETIC_PAYLOAD_FIELDS = ['nameplate', 'nameplate_url', 'nameplate_speed', 'avatar_decoration', 'avatar_decoration_url', 'avatar_decoration_thumb_url', 'avatar_decoration_speed', 'name_color', 'name_color_hex', 'name_color_rarity', 'name_color_animated', 'name_color_gradient', 'name_color_animation_seconds', 'name_color_effect', 'name_color_speed', 'name_color_direction', 'nameplate_outline', 'nameplate_outline_data', 'content_border', 'content_border_data'];
 
 function cosmeticFields(source) {
     var fields = {};
@@ -2261,6 +2273,7 @@ function userNameplateSrc(userLike) {
 }
 
 function userDecorationSrc(userLike) {
+    if (userLike && userLike.avatar_decoration_thumb_url) return userLike.avatar_decoration_thumb_url;
     if (userLike && userLike.avatar_decoration_url) return userLike.avatar_decoration_url;
     var decorationFile = (config && config.default_avatar_decoration) || 'chromawave.png';
     return siteBaseUrl() + 'images/assets/avatar_decoration/' + decorationFile;
@@ -2287,7 +2300,30 @@ function miniNameplateWrapStart() {
 }
 
 function miniNameplateBgHtml(userLike) {
-    return '<video class="mini-nameplate-bg" autoplay loop muted playsinline src="' + escHtml(userNameplateSrc(userLike)) + '"></video>';
+    return nameplateVideoHtml(userLike);
+}
+
+function nameplateVideoHtml(userLike) {
+    var speed = userLike && userLike.nameplate_speed ? parseFloat(userLike.nameplate_speed) : 1;
+    return '<video class="mini-nameplate-bg" autoplay loop muted playsinline data-rwl-speed="' + (isNaN(speed) ? 1 : speed) + '" src="' + escHtml(userNameplateSrc(userLike)) + '"></video>';
+}
+
+function outlineClasses(userLike) {
+    return RWL.frameClasses(userLike && userLike.nameplate_outline_data);
+}
+
+function outlineStyleAttr(userLike) {
+    var style = RWL.frameStyle(userLike && userLike.nameplate_outline_data);
+    return style ? ' style="' + escHtml(style) + '"' : '';
+}
+
+function contentFrameClasses(userLike) {
+    return RWL.frameClasses(userLike && userLike.content_border_data);
+}
+
+function contentFrameStyleAttr(userLike) {
+    var style = RWL.frameStyle(userLike && userLike.content_border_data);
+    return style ? ' style="' + escHtml(style) + '"' : '';
 }
 
 function forumBadgesHtml(accountType, accountPermissions) {
@@ -2384,10 +2420,10 @@ function buildCommentHtml(c, postIdx, commentPath) {
             '</div>' +
         '</div>';
     }
-    return '<div class="forum-comment-item" id="forum-comment-' + postIdx + '-' + commentPath + '">' +
+    return '<div class="forum-comment-item' + contentFrameClasses(c) + '" id="forum-comment-' + postIdx + '-' + commentPath + '"' + contentFrameStyleAttr(c) + '>' +
         '<div class="forum-comment-content">' +
-            '<div class="forum-identity-box forum-comment-identity">' +
-                '<video class="mini-nameplate-bg" autoplay loop muted playsinline src="' + escHtml(userNameplateSrc(c)) + '"></video>' +
+            '<div class="forum-identity-box forum-comment-identity' + outlineClasses(c) + '"' + outlineStyleAttr(c) + '>' +
+                nameplateVideoHtml(c) +
                 avatarHtml +
                 '<div class="forum-comment-meta">' +
                     '<span class="forum-comment-user" style=\"' + escHtml(userNameStyle(c)) + '\">' + escHtml(c.username) + '</span>' +
@@ -2439,10 +2475,10 @@ function buildForumPostCard(p, idx) {
             commentInputHtml +
         '</div>';
     }
-    return '<div class="forum-post-card glass-card" id="forumPost-' + idx + '">' +
+    return '<div class="forum-post-card glass-card' + contentFrameClasses(p) + '" id="forumPost-' + idx + '"' + contentFrameStyleAttr(p) + '>' +
         '<div class="forum-post-header">' +
-            '<div class="forum-identity-box">' +
-                '<video class="mini-nameplate-bg" autoplay loop muted playsinline src="' + escHtml(userNameplateSrc(p)) + '"></video>' +
+            '<div class="forum-identity-box' + outlineClasses(p) + '"' + outlineStyleAttr(p) + '>' +
+                nameplateVideoHtml(p) +
                 avatarHtml +
                 '<div class="forum-post-meta">' +
                     '<div class="forum-post-user-row">' +
@@ -3172,8 +3208,8 @@ async function showReviewsPage() {
                 '<div class="review-body-full" translate="no" id="rv-full-'+idx+'">' + escHtml(r.text) + '</div>' +
                 (hasMore ? '<button class="review-read-more" id="rv-btn-'+idx+'" onclick="toggleReviewBody('+idx+')">Read more</button>' : '') +
             '</div>' +
-            '<div class="review-user-row">' +
-                '<video class="mini-nameplate-bg" autoplay loop muted playsinline src="' + escHtml(userNameplateSrc(r)) + '"></video>' +
+            '<div class="review-user-row' + outlineClasses(r) + '"' + outlineStyleAttr(r) + '>' +
+                nameplateVideoHtml(r) +
                 '<div class="review-avatar-wrap">' + avatarHtml + decorationHtmlR + '</div>' +
                 '<div class="review-user-info">' +
                     '<div class="review-user-name-row">' +
@@ -3191,6 +3227,11 @@ async function showReviewsPage() {
                     '<button class="review-vote-btn' + (!canVoteReview(r) ? ' vote-disabled' : '') + '" id="rv-dislike-'+idx+'" ' + (!canVoteReview(r) ? 'disabled title="' + reviewVoteBlockedTitle(r) + '"' : 'onclick="voteReview('+idx+',\'dislike\')"') + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg> <span id="rv-dislike-count-'+idx+'">' + (r.dislikes||0) + '</span></button>' +
                 '</div>' +
             '</div>';
+        var frameClassNames = contentFrameClasses(r);
+        if (frameClassNames) {
+            card.className += frameClassNames;
+            card.style.cssText += RWL.frameStyle(r.content_border_data);
+        }
         grid.appendChild(card);
         var npBgEl = card.querySelector('.mini-nameplate-bg');
         if (npBgEl) {
@@ -4666,6 +4707,10 @@ function buildProductStatsHtml(p, iconSize) {
         (viewsKey ? '<span class="product-stat-item product-stat-views" title="Unique views" data-views-type="' + viewsType + '" data-views-key="' + escHtml(viewsKey) + '">' +
         '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
         '<span class="product-stat-value">0</span></span>' : '') +
+        (viewsKey ? '<span class="product-stat-item product-stat-live" title="People viewing this right now" data-live-item="' + viewsType + ':' + escHtml(viewsKey) + '">' +
+        '<span class="product-live-dot" aria-hidden="true"></span>' +
+        '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+        '<span class="product-stat-value">0</span></span>' : '') +
         '</div>';
 }
 
@@ -4972,7 +5017,7 @@ function hasAllProductsAccess(user) {
 
 function ownedProductList() {
     if (!productsData || !productsData.products || !currentUser) return [];
-    var available = productsData.products.filter(function(p) { return !isComingSoonProduct(p); });
+    var available = productsData.products.filter(function(p) { return !isComingSoonProduct(p) && !isGithubProduct(p); });
     if (hasAllProductsAccess(currentUser)) return available;
     var owned = {};
     if (Array.isArray(currentUser.owned_product_ids)) {

@@ -4,6 +4,384 @@
     box-sizing: border-box;
 }
 
+@media (min-width: 901px) and (min-height: 620px) {
+    html,
+    body {
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .inv-page-wrap {
+        height: 100vh;
+        min-height: 0 !important;
+        padding: 14px 22px !important;
+        gap: 12px !important;
+        overflow: hidden;
+    }
+
+    .inv-top-row {
+        flex: 1;
+        min-height: 0;
+        height: 100%;
+        grid-template-columns: minmax(0, 1fr) 300px !important;
+        gap: 14px !important;
+    }
+
+    .inv-left-column,
+    .inv-content.inv-visible {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        height: 100%;
+        gap: 10px;
+    }
+
+    .inv-content.inv-visible {
+        flex: 1;
+    }
+
+    .inv-section {
+        flex: 1 1 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        margin: 0 !important;
+        padding: 10px 14px !important;
+    }
+
+    .inv-grid {
+        flex: 1;
+        min-height: 0;
+        grid-auto-rows: minmax(0, 1fr);
+        gap: 10px !important;
+    }
+
+    #invLockerGrid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .inv-category-card {
+        aspect-ratio: auto !important;
+        max-height: none !important;
+        min-height: 0;
+    }
+
+    .inv-category-image {
+        object-fit: contain !important;
+        max-height: 100%;
+    }
+
+    .inv-footer-bar {
+        flex-shrink: 0;
+        padding: 8px 14px !important;
+        margin: 0 !important;
+    }
+
+    .inv-sidebar-panel {
+        height: 100%;
+        min-height: 0;
+        overflow-y: auto;
+        position: static !important;
+    }
+
+    .inv-header-section {
+        margin-bottom: 0 !important;
+        padding-bottom: 8px !important;
+        flex-shrink: 0;
+    }
+
+    .inv-header-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .inv-page-title {
+        font-size: 22px !important;
+    }
+}
+
+.inv-virtual-spacer {
+    position: relative;
+    width: 100%;
+    contain: layout style;
+}
+
+.inv-virtual-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    gap: 9px;
+    will-change: transform;
+}
+
+.inv-virtual-layer .inv-slot {
+    aspect-ratio: auto !important;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding-top: 17px !important;
+    overflow: hidden;
+    opacity: 1;
+    transform: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.inv-slot-nameplates .inv-item-media {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.inv-item-config {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    z-index: 4;
+    width: 22px;
+    height: 22px;
+    border: 1px solid rgba(157, 78, 221, 0.6);
+    border-radius: 6px;
+    background: rgba(10, 4, 20, 0.85);
+    color: #e0aaff;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 20px;
+    opacity: 0;
+    transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.inv-slot:hover .inv-item-config,
+.inv-item-config:focus-visible {
+    opacity: 1;
+}
+
+.inv-item-config:hover {
+    background: #7b2cbf;
+    color: #ffffff;
+}
+
+.inv-config-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    border: 1px solid rgba(157, 78, 221, 0.4);
+    border-radius: 10px;
+    background: #08080b;
+    color: #ffffff;
+    font-size: 12px;
+}
+
+.inv-config-bar[hidden] {
+    display: none;
+}
+
+.inv-config-name {
+    font-weight: 700;
+    flex: 1 1 140px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inv-config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    color: #c4c4cc;
+}
+
+.inv-config-field select {
+    background: #000000;
+    border: 1px solid #33333d;
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+
+.inv-config-field input[type="range"] {
+    width: 150px;
+    accent-color: #9d4edd;
+}
+
+.inv-frame-sample {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d0912;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px;
+}
+
+.inv-frame-box {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    padding: 12px;
+}
+
+.inv-frame-box span {
+    display: block;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.inv-frame-box span:last-child {
+    width: 60%;
+}
+
+.inv-hover-preview {
+    position: fixed;
+    z-index: 2147482500;
+    background: #050507;
+    border: 1px solid rgba(157, 78, 221, 0.55);
+    border-radius: 12px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.85);
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.inv-hover-preview[hidden] {
+    display: none;
+}
+
+.inv-theme-frame-holder {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    background: #000000;
+}
+
+.inv-theme-frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+}
+
+.inv-hover-caption {
+    padding: 6px 10px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.inv-profile-strip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 76px;
+    padding: 8px 14px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #0d0912;
+}
+
+.inv-strip-plate {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.75;
+}
+
+.inv-strip-avatar-wrap {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    z-index: 1;
+}
+
+.inv-strip-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.inv-strip-initial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #63008a, #9b00cc);
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.inv-strip-deco {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 56px;
+    height: 56px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.inv-strip-text {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+}
+
+.inv-strip-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.inv-strip-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 4px;
+}
+
+.inv-strip-badge {
+    padding: 1px 7px;
+    border-radius: 7px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.inv-strip-perm {
+    background: rgba(0, 188, 212, 0.25);
+}
+
+.inv-border-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    border-radius: 12px;
+    background: #0d0912;
+    color: #d4d4dc;
+    font-size: 12px;
+}
+
+.inv-border-demo strong {
+    color: #ffffff;
+    font-size: 14px;
+}
+
 :root {
     --inv-bg-primary: #0f0f0f;
     --inv-accent: #9b00cc;

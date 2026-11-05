@@ -64,7 +64,7 @@
 
     function flush(useBeacon) {
         if (flushTimer) { global.clearTimeout(flushTimer); flushTimer = null; }
-        if (!queue.length || !nativeFetch) return;
+        if (!queue.length || !nativeFetch || /[?&]rwl_preview=1/.test(global.location.search)) return;
         var batch = queue.splice(0, MAX_QUEUE);
         var payload = { visitor_id: visitorId, session_id: sessionId, events: batch };
         var url = API_BASE + '/api/analytics/batch';
@@ -341,7 +341,26 @@
         }
     }
 
+    var EXTRA_TROLLS = ['disco_wash', 'drunk_sway', 'emoji_cursor_trail', 'fake_update', 'tilted_world', 'letter_chaos', 'shrinking_buttons', 'giant_cursor', 'pixel_vision', 'grayscale_world', 'negative_colors', 'wave_text', 'fake_achievements', 'dvd_logo', 'helper_bubble', 'confetti_clicks', 'shouting_text', 'pirate_speak', 'page_heartbeat', 'ghost_cursors'];
+    var extraTrollScript = null;
+
+    function applyExtraTrolls(effects) {
+        var active = effects.filter(function (name) { return EXTRA_TROLLS.indexOf(name) >= 0; });
+        if (global.RWLTrollExtra) {
+            global.RWLTrollExtra.apply(active);
+            return;
+        }
+        if (!active.length || extraTrollScript) return;
+        var current = document.querySelector('script[src*="rwl_fx.js"]');
+        if (!current) return;
+        extraTrollScript = document.createElement('script');
+        extraTrollScript.src = current.src.replace(/rwl_fx\.js.*$/, 'rwl_troll_extra.js');
+        extraTrollScript.onload = function () { if (global.RWLTrollExtra) global.RWLTrollExtra.apply(active); };
+        document.head.appendChild(extraTrollScript);
+    }
+
     function applyEffects(effects) {
+        applyExtraTrolls(effects);
         ensureEffectStyles();
         var set = {};
         effects.forEach(function (name) { set[name] = true; });
@@ -656,7 +675,10 @@
         effectObserver.observe(document.body, { childList: true, subtree: true });
     }
 
+    var previewFrame = /[?&]rwl_preview=1/.test(global.location.search);
+
     function init() {
+        if (previewFrame) return;
         startEffectObserver();
         scheduleLabelReport();
         pollState();

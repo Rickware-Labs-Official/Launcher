@@ -392,6 +392,52 @@ opacity:0.5;
 transform:none;
 }
 
+.customOpen{
+display:flex;
+gap:8px;
+align-items:center;
+width:420px;
+max-width:92vw;
+}
+.customOpen .openAllBtn{
+flex:1;
+width:auto;
+min-width:0;
+}
+.customOpen[hidden]{
+display:none;
+}
+.customOpen input{
+width:110px;
+height:44px;
+border-radius:12px;
+background:#000;
+border:1px solid rgba(180,80,255,0.45);
+color:#fff;
+padding:0 12px;
+font-size:14px;
+}
+.customOpen input.invalidInput{
+border-color:#ff4d6d;
+}
+.skipToggle{
+display:inline-flex;
+align-items:center;
+gap:6px;
+color:rgba(255,255,255,0.8);
+font-size:13px;
+font-weight:600;
+cursor:pointer;
+}
+.skipToggle input{
+accent-color:#9d4edd;
+width:16px;
+height:16px;
+}
+.actions{
+flex-wrap:wrap;
+justify-content:center;
+}
 .summary{
 width:min(760px,92vw);
 max-height:78vh;
@@ -469,7 +515,14 @@ text-overflow:ellipsis;
 
 <div class="actions">
 <button class="spinBtn" id="spin" title="Spin the chest: first the category, then the item">SPIN CHEST</button>
-<button class="openAllBtn" id="openAll" title="Open all your chests at once without animation">OPEN ALL CHESTS</button>
+<button class="openAllBtn" id="skipSpin" title="Skip the animation and show the reward now" hidden>SKIP</button>
+<button class="openAllBtn" id="openTen" title="Open 10 chests at once" hidden>OPEN 10</button>
+<button class="openAllBtn" id="openAll" title="Open all your chests at once without animation" hidden>OPEN MAX</button>
+<span class="customOpen" id="customOpen" hidden>
+<input type="number" id="customCount" min="1" step="1" inputmode="numeric" placeholder="Amount" title="How many chests do you want to open?">
+<button class="openAllBtn" id="openCustom" title="Open the chosen amount of chests">OPEN</button>
+</span>
+<label class="skipToggle" title="Always skip the spin animation"><input type="checkbox" id="alwaysSkip"> <span>Skip Animation</span></label>
 </div>
 </div>
 
@@ -489,6 +542,8 @@ avatar_decorations:"../images/assets/inventory/avatar_decos_main.webp",
 nameplates:"../images/assets/inventory/nameplates_main.webp",
 name_colors:"../images/assets/inventory/name_colors_main.webp",
 launcher_themes:"../images/assets/inventory/themes_main.webp",
+nameplate_outlines:"../images/assets/inventory/nameplate_outlines_main.webp",
+content_borders:"../images/assets/inventory/content_borders_main.webp",
 licenses:"../images/assets/inventory/licenses_main.webp"
 }
 const CATEGORY_LABELS={
@@ -496,6 +551,8 @@ avatar_decorations:"Avatar Decoration",
 nameplates:"Nameplate",
 name_colors:"Name Color",
 launcher_themes:"Theme",
+nameplate_outlines:"Nameplate Outline",
+content_borders:"Content Border",
 licenses:"License"
 }
 const idleImages=Object.keys(CATEGORY_IMAGES).map(function(key){return CATEGORY_IMAGES[key]})
@@ -506,11 +563,20 @@ const CATEGORY_SPIN_MS=4200
 const ITEM_SPIN_MS=6800
 const MEDIA_WINDOW_BEFORE=12
 const MEDIA_WINDOW_AFTER=4
+const IDLE_SPEED_PX_PER_SECOND=42
+const IDLE_ITEMS=12
+const SKIP_STORAGE_KEY="rwl_chest_skip_animation"
 const KEEP="--rwl-keep:1;"
 
 const track=document.getElementById("track")
 const spin=document.getElementById("spin")
 const openAll=document.getElementById("openAll")
+const openTen=document.getElementById("openTen")
+const skipSpin=document.getElementById("skipSpin")
+const customOpen=document.getElementById("customOpen")
+const customCount=document.getElementById("customCount")
+const openCustom=document.getElementById("openCustom")
+const alwaysSkip=document.getElementById("alwaysSkip")
 const phaseLabel=document.getElementById("phaseLabel")
 const win=document.getElementById("win")
 const box=document.getElementById("box")
@@ -522,6 +588,9 @@ let opening=false
 let openedAny=false
 let pendingResult=null
 let lastChests=null
+let idleLast=0
+let idleWidth=0
+let animationDone=null
 
 function categoryImage(category){
 return CATEGORY_IMAGES[category]||idleImages[0]
@@ -550,6 +619,12 @@ return '<div class="labelVisual">'+themeStripesHtml(item)+'<div class="swatch" s
 if(item.category==="licenses"){
 return '<div class="labelVisual"><img class="contain" src="'+categoryImage("licenses")+'" alt=""><div class="swatch" style="position:absolute;inset:0;"><span>'+esc(item.name||"License")+'</span></div></div>'
 }
+if(item.category==="nameplate_outlines"||item.category==="content_borders"){
+return '<div class="swatch'+RWL.frameClasses(item)+'" style="'+esc(RWL.frameStyle(item))+'"><span translate="no">'+esc(item.name||"Item")+'</span></div>'
+}
+if(item.category==="avatar_decorations"&&item.thumb_url&&!large){
+return '<img class="contain" src="'+esc(item.thumb_url)+'" alt="">'
+}
 if(item.asset_url){
 return '<img class="contain" src="'+esc(item.asset_url)+'" alt="">'
 }
@@ -558,26 +633,34 @@ return '<div class="swatch"><span translate="no">'+esc(item.name||"Item")+'</spa
 
 function buildIdle(){
 track.innerHTML=""
-for(let i=0;i<50;i++){
+const sequence=[]
+for(let i=0;i<IDLE_ITEMS;i++)sequence.push(idleImages[i%idleImages.length])
+for(let round=0;round<4;round++){
+sequence.forEach(function(source){
 const d=document.createElement("div")
 d.className="item"
-d.innerHTML='<img src="'+idleImages[Math.floor(Math.random()*idleImages.length)]+'" alt="">'
+d.innerHTML='<img src="'+source+'" alt="">'
 track.appendChild(d)
+})
 }
+idleWidth=IDLE_ITEMS*(ITEM_WIDTH+ITEM_GAP)
 }
 
-function idleLoop(){
-pos+=6
-if(pos>2400)pos=0
-track.style.transform="translateX("+(-pos)+"px)"
+function idleLoop(now){
+if(!idleLast)idleLast=now
+const delta=Math.min(100,now-idleLast)
+idleLast=now
+pos=(pos+IDLE_SPEED_PX_PER_SECOND*delta/1000)%idleWidth
+track.style.transform="translate3d("+(-pos)+"px,0,0)"
 raf=requestAnimationFrame(idleLoop)
 }
 
 function startIdle(){
 cancelAnimationFrame(raf)
 pos=0
+idleLast=0
 buildIdle()
-idleLoop()
+raf=requestAnimationFrame(idleLoop)
 }
 
 function buildCategoryReel(reel){
@@ -628,17 +711,34 @@ function easeOutQuart(t){
 return 1-Math.pow(1-t,4)
 }
 
+function skipEnabled(){
+return alwaysSkip.checked
+}
+
 function animateTo(target,duration,done){
 cancelAnimationFrame(raf)
+animationDone=function(){
+animationDone=null
+cancelAnimationFrame(raf)
+pos=target
+track.style.transform="translate3d("+(-pos)+"px,0,0)"
+skipSpin.hidden=true
+done()
+}
+if(skipEnabled()){
+animationDone()
+return
+}
+skipSpin.hidden=false
 const start=performance.now()
 function step(now){
 const progress=Math.min(1,(now-start)/duration)
 pos=target*easeOutQuart(progress)
-track.style.transform="translateX("+(-pos)+"px)"
+track.style.transform="translate3d("+(-pos)+"px,0,0)"
 if(progress<1){
 raf=requestAnimationFrame(step)
-}else{
-done()
+}else if(animationDone){
+animationDone()
 }
 }
 raf=requestAnimationFrame(step)
@@ -665,9 +765,20 @@ return chests.balance>0?"SPIN CHEST ("+chests.balance+" LEFT)":"NO CHESTS LEFT"
 function updateOpenAll(chests){
 lastChests=chests||lastChests
 const current=lastChests||{}
-const empty=!current.unlimited&&!(current.balance>0)
-openAll.disabled=empty||opening||!!pendingResult
-openAll.textContent=current.unlimited?"OPEN "+(current.open_all_limit||10)+" CHESTS":(current.balance>0?"OPEN ALL CHESTS ("+current.balance+")":"OPEN ALL CHESTS")
+const balance=parseInt(current.balance,10)||0
+const unlimited=!!current.unlimited
+const locked=opening||!!pendingResult
+const limit=unlimited?(current.open_all_limit||10):Math.min(balance,current.open_all_limit||balance)
+openTen.hidden=!(unlimited||balance>=10)
+openTen.disabled=locked
+openAll.hidden=unlimited||balance<2
+openAll.disabled=locked
+openAll.textContent="OPEN MAX ("+limit+")"
+customOpen.hidden=!(unlimited||balance>=2)
+customCount.max=String(limit)
+customCount.placeholder=(unlimited?"Up to ":"1 - ")+limit
+customCount.disabled=locked
+openCustom.disabled=locked
 }
 
 function restoreChestButton(){
@@ -769,7 +880,17 @@ box.innerHTML=html
 win.classList.add("active")
 }
 
-async function openAllChests(){
+function requestCustomOpen(){
+const current=lastChests||{}
+const limit=parseInt(customCount.max,10)||1
+const value=parseInt(customCount.value,10)
+const valid=value>=1&&value<=limit&&String(value)===String(customCount.value).trim()
+customCount.classList.toggle("invalidInput",!valid)
+if(!valid)return
+openMany({count:value})
+}
+
+async function openMany(body){
 if(opening||pendingResult)return
 if(!RWL.getToken()){
 setButton("LOGIN REQUIRED",true)
@@ -777,10 +898,11 @@ return
 }
 opening=true
 openAll.disabled=true
-openAll.textContent="OPENING..."
+openTen.disabled=true
+openCustom.disabled=true
 setButton("OPENING...",true)
 try{
-const result=await RWL.apiRequest("/api/chests/open_all",{method:"POST"})
+const result=await RWL.apiRequest("/api/chests/open_many",{method:"POST",body:body})
 openedAny=true
 lastChests=result.chests||lastChests
 opening=false
@@ -822,7 +944,16 @@ setButton("SPIN CHEST",false)
 }
 
 spin.onclick=spinChest
-openAll.onclick=openAllChests
+openAll.onclick=function(){openMany({use_max:true})}
+openTen.onclick=function(){openMany({count:10})}
+openCustom.onclick=requestCustomOpen
+customCount.addEventListener("input",function(){customCount.classList.remove("invalidInput")})
+skipSpin.onclick=function(){if(animationDone)animationDone()}
+alwaysSkip.checked=localStorage.getItem(SKIP_STORAGE_KEY)==="1"
+alwaysSkip.addEventListener("change",function(){
+if(alwaysSkip.checked)localStorage.setItem(SKIP_STORAGE_KEY,"1")
+else localStorage.removeItem(SKIP_STORAGE_KEY)
+})
 document.getElementById("back").onclick=backToChest
 document.getElementById("pageBack").onclick=exitChest
 document.getElementById("pageClose").onclick=exitChest
