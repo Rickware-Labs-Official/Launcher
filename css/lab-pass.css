@@ -197,6 +197,27 @@
     opacity: 0.5;
 }
 
+.lp-level-badge {
+    line-height: 1;
+    text-align: center;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.lp-level-long {
+    font-size: 15px;
+    letter-spacing: 0;
+}
+
+.lp-level-row {
+    align-items: flex-start;
+}
+
+.lp-xp-bar-wrap {
+    min-height: 50px;
+    justify-content: center;
+}
+
 .lp-xp-bar-wrap {
     flex: 1;
     display: flex;
@@ -651,10 +672,18 @@
     box-shadow: 0 0 12px rgba(201, 126, 255, 0.25);
 }
 
+.lp-reward-image {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+}
+
 .lp-reward-icon-wrap {
     position: relative;
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1207,4 +1236,39 @@
     .lp-reveal-item {
         animation-duration: 0.01s;
     }
+}
+
+.lp-cell-limited {
+    position: relative;
+    overflow: hidden;
+}
+
+.lp-limited-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    height: 14px;
+    line-height: 14px;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+    color: #0d0914;
+    background: linear-gradient(90deg, #9d4edd, #e0aaff, #ffffff, #e0aaff, #9d4edd);
+    background-size: 300% 100%;
+    animation: lpLimitedShine 4s linear infinite;
+}
+
+@keyframes lpLimitedShine {
+    from { background-position: 0% 0; }
+    to { background-position: 300% 0; }
+}
+
+.lp-reward-emoji {
+    display: block;
+    font-size: 26px;
+    line-height: 1;
 }

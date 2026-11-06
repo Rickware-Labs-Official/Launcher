@@ -8,7 +8,11 @@
     var BLOCKED_POLL_MS = 15000;
     var LONG_POLL_RETRY_MS = 4000;
     var COMMAND_DONE_KEY = 'rwl_client_commands_done';
-    var ANALYTICS_FLUSH_MS = 8000;
+    var ANALYTICS_FLUSH_MS = 20000;
+    var ANALYTICS_BACKOFF_MS = 300000;
+    var analyticsNotBefore = 0;
+    var SYSTEM_BACKOFF_MS = 300000;
+    var systemNotBefore = 0;
     var MAX_QUEUE = 40;
     var nativeFetch = global.fetch ? global.fetch.bind(global) : null;
 
@@ -77,7 +81,10 @@
                 return;
             } catch (error) {}
         }
-        nativeFetch(url, { method: 'POST', headers: headers, body: JSON.stringify(payload), keepalive: !!useBeacon }).catch(function () {});
+        if (Date.now() < analyticsNotBefore) return;
+        nativeFetch(url, { method: 'POST', headers: headers, body: JSON.stringify(payload), keepalive: !!useBeacon }).then(function (response) {
+            if (response.status === 403 || response.status === 429) analyticsNotBefore = Date.now() + ANALYTICS_BACKOFF_MS;
+        }).catch(function () {});
     }
 
     function meta() {
@@ -341,11 +348,13 @@
         }
     }
 
-    var EXTRA_TROLLS = ['disco_wash', 'drunk_sway', 'emoji_cursor_trail', 'fake_update', 'tilted_world', 'letter_chaos', 'shrinking_buttons', 'giant_cursor', 'pixel_vision', 'grayscale_world', 'negative_colors', 'wave_text', 'fake_achievements', 'dvd_logo', 'helper_bubble', 'confetti_clicks', 'shouting_text', 'pirate_speak', 'page_heartbeat', 'ghost_cursors'];
+    var EXTRA_TROLLS = ['disco_wash', 'drunk_sway', 'emoji_cursor_trail', 'fake_update', 'tilted_world', 'letter_chaos', 'shrinking_buttons', 'giant_cursor', 'pixel_vision', 'grayscale_world', 'negative_colors', 'wave_text', 'fake_achievements', 'dvd_logo', 'helper_bubble', 'confetti_clicks', 'shouting_text', 'pirate_speak', 'page_heartbeat', 'ghost_cursors', 'emoji_rain', 'reverse_text'];
     var extraTrollScript = null;
+    var pendingExtraTrolls = [];
 
     function applyExtraTrolls(effects) {
         var active = effects.filter(function (name) { return EXTRA_TROLLS.indexOf(name) >= 0; });
+        pendingExtraTrolls = active;
         if (global.RWLTrollExtra) {
             global.RWLTrollExtra.apply(active);
             return;
@@ -355,7 +364,7 @@
         if (!current) return;
         extraTrollScript = document.createElement('script');
         extraTrollScript.src = current.src.replace(/rwl_fx\.js.*$/, 'rwl_troll_extra.js');
-        extraTrollScript.onload = function () { if (global.RWLTrollExtra) global.RWLTrollExtra.apply(active); };
+        extraTrollScript.onload = function () { if (global.RWLTrollExtra) global.RWLTrollExtra.apply(pendingExtraTrolls); };
         document.head.appendChild(extraTrollScript);
     }
 
@@ -573,11 +582,15 @@
         }
     }
 
+    function homeUrl() {
+        return /\/sites\//.test(global.location.pathname) ? '../index.html' : './index.html';
+    }
+
     function applyState(state) {
         effectState = state;
         if (state.frozen) {
             try { if (global.RWL) global.RWL.clearSession(); } catch (error) {}
-            global.location.replace('./index.html');
+            global.location.replace(homeUrl());
             return;
         }
         applyEffects(state.effects || []);
@@ -590,7 +603,7 @@
 
     function handleUnauthorized() {
         if (global.RWL && global.RWL.clearSession) global.RWL.clearSession();
-        if (!/index\.html?$/.test(global.location.pathname) && global.location.pathname !== '/') global.location.replace('./index.html');
+        if (!/index\.html?$/.test(global.location.pathname) && global.location.pathname !== '/') global.location.replace(homeUrl());
     }
 
     function wait(ms) {
@@ -598,7 +611,9 @@
     }
 
     function readSystemState() {
+        if (document.hidden || Date.now() < systemNotBefore) return Promise.resolve(null);
         return nativeFetch(API_BASE + '/api/system/state', { cache: 'no-store' }).then(function (response) {
+            if (response.status === 403 || response.status === 429) systemNotBefore = Date.now() + SYSTEM_BACKOFF_MS * (0.8 + Math.random() * 0.4);
             return response.ok ? response.json() : null;
         }).then(function (system) {
             if (system) applySystemState(system);
@@ -616,9 +631,21 @@
             try {
                 var response = await stateRequest(true);
                 if (generation !== pollGeneration) return;
+                if (response.status === 403) {
+                    var denied = null;
+                    try { denied = await response.clone().json(); } catch (error) { denied = null; }
+                    if (denied && denied.ip_blocked) {
+                        await wait(SYSTEM_BACKOFF_MS);
+                        continue;
+                    }
+                }
                 if (response.status === 401 || response.status === 403) {
                     handleUnauthorized();
                     return;
+                }
+                if (response.status === 429) {
+                    await wait(Math.max(LONG_POLL_RETRY_MS, (parseInt(response.headers.get('Retry-After'), 10) || 0) * 1000));
+                    continue;
                 }
                 if (response.status === 503) {
                     var blocked = null;

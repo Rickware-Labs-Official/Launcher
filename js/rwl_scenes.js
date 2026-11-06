@@ -535,6 +535,7 @@
         this.canvas.width = this.width;
         this.canvas.height = this.height;
         this.drifts = null;
+        if (this.pieces) this.buildPieces();
     };
 
     Scene.prototype.amount = function (base) {
@@ -663,10 +664,36 @@
         this.nextVisitor = performance.now() + 4000 + this.random() * 6000;
         this.visitor = null;
         this.nextFirework = 0;
+        this.buildPieces();
+    };
+
+    Scene.prototype.buildPieces = function () {
+        var registry = global.RWLScenePieces || {};
+        var self = this;
+        this.pieces = (this.scene.pieces || []).filter(function (name) { return registry[name]; }).map(function (name) {
+            var state = {};
+            if (registry[name].build) registry[name].build(self, state);
+            return { definition: registry[name], state: state };
+        });
+    };
+
+    Scene.prototype.spriteOf = function (kind, width, height, color, frame) {
+        return sprite(kind, width, height, color, frame);
+    };
+
+    Scene.prototype.glow = function (x, y, radius, color, alpha) {
+        var ctx = this.ctx;
+        var previous = ctx.globalAlpha;
+        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+        ctx.drawImage(sprite('glow', 64, 64, color), x - radius, y - radius, radius * 2, radius * 2);
+        ctx.globalAlpha = previous;
     };
 
     Scene.prototype.handleClick = function (x, y) {
         var self = this;
+        (this.pieces || []).forEach(function (piece) {
+            if (piece.definition.click) piece.definition.click(self, piece.state, x, y);
+        });
         ['bats', 'ghosts', 'butterflies', 'bees', 'birds', 'hearts', 'gifts', 'leaves', 'petals'].forEach(function (group) {
             (self.entities[group] || []).forEach(function (entity) {
                 var radius = Math.max(18, entity.size);
@@ -1087,6 +1114,10 @@
         var ctx = this.ctx;
         ctx.clearRect(0, 0, this.width, this.height);
         this.drawAmbient(time, dt);
+        for (var pieceIndex = 0; pieceIndex < (this.pieces || []).length; pieceIndex++) {
+            var piece = this.pieces[pieceIndex];
+            if (piece.definition.draw) piece.definition.draw(this, piece.state, ctx, time, dt);
+        }
         var entities = this.entities;
         if (entities.snow) this.updateFalling(entities.snow, dt, false);
         if (entities.crystals) this.updateFalling(entities.crystals, dt, true);

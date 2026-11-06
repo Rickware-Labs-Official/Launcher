@@ -11,17 +11,34 @@
         if (typeof showBanner === 'function') showBanner(message, type);
     }
 
-    function getRewardIcon(type) {
-        if (type === 'lc') {
-            return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v2m0 8v2M9 9a3 3 0 0 1 6 0c0 2-3 3-3 5"/></svg>';
+    var REWARD_CATEGORY_IMAGES = {
+        avatar_decorations: 'avatar_decos_main.webp',
+        nameplates: 'nameplates_main.webp',
+        name_colors: 'name_colors_main.webp',
+        launcher_themes: 'themes_main.webp',
+        nameplate_outlines: 'nameplate_outlines_main.webp',
+        content_borders: 'content_borders_main.webp',
+        licenses: 'licenses_main.webp'
+    };
+
+    function rewardImageSource(reward) {
+        if (reward.type === 'lab_coins' || reward.icon === 'lc') return '../images/main/lc_coin_96.webp';
+        if (reward.type === 'mystery_chest' || reward.icon === 'chest') return '../images/assets/lab_pass/rickware-labs_chest.webp';
+        if (reward.type === 'license_voucher') return '../images/assets/inventory/' + REWARD_CATEGORY_IMAGES.licenses;
+        var image = REWARD_CATEGORY_IMAGES[reward.category];
+        return image ? '../images/assets/inventory/' + image : '';
+    }
+
+    function getRewardIcon(reward) {
+        var source = rewardImageSource(reward);
+        if (source) return '<img class="lp-reward-image" src="' + source + '" alt="' + esc(reward.name) + '" loading="lazy" decoding="async">';
+        if (reward.type === 'xp' || reward.icon === 'xp') {
+            return '<svg width="30" height="30" viewBox="0 0 24 24" fill="rgba(201,126,255,0.18)" stroke="#c97eff" stroke-width="1.6"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
         }
-        if (type === 'xp') {
-            return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+        if (reward.type === 'coupon') {
+            return '<svg width="30" height="30" viewBox="0 0 24 24" fill="rgba(201,126,255,0.18)" stroke="#c97eff" stroke-width="1.6"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
         }
-        if (type === 'chest') {
-            return '<img src="../images/assets/lab_pass/rickware-labs_chest.webp" alt="Mystery Chest" style="width:28px;height:28px;object-fit:contain;">';
-        }
-        return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+        return '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="1.6"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
     }
 
     function ensureClaimStyles() {
@@ -48,9 +65,11 @@
         var cellClass = isCurrent ? 'lp-cell-active' : (reward.unlocked ? 'lp-cell-unlocked' : 'lp-cell-locked');
         if (reward.claimable) cellClass += ' lp-cell-claimable';
         var title = reward.claimed ? 'Claimed' : (reward.claimable ? 'Click to claim' : (track === 'premium' && !passState.progress.premium ? 'Premium Lab-Pass required' : 'Reach level ' + reward.level));
+        if (reward.limited_time) cellClass += ' lp-cell-limited';
         var html = '<div class="lp-grid-cell ' + cellClass + '" data-track="' + track + '" data-level="' + reward.level + '" title="' + esc(reward.name + ' · ' + title) + '">';
+        if (reward.limited_time) html += '<div class="lp-limited-banner">Limited Time</div>';
         html += '<div class="lp-reward-icon-wrap">';
-        html += '<div class="lp-reward-icon-placeholder">' + getRewardIcon(reward.icon) + '</div>';
+        html += '<div class="lp-reward-icon-placeholder">' + (reward.emoji ? '<span class="lp-reward-emoji" aria-hidden="true" translate="no">' + esc(reward.emoji) + '</span>' : getRewardIcon(reward)) + '</div>';
         if (reward.claimed) html += checkIcon();
         else if (!reward.unlocked) html += lockIcon();
         html += '</div>';
@@ -118,6 +137,7 @@
         var xpText = document.getElementById('lpXpText');
         if (currentLevel) currentLevel.textContent = progress.level;
         if (nextLevel) nextLevel.textContent = progress.max_level_reached ? 'MAX' : progress.next_level;
+        [currentLevel, nextLevel].forEach(function(badge) { if (badge) badge.classList.toggle('lp-level-long', String(badge.textContent).length > 2); });
         if (xpBar) xpBar.style.width = Math.max(0, Math.min(100, progress.level_xp / progress.next_level_xp * 100)) + '%';
         if (xpText) xpText.textContent = progress.max_level_reached ? 'Max level reached' : progress.level_xp + ' / ' + progress.next_level_xp + ' XP';
         var passPrice = document.getElementById('lpPassPrice');
@@ -141,7 +161,7 @@
         if (bundleDiscount && season.bundle_original_price_lc > 0) bundleDiscount.textContent = '-' + Math.round((1 - season.bundle_price_lc / season.bundle_original_price_lc) * 100) + '%';
         if (bundleBtn) {
             bundleBtn.disabled = progress.premium || season.status !== 'active';
-            bundleBtn.textContent = progress.premium ? 'Pass Active' : 'Buy Bundle';
+            bundleBtn.textContent = progress.premium ? 'Owned' : 'Buy Bundle';
         }
         var hero = document.getElementById('lpHeroChest');
         if (hero) {
@@ -180,7 +200,8 @@
         var option = (info && info.options || []).filter(function(entry) { return entry.levels === count; })[0];
         if (!option) return;
         if (passState.lab_coins < option.price) { notify('Not enough Lab Coins. You need ' + option.price + ' LC for ' + count + ' level(s).', 'error'); return; }
-        if (!window.confirm('Buy ' + count + ' Lab-Pass level(s) for ' + option.price + ' Lab Coins? Your balance: ' + passState.lab_coins + ' LC.')) return;
+        var levelsConfirmed = await RWLDialog.confirm({ title: 'Buy Lab-Pass Levels', message: 'Buy ' + count + ' Lab-Pass level(s) for ' + option.price + ' Lab Coins? Your balance: ' + passState.lab_coins + ' LC.', confirmText: 'Buy' });
+        if (!levelsConfirmed) return;
         busy = true;
         try {
             var result = await RWL.apiRequest('/api/season_pass/buy_levels', { method: 'POST', body: { levels: count } });
@@ -412,7 +433,8 @@
         var season = passState.season;
         var price = bundle ? season.bundle_price_lc : season.premium_price_lc;
         var label = bundle ? 'the Lab-Pass Bundle (Pass + ' + season.bundle_levels + ' Levels)' : 'the premium Lab-Pass';
-        if (!window.confirm('Buy ' + label + ' for ' + price + ' Lab Coins? Your balance: ' + passState.lab_coins + ' LC. Lab-Pass purchases are final.')) return;
+        var purchaseConfirmed = await RWLDialog.confirm({ title: 'Buy Lab-Pass', message: 'Buy ' + label + ' for ' + price + ' Lab Coins? Your balance: ' + passState.lab_coins + ' LC. Lab-Pass purchases are final.', confirmText: 'Buy' });
+        if (!purchaseConfirmed) return;
         busy = true;
         try {
             var result = await RWL.apiRequest('/api/season_pass/purchase', { method: 'POST', body: { bundle: !!bundle } });

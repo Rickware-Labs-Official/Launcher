@@ -1121,9 +1121,27 @@ function syncAccountPreferences(user) {
     }
 }
 
+function applyFrameTo(element, data) {
+    if (!element) return;
+    Array.prototype.slice.call(element.classList).forEach(function(name) {
+        if (name === 'rwl-frame' || name.indexOf('rwl-frame-') === 0) element.classList.remove(name);
+    });
+    ['--rwl-keep', '--rwl-f1', '--rwl-f2', '--rwl-f3', '--rwl-fs', '--rwl-fw'].forEach(function(property) {
+        element.style.removeProperty(property);
+    });
+    if (!data || !data.effect) return;
+    RWL.frameClasses(data).trim().split(/\s+/).forEach(function(name) { if (name) element.classList.add(name); });
+    RWL.frameStyle(data).split(';').forEach(function(rule) {
+        var separator = rule.indexOf(':');
+        if (separator > 0) element.style.setProperty(rule.slice(0, separator).trim(), rule.slice(separator + 1).trim());
+    });
+}
+
 function updateUserProfile(user) {
     var fallbackColor = (config && config.default_name_color) ? config.default_name_color : '#ffffff';
     var cosmetics = user.equipped_cosmetics || {};
+    applyFrameTo(document.getElementById('userProfileBtn'), cosmetics.nameplate_outline_data);
+    applyFrameTo(document.getElementById('profileHeaderNameplate'), cosmetics.nameplate_outline_data);
     document.querySelectorAll('#usernameDisplay, #usernameDisplaySidebar, .cp-profile-username').forEach(function(el) {
         el.textContent = user.username || 'Guest';
         applyNameColor(el, cosmetics, fallbackColor);
@@ -1149,6 +1167,7 @@ function updateUserProfile(user) {
     });
     var nameplateSrc = userNameplateSrc(cosmetics);
     document.querySelectorAll('#nameplateBg, #nameplateBgLarge').forEach(function(nameplateBg) {
+        nameplateBg.style.filter = RWL.mediaFilterValue(cosmetics && cosmetics.nameplate_filter);
         if (nameplateBg.getAttribute('data-src') !== nameplateSrc) {
             nameplateBg.setAttribute('data-src', nameplateSrc);
             nameplateBg.src = nameplateSrc;
@@ -1158,6 +1177,7 @@ function updateUserProfile(user) {
     });
     var decorationSrc = userDecorationSrc(cosmetics);
     document.querySelectorAll('#avatarDecoration, #avatarDecorationLarge').forEach(function(avatarDecoration) {
+        avatarDecoration.style.filter = RWL.mediaFilterValue(cosmetics && cosmetics.avatar_decoration_filter);
         if (decorationSrc) {
             if (avatarDecoration.getAttribute('data-src') !== decorationSrc) {
                 avatarDecoration.setAttribute('data-src', decorationSrc);
@@ -1357,7 +1377,7 @@ function buildDashboardCard(member) {
         ? '<img src="' + escHtml(profilePicUrl(member.profile_picture)) + '" class="dashboard-avatar-img" alt="" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'"><div class="dashboard-avatar" style="display:none;">' + escHtml(initials) + '</div>'
         : '<div class="dashboard-avatar">' + escHtml(initials) + '</div>';
     var decorationSrc = userDecorationSrc(member);
-    var decorationHtml = decorationSrc ? '<img src="' + escHtml(decorationSrc) + '" alt="" class="dashboard-avatar-decoration">' : '';
+    var decorationHtml = decorationSrc ? '<img src="' + escHtml(decorationSrc) + '" alt="" class="dashboard-avatar-decoration"' + decorationFilterAttr(member) + '>' : '';
     var permsHtml = (member.account_permissions && member.account_permissions !== '' && member.account_permissions !== 'none')
         ? '<span class="dashboard-perms-badge">' + escHtml(Array.isArray(member.account_permissions) ? member.account_permissions.join(', ') : member.account_permissions) + '</span>' : '';
     var card = document.createElement('div');
@@ -1938,6 +1958,24 @@ function showCustomerPanel() {
     renderCustomerPanelContent();
 }
 
+function purchasePaymentMethod(purchase) {
+    return (purchase && purchase.payment_method) || 'money';
+}
+
+function purchaseAmountLabel(purchase) {
+    var method = purchasePaymentMethod(purchase);
+    if (method === 'gift') return 'Gift';
+    if (method === 'lab_coins') return (parseInt(purchase.lc_spent, 10) || 0) + ' LC';
+    return '$' + (Number(purchase.amount) || 0).toFixed(2);
+}
+
+function purchaseStatusLabel(purchase) {
+    var method = purchasePaymentMethod(purchase);
+    if (method === 'gift') return 'Gifted By An Admin';
+    if (method === 'lab_coins' && String(purchase.status || '').toLowerCase() === 'paid') return 'Paid With Lab Coins';
+    return purchase.status || 'unknown';
+}
+
 function renderCustomerPanelContent() {
     var section = document.getElementById('customerPanelSection');
     if (!section) return;
@@ -1950,14 +1988,15 @@ function renderCustomerPanelContent() {
     }
     var accountTypeBadgeStyle = getAccountTypeBadgeStyle(fullUser.account_type);
     var purchases = fullUser.purchased_products || [];
-    var totalSpent = purchases.reduce(function(sum, p) { return sum + (p.amount || 0); }, 0);
+    var totalSpent = purchases.reduce(function(sum, p) { return sum + (purchasePaymentMethod(p) === 'money' ? (p.amount || 0) : 0); }, 0);
+    var totalLabCoins = purchases.reduce(function(sum, p) { return sum + (purchasePaymentMethod(p) === 'lab_coins' ? (parseInt(p.lc_spent, 10) || 0) : 0); }, 0);
     var activeCount = purchases.filter(function(p) { var s = (p.status || '').toLowerCase(); return s === 'active' || s === 'paid' || s === 'completed'; }).length;
     var licenseKeys = fullUser.license_keys || [];
     var statsHtml =
         '<div class="cp-stats-grid">' +
             '<div class="cp-stat-card glass-card"><div class="cp-stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div><div class="cp-stat-info"><div class="cp-stat-value">' + purchases.length + '</div><div class="cp-stat-label">Total Purchases</div></div></div>' +
             '<div class="cp-stat-card glass-card"><div class="cp-stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="cp-stat-info"><div class="cp-stat-value">' + activeCount + '</div><div class="cp-stat-label">Active Licenses</div></div></div>' +
-            '<div class="cp-stat-card glass-card"><div class="cp-stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div class="cp-stat-info"><div class="cp-stat-value">$' + totalSpent.toFixed(2) + '</div><div class="cp-stat-label">Total Spent</div></div></div>' +
+            '<div class="cp-stat-card glass-card"><div class="cp-stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div class="cp-stat-info"><div class="cp-stat-value">$' + totalSpent.toFixed(2) + (totalLabCoins ? ' <small>+ ' + totalLabCoins + ' LC</small>' : '') + '</div><div class="cp-stat-label">Total Spent</div></div></div>' +
             '<div class="cp-stat-card glass-card"><div class="cp-stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div><div class="cp-stat-info"><div class="cp-stat-value">' + licenseKeys.length + '</div><div class="cp-stat-label">License Keys</div></div></div>' +
         '</div>';
     var ordersHtml = '';
@@ -1967,7 +2006,7 @@ function renderCustomerPanelContent() {
         var rowsHtml = purchases.map(function(p) {
             var sl = (p.status || 'unknown').toLowerCase();
             var statusClass = 'cp-status-unknown';
-            if (sl === 'active' || sl === 'paid' || sl === 'completed') statusClass = 'cp-status-paid';
+            if (sl === 'active' || sl === 'paid' || sl === 'completed' || sl === 'gifted') statusClass = 'cp-status-paid';
             else if (sl === 'pending') statusClass = 'cp-status-pending';
             else if (sl === 'cancelled' || sl === 'canceled' || sl === 'failed' || sl === 'aborted') statusClass = 'cp-status-cancelled';
             var couponHtml = p.coupon
@@ -1976,8 +2015,8 @@ function renderCustomerPanelContent() {
             return '<div class="cp-order-row">' +
                 '<span class="cp-order-date">' + escHtml(p.date || '—') + '</span>' +
                 '<span class="cp-order-product">' + escHtml(p.product || '—') + '</span>' +
-                '<span class="cp-order-amount">$' + (p.amount || 0).toFixed(2) + '</span>' +
-                '<span class="' + statusClass + '">' + escHtml(p.status || 'unknown') + '</span>' +
+                '<span class="cp-order-amount">' + escHtml(purchaseAmountLabel(p)) + '</span>' +
+                '<span class="' + statusClass + '">' + escHtml(purchaseStatusLabel(p)) + '</span>' +
                 '<span>' + couponHtml + '</span>' +
             '</div>';
         }).join('');
@@ -2072,10 +2111,68 @@ function setupOwnedProductActions(section, ownedProducts) {
     });
 }
 
+var webDownloads = [];
+
+function notifyWebDownloads(openPopup) {
+    try { window.dispatchEvent(new CustomEvent('rwl-web-downloads', { detail: { open: !!openPopup } })); } catch (e) {}
+}
+
+window.RWLWebDownloads = {
+    list: function() { return webDownloads.slice(); },
+    active: function() { return webDownloads.filter(function(entry) { return entry.status === 'downloading'; }).length; }
+};
+
+function startWebDownload(productId, fileName, total) {
+    var entry = { id: String(Date.now()) + productId, product_id: productId, name: fileName, total: total, received: 0, speed: 0, kind: 'download', status: 'downloading', web: true };
+    webDownloads.unshift(entry);
+    webDownloads = webDownloads.slice(0, 8);
+    notifyWebDownloads(true);
+    return entry;
+}
+
+function finishWebDownload(entry, status) {
+    entry.status = status;
+    entry.speed = 0;
+    if (status === 'completed' && !entry.total) entry.total = entry.received;
+    notifyWebDownloads(false);
+    setTimeout(function() {
+        webDownloads = webDownloads.filter(function(item) { return item !== entry; });
+        notifyWebDownloads(false);
+    }, 60000);
+}
+
+async function readDownloadBlob(response, entry) {
+    if (!response.body || !response.body.getReader) {
+        var whole = await response.blob();
+        entry.received = whole.size;
+        return whole;
+    }
+    var reader = response.body.getReader();
+    var chunks = [];
+    var windowStart = Date.now();
+    var windowBytes = 0;
+    while (true) {
+        var part = await reader.read();
+        if (part.done) break;
+        chunks.push(part.value);
+        entry.received += part.value.length;
+        windowBytes += part.value.length;
+        var elapsed = Date.now() - windowStart;
+        if (elapsed >= 400) {
+            entry.speed = windowBytes / (elapsed / 1000);
+            windowStart = Date.now();
+            windowBytes = 0;
+            notifyWebDownloads(false);
+        }
+    }
+    return new Blob(chunks);
+}
+
 async function downloadSourceProduct(productId, button) {
     var token = sessionStorage.getItem('rickware_token');
     if (!token) { showBanner('Please log in to download this product.', 'error'); return; }
     if (button) button.disabled = true;
+    var downloadEntry = null;
     try {
         var response = await fetch(apiUrl('/api/product/source'), {
             method: 'POST',
@@ -2089,17 +2186,21 @@ async function downloadSourceProduct(productId, button) {
             return;
         }
         var fileName = response.headers.get('X-File-Name') || 'rickware-labs-product.zip';
-        var blob = await response.blob();
+        downloadEntry = startWebDownload(productId, fileName, parseInt(response.headers.get('Content-Length'), 10) || 0);
+        var blob = await readDownloadBlob(response, downloadEntry);
+        finishWebDownload(downloadEntry, 'completed');
         var url = URL.createObjectURL(blob);
         var link = document.createElement('a');
         link.href = url;
         link.download = fileName;
+        link.addEventListener('click', function(event) { event.stopPropagation(); });
         document.body.appendChild(link);
         link.click();
         link.remove();
         setTimeout(function() { URL.revokeObjectURL(url); }, 4000);
-        showBanner('Download started.', 'success');
+        showBanner('Download finished.', 'success');
     } catch (e) {
+        if (downloadEntry) finishWebDownload(downloadEntry, 'failed');
         showBanner('The download failed. Please try again.', 'error');
     } finally {
         if (button) button.disabled = false;
@@ -2161,7 +2262,7 @@ async function loadReviewsData() {
     } catch(e) {}
 }
 
-var COSMETIC_PAYLOAD_FIELDS = ['nameplate', 'nameplate_url', 'nameplate_speed', 'avatar_decoration', 'avatar_decoration_url', 'avatar_decoration_thumb_url', 'avatar_decoration_speed', 'name_color', 'name_color_hex', 'name_color_rarity', 'name_color_animated', 'name_color_gradient', 'name_color_animation_seconds', 'name_color_effect', 'name_color_speed', 'name_color_direction', 'nameplate_outline', 'nameplate_outline_data', 'content_border', 'content_border_data'];
+var COSMETIC_PAYLOAD_FIELDS = ['nameplate', 'nameplate_url', 'nameplate_speed', 'nameplate_filter', 'avatar_decoration_filter', 'avatar_decoration', 'avatar_decoration_url', 'avatar_decoration_thumb_url', 'avatar_decoration_speed', 'name_color', 'name_color_hex', 'name_color_rarity', 'name_color_animated', 'name_color_gradient', 'name_color_animation_seconds', 'name_color_effect', 'name_color_speed', 'name_color_direction', 'nameplate_outline', 'nameplate_outline_data', 'content_border', 'content_border_data'];
 
 function cosmeticFields(source) {
     var fields = {};
@@ -2255,7 +2356,7 @@ function forumUserAvatar(username, profilePicture, userLike) {
           '<div class="forum-post-avatar" style="display:none;">' + escHtml(initials) + '</div>'
         : '<div class="forum-post-avatar">' + escHtml(initials) + '</div>';
     var decorationSrc = userDecorationSrc(userLike || { username: username });
-    var decorationImg = decorationSrc ? '<img src="' + escHtml(decorationSrc) + '" alt="" class="forum-post-avatar-decoration">' : '';
+    var decorationImg = decorationSrc ? '<img src="' + escHtml(decorationSrc) + '" alt="" class="forum-post-avatar-decoration"' + decorationFilterAttr(userLike) + '>' : '';
     return avatarInner + decorationImg;
 }
 
@@ -2282,7 +2383,7 @@ function userDecorationSrc(userLike) {
 function miniNameplateAvatarHtml(userLike, profilePicture) {
     var decorationSrc = userDecorationSrc(userLike);
     var decorationImg = decorationSrc
-        ? '<img src="' + escHtml(decorationSrc) + '" alt="" class="mini-avatar-decoration">'
+        ? '<img src="' + escHtml(decorationSrc) + '" alt="" class="mini-avatar-decoration"' + decorationFilterAttr(userLike) + '>'
         : '';
     return '<div class="mini-avatar-wrap">' +
                 forumUserAvatar((userLike && userLike.username) || '', profilePicture) +
@@ -2303,9 +2404,15 @@ function miniNameplateBgHtml(userLike) {
     return nameplateVideoHtml(userLike);
 }
 
+function decorationFilterAttr(userLike) {
+    var style = RWL.mediaFilterStyle(userLike && userLike.avatar_decoration_filter);
+    return style ? ' style="' + escHtml(style) + '"' : '';
+}
+
 function nameplateVideoHtml(userLike) {
     var speed = userLike && userLike.nameplate_speed ? parseFloat(userLike.nameplate_speed) : 1;
-    return '<video class="mini-nameplate-bg" autoplay loop muted playsinline data-rwl-speed="' + (isNaN(speed) ? 1 : speed) + '" src="' + escHtml(userNameplateSrc(userLike)) + '"></video>';
+    var plateStyle = RWL.mediaFilterStyle(userLike && userLike.nameplate_filter);
+    return '<video class="mini-nameplate-bg"' + (plateStyle ? ' style="' + escHtml(plateStyle) + '"' : '') + ' autoplay loop muted playsinline data-rwl-speed="' + (isNaN(speed) ? 1 : speed) + '" src="' + escHtml(userNameplateSrc(userLike)) + '"></video>';
 }
 
 function outlineClasses(userLike) {
@@ -3185,7 +3292,7 @@ async function showReviewsPage() {
               '<div class="review-avatar" style="display:none;">' + escHtml(initials) + '</div>'
             : '<div class="review-avatar">' + escHtml(initials) + '</div>';
         var decorationSrcR = userDecorationSrc(r);
-        var decorationHtmlR = decorationSrcR ? '<img src="' + escHtml(decorationSrcR) + '" alt="" class="review-avatar-decoration">' : '';
+        var decorationHtmlR = decorationSrcR ? '<img src="' + escHtml(decorationSrcR) + '" alt="" class="review-avatar-decoration"' + decorationFilterAttr(r) + '>' : '';
 
         var rType = r.account_type || 'User';
         var rPerms = Array.isArray(r.account_permissions) ? r.account_permissions.join(', ') : (r.account_permissions || '');
@@ -4697,13 +4804,14 @@ function buildProductStatsHtml(p, iconSize) {
     var totalDownloads = formatCompactCount(p.total_downloads);
     var viewsKey = isGithubProduct(p) ? normalizeGithubUrl(p.github_url) : String(p.product_id || '');
     var viewsType = isGithubProduct(p) ? 'github' : 'product';
+    var productKey = isGithubProduct(p) ? '' : String(p.product_id || '');
     return '<div class="product-stats-inline">' +
-        '<span class="product-stat-item" title="Active users (total licenses)">' +
+        (isGithubProduct(p) ? '' : '<span class="product-stat-item" title="Active users (total licenses)" data-stat-field="users" data-stat-product="' + escHtml(productKey) + '">' +
         '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
         '<span class="product-stat-value">' + totalUsers + '</span></span>' +
-        '<span class="product-stat-item" title="Total downloads">' +
+        '<span class="product-stat-item" title="Total downloads" data-stat-field="downloads" data-stat-product="' + escHtml(productKey) + '">' +
         '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-        '<span class="product-stat-value">' + totalDownloads + '</span></span>' +
+        '<span class="product-stat-value">' + totalDownloads + '</span></span>') +
         (viewsKey ? '<span class="product-stat-item product-stat-views" title="Unique views" data-views-type="' + viewsType + '" data-views-key="' + escHtml(viewsKey) + '">' +
         '<svg width="' + iconSize + '" height="' + iconSize + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
         '<span class="product-stat-value">0</span></span>' : '') +
@@ -4714,9 +4822,38 @@ function buildProductStatsHtml(p, iconSize) {
         '</div>';
 }
 
+var productStatsRequest = null;
+var productStatsLoadedAt = 0;
+
+function loadProductStats() {
+    if (productStatsRequest && Date.now() - productStatsLoadedAt < 60000) return productStatsRequest;
+    productStatsLoadedAt = Date.now();
+    productStatsRequest = fetch(apiUrl('/api/products/stats')).then(function(response) {
+        return response.ok ? response.json() : { stats: {} };
+    }).then(function(data) {
+        return data.stats || {};
+    }).catch(function() {
+        return {};
+    });
+    return productStatsRequest;
+}
+
+function populateProductStats(scope) {
+    var nodes = scope.querySelectorAll('[data-stat-product]');
+    if (!nodes.length) return;
+    loadProductStats().then(function(stats) {
+        nodes.forEach(function(node) {
+            var row = stats[node.getAttribute('data-stat-product')] || {};
+            var valueEl = node.querySelector('.product-stat-value');
+            if (valueEl) valueEl.textContent = formatCompactCount(row[node.getAttribute('data-stat-field')] || 0);
+        });
+    });
+}
+
 function populateViewCounts(root) {
-    if (!window.RWLViews) return;
     var scope = root || document;
+    populateProductStats(scope);
+    if (!window.RWLViews) return;
     ['product', 'github'].forEach(function(type) {
         var nodes = scope.querySelectorAll('[data-views-type="' + type + '"]');
         if (!nodes.length) return;
@@ -4938,13 +5075,13 @@ function buildProductCard(p, showCategory, mode) {
     var wishBtn = document.createElement('button');
     wishBtn.className = 'product-btn product-btn-wishlist' + (isInWishlist(p) ? ' active' : '');
     wishBtn.title = 'Wishlist';
-    wishBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="' + (isInWishlist(p) ? '#e74c3c' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
+    wishBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="' + (isInWishlist(p) ? '#c97eff' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
     wishBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         toggleWishlistProduct(p);
         var inWL = isInWishlist(p);
         wishBtn.classList.toggle('active', inWL);
-        wishBtn.querySelector('svg').setAttribute('fill', inWL ? '#e74c3c' : 'none');
+        wishBtn.querySelector('svg').setAttribute('fill', inWL ? '#c97eff' : 'none');
     });
     actions.appendChild(wishBtn);
 
@@ -5324,7 +5461,7 @@ function openProductModal(p, options) {
     }
 
     html += '<div class="modal-header">';
-    html += '<div class="modal-title" translate="no">' + escHtml(p.title) + '</div>';
+    html += '<div class="modal-title" translate="no"><span class="shiny-text-js" style="background-image:linear-gradient(120deg,#c97eff 35%,#ffffff 50%,#c97eff 65%);">' + escHtml(p.title) + '</span></div>';
     html += '<div class="modal-badges">';
     if (p.version) html += '<span class="modal-version-badge" translate="no">' + escHtml(p.version) + '</span>';
     if (p.category) html += '<span class="modal-category-badge" translate="no">' + escHtml(p.category) + '</span>';
@@ -5405,7 +5542,7 @@ function openProductModal(p, options) {
         html += '<button class="modal-btn modal-btn-buy" id="modalBuyBtn">Buy Now</button>';
         html += '<button class="modal-btn modal-btn-cart" id="modalCartBtn"' + (hasMultiLicense ? ' disabled' : '') + '><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Add to Cart</button>';
     }
-    if (!infoOnly) html += '<button class="modal-btn modal-btn-wishlist' + (inWL ? ' active' : '') + '" id="modalWishBtn" title="Wishlist"><svg width="16" height="16" viewBox="0 0 24 24" fill="' + (inWL ? '#e74c3c' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>';
+    if (!infoOnly) html += '<button class="modal-btn modal-btn-wishlist' + (inWL ? ' active' : '') + '" id="modalWishBtn" title="Wishlist"><svg width="16" height="16" viewBox="0 0 24 24" fill="' + (inWL ? '#c97eff' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>';
     if (p.discord_url && p.discord_url.trim()) {
         html += '<a class="modal-btn modal-btn-discord" href="' + p.discord_url + '" target="_blank" rel="noopener noreferrer"><svg width="14" height="14" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.3087 23.0133 30.1353 26.2532 30.1067 30.1693C30.1067 34.1136 27.2801 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9006 23.0133 53.7272 26.2532 53.6986 30.1693C53.6986 34.1136 50.9006 37.3253 47.3178 37.3253Z"/></svg></a>';
     }
@@ -5413,7 +5550,7 @@ function openProductModal(p, options) {
         html += '<a class="modal-btn modal-btn-github" href="' + p.github_url + '" target="_blank" rel="noopener noreferrer" style="background:#24292e;color:#fff;flex:0 0 auto;min-width:unset;padding:12px 14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg></a>';
     }
     if (p.website_url && p.website_url.trim()) {
-        html += '<a class="modal-btn modal-btn-website" href="' + p.website_url + '" target="_blank" rel="noopener noreferrer" style="background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.15);flex:0 0 auto;min-width:unset;padding:12px 14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>';
+        html += '<a class="modal-btn modal-btn-website" href="' + p.website_url + '" target="_blank" rel="noopener noreferrer" style="background:rgba(155,0,204,0.14);color:#c97eff;border:1px solid rgba(155,0,204,0.45);flex:0 0 auto;min-width:unset;padding:12px 14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>';
     }
     html += '</div>';
 
@@ -5456,6 +5593,7 @@ function openProductModal(p, options) {
     }
 
     inner.innerHTML = html;
+    populateViewCounts(inner);
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
 
@@ -5544,7 +5682,7 @@ function openProductModal(p, options) {
             toggleWishlistProduct(p);
             var inWL2 = isInWishlist(p);
             modalWishBtn.classList.toggle('active', inWL2);
-            modalWishBtn.querySelector('svg').setAttribute('fill', inWL2 ? '#e74c3c' : 'none');
+            modalWishBtn.querySelector('svg').setAttribute('fill', inWL2 ? '#c97eff' : 'none');
         });
     }
 
@@ -5931,7 +6069,7 @@ function syncWishlistButtonState(product, inWishlist) {
         if (matchById || matchByTitle) {
             btn.classList.toggle('active', inWishlist);
             var svg = btn.querySelector('svg');
-            if (svg) svg.setAttribute('fill', inWishlist ? '#e74c3c' : 'none');
+            if (svg) svg.setAttribute('fill', inWishlist ? '#c97eff' : 'none');
         }
     });
     if (!inWishlist) {

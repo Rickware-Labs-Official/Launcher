@@ -1,0 +1,723 @@
+.rwl-frame-comet::before {
+    background: conic-gradient(from var(--rwl-a), transparent 0deg, transparent 250deg, var(--rwl-f1) 320deg, var(--rwl-f2) 358deg, transparent 360deg);
+}
+
+.rwl-frame-heartbeat::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2));
+}
+
+.rwl-frame-rainbow::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f4), var(--rwl-f5), var(--rwl-f6), var(--rwl-f1));
+}
+
+.rwl-frame-holo::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f4), var(--rwl-f1));
+}
+
+.rwl-frame-arc_duo::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 81.00deg, transparent 81.00deg 90.00deg, var(--rwl-f2) 90.00deg 171.00deg, transparent 171.00deg 180.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-arc_trio::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 54.00deg, transparent 54.00deg 60.00deg, var(--rwl-f2) 60.00deg 114.00deg, transparent 114.00deg 120.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-arc_quad::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 40.50deg, transparent 40.50deg 45.00deg, var(--rwl-f2) 45.00deg 85.50deg, transparent 85.50deg 90.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-arc_penta::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 32.40deg, transparent 32.40deg 36.00deg, var(--rwl-f2) 36.00deg 68.40deg, transparent 68.40deg 72.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-arc_hexa::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 27.00deg, transparent 27.00deg 30.00deg, var(--rwl-f2) 30.00deg 57.00deg, transparent 57.00deg 60.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-arc_octa::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 20.25deg, transparent 20.25deg 22.50deg, var(--rwl-f2) 22.50deg 42.75deg, transparent 42.75deg 45.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-arc_deca::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 16.20deg, transparent 16.20deg 18.00deg, var(--rwl-f2) 18.00deg 34.20deg, transparent 34.20deg 36.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-arc_dodeca::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 13.50deg, transparent 13.50deg 15.00deg, var(--rwl-f2) 15.00deg 28.50deg, transparent 28.50deg 30.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-clash_1::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 108.00deg, transparent 108.00deg 360.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-clash_1::after {
+    display: block; background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f2) 0deg 108.00deg, transparent 108.00deg 360.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite reverse;
+}
+
+.rwl-frame-clash_2::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 54.00deg, transparent 54.00deg 180.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-clash_2::after {
+    display: block; background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f2) 0deg 54.00deg, transparent 54.00deg 180.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite reverse;
+}
+
+.rwl-frame-clash_3::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 36.00deg, transparent 36.00deg 120.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-clash_3::after {
+    display: block; background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f2) 0deg 36.00deg, transparent 36.00deg 120.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite reverse;
+}
+
+.rwl-frame-clash_4::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 27.00deg, transparent 27.00deg 90.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-clash_4::after {
+    display: block; background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f2) 0deg 27.00deg, transparent 27.00deg 90.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite reverse;
+}
+
+.rwl-frame-march_4::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 4deg, var(--rwl-f2) 4deg 5.6deg, transparent 5.6deg 8deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 3) steps(180) infinite;
+}
+
+.rwl-frame-march_6::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 6deg, var(--rwl-f2) 6deg 8.4deg, transparent 8.4deg 12deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 3) steps(120) infinite;
+}
+
+.rwl-frame-march_8::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 8deg, var(--rwl-f2) 8deg 11.2deg, transparent 11.2deg 16deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 3) steps(88) infinite;
+}
+
+.rwl-frame-march_10::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 10deg, var(--rwl-f2) 10deg 14.0deg, transparent 14.0deg 20deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 3) steps(72) infinite;
+}
+
+.rwl-frame-march_20::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 20deg, var(--rwl-f2) 20deg 28.0deg, transparent 28.0deg 40deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 3) steps(36) infinite;
+}
+
+.rwl-frame-march_30::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 30deg, var(--rwl-f2) 30deg 42.0deg, transparent 42.0deg 60deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 3) steps(24) infinite;
+}
+
+.rwl-frame-sweep_h::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1)); background-size: 300% 100%; animation: rwlFrameFlow var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-sweep_h_bounce::before {
+    background: linear-gradient(90deg, var(--rwl-f1), transparent, var(--rwl-f2), transparent, var(--rwl-f1)); background-size: 300% 100%; animation: rwlFrameFlow var(--rwl-fs, 6s) ease-in-out infinite alternate;
+}
+
+.rwl-frame-sweep_v::before {
+    background: linear-gradient(0deg, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1)); background-size: 100% 300%; animation: rwlFrameRise var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-sweep_v_bounce::before {
+    background: linear-gradient(0deg, var(--rwl-f1), transparent, var(--rwl-f2), transparent, var(--rwl-f1)); background-size: 100% 300%; animation: rwlFrameRise var(--rwl-fs, 6s) ease-in-out infinite alternate;
+}
+
+.rwl-frame-sweep_d::before {
+    background: linear-gradient(45deg, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1)); background-size: 300% 300%; animation: rwlFrameFlow var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-sweep_d_bounce::before {
+    background: linear-gradient(45deg, var(--rwl-f1), transparent, var(--rwl-f2), transparent, var(--rwl-f1)); background-size: 300% 300%; animation: rwlFrameFlow var(--rwl-fs, 6s) ease-in-out infinite alternate;
+}
+
+.rwl-frame-sweep_a::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1)); background-size: 300% 300%; animation: rwlFrameFlow var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-sweep_a_bounce::before {
+    background: linear-gradient(135deg, var(--rwl-f1), transparent, var(--rwl-f2), transparent, var(--rwl-f1)); background-size: 300% 300%; animation: rwlFrameFlow var(--rwl-fs, 6s) ease-in-out infinite alternate;
+}
+
+.rwl-frame-beat_double_beat::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_double_beat var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-beat_sos::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_sos var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-beat_strobe::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_strobe var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-beat_flicker::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_flicker var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-beat_tide::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_tide var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-beat_blink_twice::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_blink_twice var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-beat_ember_glow::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_ember_glow var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-beat_crossfade::before {
+    background: var(--rwl-f1); animation: rwlFx_tide var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-beat_crossfade::after {
+    display: block; background: var(--rwl-f2); animation: rwlFx_tide var(--rwl-fs, 6s) ease-in-out infinite reverse;
+}
+
+.rwl-frame-glitch_shift::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_glitch_shift var(--rwl-fs, 6s) steps(1) infinite;
+}
+
+.rwl-frame-glitch_shift::after {
+    display: block; background: linear-gradient(90deg, transparent 40%, var(--rwl-f3) 50%, transparent 60%); background-size: 300% 100%; animation: rwlFrameFlow var(--rwl-fs, 6s) steps(9) infinite;
+}
+
+.rwl-frame-glitch_tear::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_glitch_tear var(--rwl-fs, 6s) steps(1) infinite;
+}
+
+.rwl-frame-glitch_tear::after {
+    display: block; background: linear-gradient(90deg, transparent 40%, var(--rwl-f3) 50%, transparent 60%); background-size: 300% 100%; animation: rwlFrameFlow var(--rwl-fs, 6s) steps(9) infinite;
+}
+
+.rwl-frame-glitch_drop::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_glitch_drop var(--rwl-fs, 6s) steps(1) infinite;
+}
+
+.rwl-frame-glitch_drop::after {
+    display: block; background: linear-gradient(90deg, transparent 40%, var(--rwl-f3) 50%, transparent 60%); background-size: 300% 100%; animation: rwlFrameFlow var(--rwl-fs, 6s) steps(9) infinite;
+}
+
+.rwl-frame-glitch_rgb::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_glitch_rgb var(--rwl-fs, 6s) steps(1) infinite;
+}
+
+.rwl-frame-glitch_rgb::after {
+    display: block; background: linear-gradient(90deg, transparent 40%, var(--rwl-f3) 50%, transparent 60%); background-size: 300% 100%; animation: rwlFrameFlow var(--rwl-fs, 6s) steps(9) infinite;
+}
+
+.rwl-frame-corner_short::before {
+    background: linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 14px 100% no-repeat, linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 100% 14px no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 14px 100% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 100% 14px no-repeat; animation: rwlFx_ember_glow var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-corner_long::before {
+    background: linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 34% 100% no-repeat, linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 100% 34% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 34% 100% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 100% 34% no-repeat; animation: rwlFx_flame var(--rwl-fs, 6s) steps(4) infinite;
+}
+
+.rwl-frame-corner_pulse::before {
+    background: linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 22px 100% no-repeat, linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 100% 22px no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 22px 100% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 100% 22px no-repeat; animation: rwlFx_tide var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-corner_flash::before {
+    background: linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 18% 100% no-repeat, linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 100% 18% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 18% 100% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 100% 18% no-repeat; animation: rwlFx_double_beat var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-corner_grow::before {
+    background: linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 10% 100% no-repeat, linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 100% 10% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 10% 100% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 100% 10% no-repeat; animation: rwlFx_corner_grow var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-corner_trace::before {
+    background: linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 24% 100% no-repeat, linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 100% 24% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 24% 100% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 100% 24% no-repeat; opacity: .8;
+}
+
+.rwl-frame-corner_trace::after {
+    display: block; background: conic-gradient(from var(--rwl-a), transparent 0deg 300deg, var(--rwl-f3) 360deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-corner_cross::before {
+    background: linear-gradient(var(--rwl-f1), var(--rwl-f1)) 100% 0 / 20% 100% no-repeat, linear-gradient(var(--rwl-f1), var(--rwl-f1)) 100% 0 / 100% 20% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 0 100% / 20% 100% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 0 100% / 100% 20% no-repeat; animation: rwlFx_strobe calc(var(--rwl-fs, 6s) * 0.5) steps(1) infinite;
+}
+
+.rwl-frame-corner_rainbow::before {
+    background: linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 26% 100% no-repeat, linear-gradient(var(--rwl-f1), var(--rwl-f1)) 0 0 / 100% 26% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 26% 100% no-repeat, linear-gradient(var(--rwl-f2), var(--rwl-f2)) 100% 100% / 100% 26% no-repeat; animation: rwlFx_hue var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-edge_rails_h::before {
+    background: linear-gradient(var(--rwl-f1), var(--rwl-f2)) 0 0 / 100% 50% no-repeat; animation: rwlFx_rail_h var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-edge_rails_v::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)) 0 0 / 50% 100% no-repeat; animation: rwlFx_rail_v var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-edge_top_bottom::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2), var(--rwl-f1)) 0 0 / 300% 100%; clip-path: polygon(0 0, 100% 0, 100% 12%, 0 12%, 0 88%, 100% 88%, 100% 100%, 0 100%); animation: rwlFrameFlow var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-edge_left_right::before {
+    background: linear-gradient(0deg, var(--rwl-f1), var(--rwl-f2), var(--rwl-f1)) 0 0 / 100% 300%; clip-path: polygon(0 0, 6% 0, 6% 100%, 0 100%, 0 0, 94% 0, 100% 0, 100% 100%, 94% 100%, 94% 0); animation: rwlFrameRise var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-edge_split::before {
+    background: linear-gradient(90deg, var(--rwl-f1) 50%, var(--rwl-f2) 50%); animation: rwlFx_tide var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-edge_split::after {
+    display: block; background: linear-gradient(90deg, var(--rwl-f2) 50%, var(--rwl-f1) 50%); animation: rwlFx_tide var(--rwl-fs, 6s) ease-in-out infinite reverse;
+}
+
+.rwl-frame-edge_runner::before {
+    background: linear-gradient(90deg, transparent 45%, var(--rwl-f1) 50%, transparent 55%) 0 0 / 300% 100%; animation: rwlFrameFlow var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-edge_runner::after {
+    display: block; background: linear-gradient(0deg, transparent 45%, var(--rwl-f2) 50%, transparent 55%) 0 0 / 100% 300%; animation: rwlFrameRise var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-dots_fine::before {
+    background: radial-gradient(circle, var(--rwl-f1) 0 1.5px, transparent 1.7px) 0 0 / 6px 6px, linear-gradient(var(--rwl-f2), var(--rwl-f2)); background-blend-mode: normal; animation: rwlFx_dots_6 var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-beads_fine::before {
+    background: radial-gradient(circle, var(--rwl-f1) 0 1.9px, transparent 2.2px) 0 0 / 6px 6px; animation: rwlFx_dots_6 calc(var(--rwl-fs, 6s) * 0.6) linear infinite reverse;
+}
+
+.rwl-frame-dots_small::before {
+    background: radial-gradient(circle, var(--rwl-f1) 0 2.2px, transparent 2.5px) 0 0 / 9px 9px, linear-gradient(var(--rwl-f2), var(--rwl-f2)); background-blend-mode: normal; animation: rwlFx_dots_9 var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-beads_small::before {
+    background: radial-gradient(circle, var(--rwl-f1) 0 2.9px, transparent 3.2px) 0 0 / 9px 9px; animation: rwlFx_dots_9 calc(var(--rwl-fs, 6s) * 0.6) linear infinite reverse;
+}
+
+.rwl-frame-dots_medium::before {
+    background: radial-gradient(circle, var(--rwl-f1) 0 3.0px, transparent 3.4px) 0 0 / 12px 12px, linear-gradient(var(--rwl-f2), var(--rwl-f2)); background-blend-mode: normal; animation: rwlFx_dots_12 var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-beads_medium::before {
+    background: radial-gradient(circle, var(--rwl-f1) 0 3.8px, transparent 4.3px) 0 0 / 12px 12px; animation: rwlFx_dots_12 calc(var(--rwl-fs, 6s) * 0.6) linear infinite reverse;
+}
+
+.rwl-frame-dots_large::before {
+    background: radial-gradient(circle, var(--rwl-f1) 0 4.0px, transparent 4.5px) 0 0 / 16px 16px, linear-gradient(var(--rwl-f2), var(--rwl-f2)); background-blend-mode: normal; animation: rwlFx_dots_16 var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-beads_large::before {
+    background: radial-gradient(circle, var(--rwl-f1) 0 5.1px, transparent 5.8px) 0 0 / 16px 16px; animation: rwlFx_dots_16 calc(var(--rwl-fs, 6s) * 0.6) linear infinite reverse;
+}
+
+.rwl-frame-stripe_barber::before {
+    background: repeating-linear-gradient(45deg, var(--rwl-f1) 0 6px, var(--rwl-f2) 6px 12px); background-size: 200% 200%; animation: rwlFx_stripes var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-stripe_barber_rev::before {
+    background: repeating-linear-gradient(-45deg, var(--rwl-f1) 0 6px, var(--rwl-f2) 6px 12px); background-size: 200% 200%; animation: rwlFx_stripes var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-stripe_hazard::before {
+    background: repeating-linear-gradient(45deg, var(--rwl-f1) 0 12px, var(--rwl-f2) 12px 24px); background-size: 200% 200%; animation: rwlFx_stripes var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-stripe_hazard_rev::before {
+    background: repeating-linear-gradient(-45deg, var(--rwl-f1) 0 12px, var(--rwl-f2) 12px 24px); background-size: 200% 200%; animation: rwlFx_stripes var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-stripe_ticker::before {
+    background: repeating-linear-gradient(90deg, var(--rwl-f1) 0 4px, var(--rwl-f2) 4px 8px); background-size: 200% 200%; animation: rwlFx_stripes var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-stripe_rain::before {
+    background: repeating-linear-gradient(0deg, var(--rwl-f1) 0 4px, var(--rwl-f2) 4px 8px); background-size: 200% 200%; animation: rwlFx_stripes var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-stripe_slant::before {
+    background: repeating-linear-gradient(60deg, var(--rwl-f1) 0 8px, var(--rwl-f2) 8px 16px); background-size: 200% 200%; animation: rwlFx_stripes var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-stripe_slant_rev::before {
+    background: repeating-linear-gradient(120deg, var(--rwl-f1) 0 8px, var(--rwl-f2) 8px 16px); background-size: 200% 200%; animation: rwlFx_stripes var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-double_static::before {
+    background: var(--rwl-f1); animation: rwlFx_flame var(--rwl-fs, 6s) steps(4) infinite;
+}
+
+.rwl-frame-double_static::after {
+    display: block; inset: calc(var(--rwl-fw, 2px) * 2); background: var(--rwl-f2); animation: rwlFx_ember_glow var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-double_orbit::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1), transparent, var(--rwl-f1)); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-double_orbit::after {
+    display: block; inset: calc(var(--rwl-fw, 2px) * 2); background: conic-gradient(from var(--rwl-a), var(--rwl-f2), transparent, var(--rwl-f2)); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite reverse;
+}
+
+.rwl-frame-double_pulse::before {
+    background: var(--rwl-f1); animation: rwlFx_tide var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-double_pulse::after {
+    display: block; inset: calc(var(--rwl-fw, 2px) * 2); background: var(--rwl-f2); animation: rwlFx_tide var(--rwl-fs, 6s) ease-in-out infinite reverse;
+}
+
+.rwl-frame-double_flow::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f3), var(--rwl-f1)) 0 0 / 300% 100%; animation: rwlFrameFlow var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-double_flow::after {
+    display: block; inset: calc(var(--rwl-fw, 2px) * 2); background: linear-gradient(90deg, var(--rwl-f2), var(--rwl-f3), var(--rwl-f2)) 0 0 / 300% 100%; animation: rwlFrameFlow var(--rwl-fs, 6s) linear infinite reverse;
+}
+
+.rwl-frame-double_dash::before {
+    background: var(--rwl-f1);
+}
+
+.rwl-frame-double_dash::after {
+    display: block; inset: calc(var(--rwl-fw, 2px) * 2); background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f2) 0deg 8deg, transparent 8deg 16deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 2) linear infinite reverse;
+}
+
+.rwl-frame-double_comet::before {
+    background: var(--rwl-f1); opacity: .55;
+}
+
+.rwl-frame-double_comet::after {
+    display: block; inset: calc(var(--rwl-fw, 2px) * 2); background: conic-gradient(from var(--rwl-a), transparent 0deg 280deg, var(--rwl-f2) 360deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-aura_steady::before {
+    background: var(--rwl-f1);
+}
+
+.rwl-frame-aura_steady::after {
+    display: block; -webkit-mask: none; mask: none; padding: 0; background: transparent; box-shadow: 0 0 14px var(--rwl-f1); animation: rwlFx_ember_glow var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-aura_breath::before {
+    background: var(--rwl-f1);
+}
+
+.rwl-frame-aura_breath::after {
+    display: block; -webkit-mask: none; mask: none; padding: 0; background: transparent; box-shadow: 0 0 18px var(--rwl-f1); animation: rwlFx_tide var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-aura_swap::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2));
+}
+
+.rwl-frame-aura_swap::after {
+    display: block; -webkit-mask: none; mask: none; padding: 0; background: transparent; animation: rwlFx_aura_swap var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-aura_inner::before {
+    background: var(--rwl-f1);
+}
+
+.rwl-frame-aura_inner::after {
+    display: block; -webkit-mask: none; mask: none; padding: 0; background: transparent; box-shadow: inset 0 0 14px var(--rwl-f2); animation: rwlFx_tide var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-aura_ring::before {
+    background: var(--rwl-f1);
+}
+
+.rwl-frame-aura_ring::after {
+    display: block; -webkit-mask: none; mask: none; padding: 0; background: transparent; animation: rwlFx_aura_ring var(--rwl-fs, 6s) ease-out infinite;
+}
+
+.rwl-frame-aura_spin::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1), var(--rwl-f2), var(--rwl-f1)); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-aura_spin::after {
+    display: block; -webkit-mask: none; mask: none; padding: 0; background: transparent; box-shadow: 0 0 12px var(--rwl-f2);
+}
+
+.rwl-frame-aura_flare::before {
+    background: var(--rwl-f1);
+}
+
+.rwl-frame-aura_flare::after {
+    display: block; -webkit-mask: none; mask: none; padding: 0; background: transparent; animation: rwlFx_aura_flare var(--rwl-fs, 6s) steps(1) infinite;
+}
+
+.rwl-frame-aura_duo::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2));
+}
+
+.rwl-frame-aura_duo::after {
+    display: block; -webkit-mask: none; mask: none; padding: 0; background: transparent; animation: rwlFx_aura_duo var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-shine_soft::before {
+    background: linear-gradient(110deg, transparent 42%, rgba(255,255,255,.55) 50%, transparent 58%) 0 0 / 300% 100%, linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFrameFlow calc(var(--rwl-fs, 6s) * 1) linear infinite;
+}
+
+.rwl-frame-shine_hard::before {
+    background: linear-gradient(110deg, transparent 42%, #ffffff 50%, transparent 58%) 0 0 / 300% 100%, linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFrameFlow calc(var(--rwl-fs, 6s) * 0.7) linear infinite;
+}
+
+.rwl-frame-shine_steep::before {
+    background: linear-gradient(160deg, transparent 42%, #ffffff 50%, transparent 58%) 0 0 / 300% 100%, linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFrameFlow calc(var(--rwl-fs, 6s) * 1) linear infinite;
+}
+
+.rwl-frame-shine_fast::before {
+    background: linear-gradient(110deg, transparent 42%, #ffffff 50%, transparent 58%) 0 0 / 300% 100%, linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFrameFlow calc(var(--rwl-fs, 6s) * 0.35) linear infinite;
+}
+
+.rwl-frame-shine_gold::before {
+    background: linear-gradient(110deg, transparent 42%, var(--rwl-f3) 50%, transparent 58%) 0 0 / 300% 100%, linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFrameFlow calc(var(--rwl-fs, 6s) * 1) linear infinite;
+}
+
+.rwl-frame-swell_solid::before {
+    background: var(--rwl-f1); animation: rwlFx_swell var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-swell_gradient::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_swell var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-swell_spin::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1), var(--rwl-f2), var(--rwl-f1)); animation: rwlFx_swell var(--rwl-fs, 6s) ease-in-out infinite, rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-swell_heavy::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3)); animation: rwlFx_swell_heavy var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-swell_tick::before {
+    background: var(--rwl-f1); animation: rwlFx_swell_tick var(--rwl-fs, 6s) ease-in-out infinite;
+}
+
+.rwl-frame-swell_wave::before {
+    background: repeating-conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 20deg, var(--rwl-f2) 20deg 40deg); animation: rwlFx_swell var(--rwl-fs, 6s) ease-in-out infinite, rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-hue_conic::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1), var(--rwl-f2), var(--rwl-f1)); animation: rwlFx_hue var(--rwl-fs, 6s) linear infinite, rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-hue_linear::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2)); animation: rwlFx_hue var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-hue_diagonal::before {
+    background: linear-gradient(135deg, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3)); animation: rwlFx_hue var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-hue_solid::before {
+    background: var(--rwl-f1); animation: rwlFx_hue var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-nova_tl::before {
+    background: conic-gradient(from var(--rwl-a) at 20% 20%, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1)); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-nova_tr::before {
+    background: conic-gradient(from var(--rwl-a) at 80% 20%, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1)); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-nova_bl::before {
+    background: conic-gradient(from var(--rwl-a) at 20% 80%, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1)); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-nova_br::before {
+    background: conic-gradient(from var(--rwl-a) at 80% 80%, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1)); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-nova_top::before {
+    background: conic-gradient(from var(--rwl-a) at 50% 0%, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1)); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-nova_bottom::before {
+    background: conic-gradient(from var(--rwl-a) at 50% 100%, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f1)); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-inferno::before {
+    background: linear-gradient(0deg, var(--rwl-f1), var(--rwl-f2), #ffe066, var(--rwl-f2), var(--rwl-f1)); background-size: 100% 300%; animation: rwlFrameRise calc(var(--rwl-fs, 6s) * 0.5) linear infinite, rwlFx_flame 1.3s steps(4) infinite;
+}
+
+.rwl-frame-toxic::before {
+    background: linear-gradient(0deg, var(--rwl-f1), var(--rwl-f2), #e9ff70, var(--rwl-f2), var(--rwl-f1)); background-size: 100% 300%; animation: rwlFrameRise calc(var(--rwl-fs, 6s) * 0.5) linear infinite, rwlFx_flame 1.3s steps(4) infinite;
+}
+
+.rwl-frame-magma::before {
+    background: linear-gradient(0deg, var(--rwl-f1), var(--rwl-f2), #ff5400, var(--rwl-f2), var(--rwl-f1)); background-size: 100% 300%; animation: rwlFrameRise calc(var(--rwl-fs, 6s) * 0.5) linear infinite, rwlFx_flame 1.3s steps(4) infinite;
+}
+
+.rwl-frame-glacier::before {
+    background: linear-gradient(0deg, var(--rwl-f1), var(--rwl-f2), #ffffff, var(--rwl-f2), var(--rwl-f1)); background-size: 100% 300%; animation: rwlFrameRise calc(var(--rwl-fs, 6s) * 0.5) linear infinite, rwlFx_flame 1.3s steps(4) infinite;
+}
+
+.rwl-frame-tick_4::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 90.00deg, var(--rwl-f2) 90.00deg 180.00deg, transparent 180.00deg 360deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 2) steps(4) infinite;
+}
+
+.rwl-frame-tick_8::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 45.00deg, var(--rwl-f2) 45.00deg 90.00deg, transparent 90.00deg 360deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 2) steps(8) infinite;
+}
+
+.rwl-frame-tick_12::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 30.00deg, var(--rwl-f2) 30.00deg 60.00deg, transparent 60.00deg 360deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 2) steps(12) infinite;
+}
+
+.rwl-frame-tick_24::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 15.00deg, var(--rwl-f2) 15.00deg 30.00deg, transparent 30.00deg 360deg); animation: rwlFrameSpin calc(var(--rwl-fs, 6s) * 2) steps(24) infinite;
+}
+
+.rwl-frame-swing_soft::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 70deg, transparent 70deg 180deg, var(--rwl-f2) 180deg 250deg, transparent 250deg 360deg); animation: rwlFx_swing var(--rwl-fs, 6s) ease-in-out infinite alternate;
+}
+
+.rwl-frame-swing_hard::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 70deg, transparent 70deg 180deg, var(--rwl-f2) 180deg 250deg, transparent 250deg 360deg); animation: rwlFx_swing var(--rwl-fs, 6s) cubic-bezier(.7,0,.3,1) infinite alternate;
+}
+
+.rwl-frame-swing_elastic::before {
+    background: conic-gradient(from var(--rwl-a), var(--rwl-f1) 0deg 70deg, transparent 70deg 180deg, var(--rwl-f2) 180deg 250deg, transparent 250deg 360deg); animation: rwlFx_swing var(--rwl-fs, 6s) cubic-bezier(.6,-.3,.4,1.3) infinite alternate;
+}
+
+.rwl-frame-comet_pair::before {
+    background: repeating-conic-gradient(from var(--rwl-a), transparent 0deg 120.00deg, var(--rwl-f1) 176.00deg, var(--rwl-f2) 180.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-comet_trio::before {
+    background: repeating-conic-gradient(from var(--rwl-a), transparent 0deg 70.00deg, var(--rwl-f1) 116.00deg, var(--rwl-f2) 120.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-comet_swarm::before {
+    background: repeating-conic-gradient(from var(--rwl-a), transparent 0deg 52.00deg, var(--rwl-f1) 86.00deg, var(--rwl-f2) 90.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-comet_long::before {
+    background: repeating-conic-gradient(from var(--rwl-a), transparent 0deg 180.00deg, var(--rwl-f1) 356.00deg, var(--rwl-f2) 360.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-comet_short::before {
+    background: repeating-conic-gradient(from var(--rwl-a), transparent 0deg 330.00deg, var(--rwl-f1) 356.00deg, var(--rwl-f2) 360.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-comet_storm::before {
+    background: repeating-conic-gradient(from var(--rwl-a), transparent 0deg 36.00deg, var(--rwl-f1) 56.00deg, var(--rwl-f2) 60.00deg); animation: rwlFrameSpin var(--rwl-fs, 6s) linear infinite;
+}
+
+.rwl-frame-aurora_band::before {
+    background: linear-gradient(90deg, var(--rwl-f1), var(--rwl-f2), var(--rwl-f3), var(--rwl-f4), var(--rwl-f1)); background-size: 400% 100%; animation: rwlFrameFlow var(--rwl-fs, 6s) ease-in-out infinite alternate, rwlFx_tide calc(var(--rwl-fs, 6s) * 2) ease-in-out infinite;
+}
+
+@keyframes rwlFx_double_beat {
+    0%,16%,36%,100%{opacity:.25}8%,26%{opacity:1}
+}
+
+@keyframes rwlFx_sos {
+    0%,8%,16%,24%,32%,40%,60%,80%,100%{opacity:.12}4%,12%,20%,48%,68%,84%,88%,92%{opacity:1}
+}
+
+@keyframes rwlFx_strobe {
+    0%,49%{opacity:1}50%,100%{opacity:.08}
+}
+
+@keyframes rwlFx_flicker {
+    0%,19%,21%,23%,25%,54%,56%,100%{opacity:1}20%,24%,55%{opacity:.15}
+}
+
+@keyframes rwlFx_tide {
+    0%,100%{opacity:.18}50%{opacity:1}
+}
+
+@keyframes rwlFx_blink_twice {
+    0%,10%,20%,100%{opacity:.1}5%,15%{opacity:1}
+}
+
+@keyframes rwlFx_ember_glow {
+    0%,100%{opacity:.5;filter:brightness(1)}35%{opacity:1;filter:brightness(1.7)}70%{opacity:.75;filter:brightness(1.2)}
+}
+
+@keyframes rwlFx_glitch_shift {
+    0%,84%,100%{transform:none;filter:none}86%{transform:translate(3px,-2px);filter:hue-rotate(70deg)}90%{transform:translate(-3px,2px);filter:hue-rotate(-70deg)}94%{transform:translate(2px,1px)}
+}
+
+@keyframes rwlFx_glitch_tear {
+    0%,72%,100%{transform:none}74%{transform:skewX(12deg)}78%{transform:skewX(-12deg)}82%{transform:translateX(4px)}
+}
+
+@keyframes rwlFx_glitch_drop {
+    0%,60%,100%{opacity:1;transform:none}62%{opacity:.2;transform:translateY(3px)}66%{opacity:1;transform:translateY(-3px)}70%{opacity:.4}74%{opacity:1}
+}
+
+@keyframes rwlFx_glitch_rgb {
+    0%,70%,100%{filter:none}72%{filter:hue-rotate(120deg) saturate(2)}76%{filter:hue-rotate(240deg) saturate(2)}80%{filter:none}84%{filter:invert(1)}
+}
+
+@keyframes rwlFx_corner_grow {
+    0%,100%{background-size:10% 100%,100% 10%,10% 100%,100% 10%}50%{background-size:42% 100%,100% 42%,42% 100%,100% 42%}
+}
+
+@keyframes rwlFx_hue {
+    to{filter:hue-rotate(360deg)}
+}
+
+@keyframes rwlFx_rail_h {
+    0%,100%{background-position:0 0}50%{background-position:0 100%}
+}
+
+@keyframes rwlFx_rail_v {
+    0%,100%{background-position:0 0}50%{background-position:100% 0}
+}
+
+@keyframes rwlFx_stripes {
+    from{background-position:0 0}to{background-position:200% 200%}
+}
+
+@keyframes rwlFx_aura_swap {
+    0%,100%{box-shadow:0 0 14px var(--rwl-f1)}50%{box-shadow:0 0 14px var(--rwl-f2)}
+}
+
+@keyframes rwlFx_aura_ring {
+    0%{box-shadow:0 0 0 0 var(--rwl-f1)}100%{box-shadow:0 0 0 10px transparent}
+}
+
+@keyframes rwlFx_aura_flare {
+    0%,80%,100%{box-shadow:0 0 4px var(--rwl-f1)}85%{box-shadow:0 0 22px var(--rwl-f1)}90%{box-shadow:0 0 6px var(--rwl-f1)}95%{box-shadow:0 0 18px var(--rwl-f1)}
+}
+
+@keyframes rwlFx_aura_duo {
+    0%,100%{box-shadow:-6px -6px 14px -4px var(--rwl-f1),6px 6px 14px -4px var(--rwl-f2)}50%{box-shadow:6px -6px 14px -4px var(--rwl-f2),-6px 6px 14px -4px var(--rwl-f1)}
+}
+
+@keyframes rwlFx_swell {
+    0%,100%{padding:1px}50%{padding:4px}
+}
+
+@keyframes rwlFx_swell_heavy {
+    0%,100%{padding:1px}50%{padding:6px}
+}
+
+@keyframes rwlFx_swell_tick {
+    0%,40%,100%{padding:1px}20%{padding:5px}
+}
+
+@keyframes rwlFx_flame {
+    0%,100%{filter:brightness(1)}25%{filter:brightness(1.35)}60%{filter:brightness(.85)}
+}
+
+@keyframes rwlFx_swing {
+    from{--rwl-a:-40deg}to{--rwl-a:220deg}
+}
+
+@keyframes rwlFx_dots_6 {
+    to{background-position:24px 0}
+}
+
+@keyframes rwlFx_dots_9 {
+    to{background-position:36px 0}
+}
+
+@keyframes rwlFx_dots_12 {
+    to{background-position:48px 0}
+}
+
+@keyframes rwlFx_dots_16 {
+    to{background-position:64px 0}
+}
+
+.rwl-low-fx .rwl-frame::after {
+    box-shadow: none;
+}

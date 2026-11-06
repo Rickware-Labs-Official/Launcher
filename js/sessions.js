@@ -89,7 +89,7 @@
     }
 
     async function revoke(sessionId, button) {
-        if (!window.confirm('Sign out this session? The device has to sign in again.')) return;
+        if (!(await RWLDialog.confirm({ title: 'Sign Out Session', message: 'Sign out this session? The device has to sign in again.', confirmText: 'Sign Out', danger: true }))) return;
         button.disabled = true;
         busy = true;
         try {
@@ -136,7 +136,7 @@
             window.setTimeout(function () { button.disabled = false; }, 10000);
         });
         document.getElementById('revokeOthersBtn').addEventListener('click', async function (event) {
-            if (!window.confirm('Sign out every other session? Those devices have to sign in again.')) return;
+            if (!(await RWLDialog.confirm({ title: 'Sign Out Other Sessions', message: 'Sign out every other session? Those devices have to sign in again.', confirmText: 'Sign Out All', danger: true }))) return;
             var button = event.currentTarget;
             button.disabled = true;
             try {

@@ -55,6 +55,10 @@ Patterns use numbered placeholders: `{0}` matches any text and `{#0}` matches a 
 
 Visitors get the language of their IP address. Signed in users get English unless they choose another language in Preferences.
 
+## Dialogs
+
+Native browser popups are not used. Use `RWLDialog.confirm({ title, message, confirmText, danger })` and `RWLDialog.alert(message)` from `rwl_boot.js`. Both return a promise. `window.alert` opens the same dialog.
+
 ## Security Features
 
 | Feature | How it works |
@@ -80,13 +84,13 @@ These checks support the backend. They run on the client, so a determined attack
 
 | Category | Notes |
 |----------|-------|
-| Themes | Includes individual seasonal themes for 2026 to 2050 with animated scenes. Future years stay locked until their year starts, unless `cosmetics.release_all_seasonal_themes` is enabled. |
+| Themes | 40 exclusive special themes for 2026 to 2030, sorted first by year, each with its own icon and interactive scene (`js/rwl_scene_pieces.js`). Later seasonal themes up to 2050 stay locked until their year starts, unless `cosmetics.release_all_seasonal_themes` is enabled. |
 | Name Colors | Includes mythic effects. Animated colors have a playback speed and a direction. |
-| Avatar Decorations, Nameplates | Animated items have a playback speed. |
-| Nameplate Outlines | Animated outline around the nameplate, available in Lab-Pass, chests and inventory. |
-| Content Borders | Full border for review boxes, forum posts, comments and replies. |
+| Avatar Decorations, Nameplates | Playback speed plus a hue, saturation and brightness filter with a Default button. |
+| Nameplate Outlines | 137 items, each with its own animated effect (`css/rwl_frames.css`). Color editor with one field per effect color and a Default button. |
+| Content Borders | 137 items for review boxes, forum posts, comments and replies, with the same color editor. |
 
-Playback speed and direction are stored on the backend and apply everywhere.
+Every inventory area has a search bar in both tabs, themes can also be filtered by year. All settings are stored and validated on the backend and apply everywhere.
 
 ## Launcher Bridge
 

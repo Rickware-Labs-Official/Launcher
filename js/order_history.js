@@ -23,7 +23,8 @@ async function loadOrderHistory(user) {
     const pausedLicenses = user.paused_license_keys || [];
     const bannedProducts = user.banned_products || [];
 
-    const totalSpent = orderHistory.reduce((sum, o) => sum + (parseFloat(o.total_usd) || 0), 0);
+    const totalSpent = orderHistory.reduce((sum, o) => sum + (orderPaymentMethod(o) === 'money' ? (parseFloat(o.total_usd) || 0) : 0), 0);
+    const totalLabCoins = orderHistory.reduce((sum, o) => sum + (orderPaymentMethod(o) === 'lab_coins' ? (parseInt(o.lc_spent, 10) || 0) : 0), 0);
 
     let licenseData = [];
     try {
@@ -43,7 +44,7 @@ async function loadOrderHistory(user) {
 
     if (totalPurchasesElem) totalPurchasesElem.textContent = orderHistory.length;
     if (activeSubscriptionsElem) activeSubscriptionsElem.textContent = activeLicenses.length;
-    if (totalSpentElem) totalSpentElem.textContent = '$' + totalSpent.toFixed(2);
+    if (totalSpentElem) totalSpentElem.textContent = '$' + totalSpent.toFixed(2) + (totalLabCoins ? ' + ' + totalLabCoins + ' LC' : '');
 
     if (ordersList) {
         if (orderHistory.length === 0) {
@@ -55,7 +56,7 @@ async function loadOrderHistory(user) {
                 return db - da;
             });
             ordersList.innerHTML = sorted.map(o => {
-                const statusClass = o.status === 'paid' ? 'paid' : (o.status === 'pending' ? 'pending' : 'unknown');
+                const statusClass = o.status === 'paid' || o.status === 'gifted' ? 'paid' : (o.status === 'pending' ? 'pending' : 'unknown');
                 const itemNames = (o.items || []).map(i => i.name).join(', ') || o.order_id;
                 const dateStr = o.paid_at || o.created_at || '';
                 const coinStr = o.coin ? o.coin.toUpperCase() : '';
@@ -63,8 +64,8 @@ async function loadOrderHistory(user) {
                     <div class="table-row">
                         <span>${escHtmlOH(dateStr)}</span>
                         <span>${escHtmlOH(itemNames)}</span>
-                        <span>$${parseFloat(o.total_usd || 0).toFixed(2)}${coinStr ? ' (' + escHtmlOH(coinStr) + ')' : ''}</span>
-                        <span class="status-badge ${statusClass}">${escHtmlOH(o.status || 'unknown')}</span>
+                        <span>${escHtmlOH(orderAmountLabel(o))}</span>
+                        <span class="status-badge ${statusClass}">${escHtmlOH(orderStatusLabel(o))}</span>
                     </div>
                 `;
             }).join('');
@@ -133,6 +134,26 @@ async function loadOrderHistory(user) {
             bannedProductsContainer.innerHTML = '<div class="list-items">' + bannedProducts.map(prod => '<div class="list-item banned">' + escHtmlOH(prod) + '</div>').join('') + '</div>';
         }
     }
+}
+
+function orderPaymentMethod(order) {
+    if (order.payment_method) return order.payment_method;
+    return String(order.coin || '').toLowerCase() === 'lc' ? 'lab_coins' : 'money';
+}
+
+function orderAmountLabel(order) {
+    const method = orderPaymentMethod(order);
+    if (method === 'gift') return 'Gift';
+    if (method === 'lab_coins') return (parseInt(order.lc_spent, 10) || 0) + ' LC';
+    const coin = order.coin ? ' (' + String(order.coin).toUpperCase() + ')' : '';
+    return '$' + parseFloat(order.total_usd || 0).toFixed(2) + coin;
+}
+
+function orderStatusLabel(order) {
+    const method = orderPaymentMethod(order);
+    if (method === 'gift') return 'Gifted By An Admin';
+    if (method === 'lab_coins' && order.status === 'paid') return 'Paid With Lab Coins';
+    return order.status || 'unknown';
 }
 
 function escHtmlOH(str) {

@@ -343,10 +343,10 @@
         if (document.getElementById('rwlCosmeticStyles')) return;
         var style = document.createElement('style');
         style.id = 'rwlCosmeticStyles';
-        style.textContent = '@keyframes rwlNameRgb{0%{background-position:0% 50%}100%{background-position:300% 50%}}' +
-            '@keyframes rwlNameRev{0%{background-position:300% 50%}100%{background-position:0% 50%}}' +
-            '@keyframes rwlNameDown{0%{background-position:50% 0%}100%{background-position:50% 300%}}' +
-            '@keyframes rwlNameUp{0%{background-position:50% 300%}100%{background-position:50% 0%}}' +
+        style.textContent = '@keyframes rwlNameRgb{0%{background-position:300% 50%}100%{background-position:0% 50%}}' +
+            '@keyframes rwlNameRev{0%{background-position:0% 50%}100%{background-position:300% 50%}}' +
+            '@keyframes rwlNameDown{0%{background-position:50% 300%}100%{background-position:50% 0%}}' +
+            '@keyframes rwlNameUp{0%{background-position:50% 0%}100%{background-position:50% 300%}}' +
             '@property --rwl-p{syntax:"<number>";inherits:false;initial-value:0}' +
             '@keyframes rwlNameOut{0%{--rwl-p:-100}100%{--rwl-p:0}}' +
             '@keyframes rwlNameIn{0%{--rwl-p:0}100%{--rwl-p:-100}}' +
@@ -470,19 +470,38 @@
         return KEEP_COLORS_STYLE + 'background:' + sanitizeHex(item && item.hex, '#7b2cbf') + ';';
     }
 
+    function frameColorVars(colors) {
+        var vars = '';
+        for (var index = 0; index < 6; index++) {
+            vars += '--rwl-f' + (index + 1) + ':' + (colors[index] || colors[index % colors.length]) + ';';
+        }
+        return vars;
+    }
+
+    var MEDIA_FILTER_PATTERN = /^hue-rotate\(-?\d{1,3}deg\) saturate\(\d{1,3}%\) brightness\(\d{1,3}%\)$/;
+
+    function mediaFilterValue(value) {
+        return value && MEDIA_FILTER_PATTERN.test(String(value)) ? String(value) : '';
+    }
+
+    function mediaFilterStyle(value) {
+        var filter = mediaFilterValue(value);
+        return filter ? KEEP_COLORS_STYLE + 'filter:' + filter + ';' : '';
+    }
+
     function frameAttributes(data, extraClass) {
         if (!data || !data.effect || !Array.isArray(data.colors) || !data.colors.length) return extraClass ? ' class="' + extraClass + '"' : '';
         var colors = data.colors.map(function (color) { return sanitizeHex(color, '#9d4edd'); });
         var seconds = Math.max(1, Math.min(parseFloat(data.animation_seconds) || 6, 30)) / clampSpeed(data.speed);
         var width = Math.max(1, Math.min(parseInt(data.thickness, 10) || 2, 6));
-        var style = KEEP_COLORS_STYLE + '--rwl-f1:' + colors[0] + ';--rwl-f2:' + (colors[1] || colors[0]) + ';--rwl-f3:' + (colors[2] || colors[0]) + ';--rwl-fs:' + seconds.toFixed(2) + 's;--rwl-fw:' + width + 'px;';
-        var effect = String(data.effect).replace(/[^a-z]/g, '');
+        var style = KEEP_COLORS_STYLE + frameColorVars(colors) + '--rwl-fs:' + seconds.toFixed(2) + 's;--rwl-fw:' + width + 'px;';
+        var effect = String(data.effect).replace(/[^a-z0-9_]/g, '');
         return ' class="' + (extraClass ? extraClass + ' ' : '') + 'rwl-frame rwl-frame-' + effect + '" style="' + style + '"';
     }
 
     function frameClasses(data) {
         if (!data || !data.effect) return '';
-        return ' rwl-frame rwl-frame-' + String(data.effect).replace(/[^a-z]/g, '');
+        return ' rwl-frame rwl-frame-' + String(data.effect).replace(/[^a-z0-9_]/g, '');
     }
 
     function frameStyle(data) {
@@ -490,7 +509,7 @@
         var colors = data.colors.map(function (color) { return sanitizeHex(color, '#9d4edd'); });
         var seconds = Math.max(1, Math.min(parseFloat(data.animation_seconds) || 6, 30)) / clampSpeed(data.speed);
         var width = Math.max(1, Math.min(parseInt(data.thickness, 10) || 2, 6));
-        return KEEP_COLORS_STYLE + '--rwl-f1:' + colors[0] + ';--rwl-f2:' + (colors[1] || colors[0]) + ';--rwl-f3:' + (colors[2] || colors[0]) + ';--rwl-fs:' + seconds.toFixed(2) + 's;--rwl-fw:' + width + 'px;';
+        return KEEP_COLORS_STYLE + frameColorVars(colors) + '--rwl-fs:' + seconds.toFixed(2) + 's;--rwl-fw:' + width + 'px;';
     }
 
     function todayKey() {
@@ -554,6 +573,8 @@
         sanitizeHex: sanitizeHex,
         rarityColor: rarityColor,
         nameColorStyle: nameColorStyle,
+        mediaFilterValue: mediaFilterValue,
+        mediaFilterStyle: mediaFilterStyle,
         swatchStyle: swatchStyle,
         frameAttributes: frameAttributes,
         frameClasses: frameClasses,

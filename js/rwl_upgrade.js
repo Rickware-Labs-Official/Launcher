@@ -5,7 +5,12 @@
     var PRESENCE_MIN_GAP_MS = 1200;
     var DOWNLOAD_POLL_MS = 1000;
     var esc = RWL.escapeHtml;
-    var presenceInterval = 5000;
+    var presenceInterval = 20000;
+    var PRESENCE_MIN_INTERVAL_MS = 10000;
+    var PRESENCE_MAX_BACKOFF_MS = 300000;
+    var presenceBackoffMs = 0;
+    var presenceNotBefore = 0;
+    var presenceJoined = false;
     var presenceEnabled = true;
     var presenceTimer = null;
     var presenceDebounce = null;
@@ -58,6 +63,7 @@
     function syncPresence(force) {
         if (!presenceEnabled || document.hidden) return;
         var now = Date.now();
+        if (now < presenceNotBefore) return;
         var items = visibleLiveItems();
         var key = items.join('|');
         if (!force && key === lastPresenceKey && now - lastPresenceAt < presenceInterval - 200) return;
@@ -68,7 +74,17 @@
         var token = RWL.getToken();
         if (token) headers.Authorization = 'Bearer ' + token;
         fetch(RWL.apiUrl('/api/presence/sync'), { method: 'POST', headers: headers, body: JSON.stringify({ visitor_id: presenceId(), items: items, view: currentView() }) }).then(function (response) {
-            return response.ok ? response.json() : null;
+            if (!response.ok) {
+                if (response.status === 403 || response.status === 429) {
+                    var retryAfter = (parseInt(response.headers.get('Retry-After'), 10) || 0) * 1000;
+                    presenceBackoffMs = Math.min(PRESENCE_MAX_BACKOFF_MS, Math.max(presenceBackoffMs * 2, presenceInterval * 2, retryAfter));
+                    presenceNotBefore = Date.now() + presenceBackoffMs * (0.8 + Math.random() * 0.4);
+                }
+                return null;
+            }
+            presenceBackoffMs = 0;
+            presenceJoined = true;
+            return response.json();
         }).then(function (data) {
             if (!data) return;
             if (data.enabled === false) {
@@ -76,7 +92,7 @@
                 document.documentElement.classList.add('rwl-no-live');
                 return;
             }
-            if (data.interval) presenceInterval = Math.max(2000, data.interval * 1000);
+            if (data.interval) presenceInterval = Math.max(PRESENCE_MIN_INTERVAL_MS, data.interval * 1000) * (0.9 + Math.random() * 0.2);
             updateLiveCounts(data.counts || {});
         }).catch(function () {});
     }
@@ -88,7 +104,8 @@
     }
 
     function leavePresence() {
-        if (!presenceEnabled) return;
+        if (!presenceEnabled || !presenceJoined) return;
+        presenceJoined = false;
         try {
             fetch(RWL.apiUrl('/api/presence/leave'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visitor_id: presenceId() }), keepalive: true }).catch(function () {});
         } catch (error) {}
@@ -244,26 +261,35 @@
         return total + 's';
     }
 
-    function renderDownloads(downloads, tools) {
+    function webDownloadList() {
+        return global.RWLWebDownloads ? global.RWLWebDownloads.list() : [];
+    }
+
+    function downloadStatusLabel(entry) {
+        if (entry.status === 'completed') return t('Completed');
+        if (entry.status === 'failed') return t('Failed');
+        return t(entry.status === 'verifying' ? 'Verifying' : 'Downloading');
+    }
+
+    function renderDownloads(hostDownloads, tools) {
         var body = downloadPopup && downloadPopup.querySelector('.rwl-download-body');
         if (!body) return;
         var running = (tools || []).filter(function (tool) { return tool.status === 'running'; });
+        var downloads = webDownloadList().concat(hostDownloads || []);
         var html = '<div class="rwl-download-group">' + esc(t('Downloads')) + '</div>';
-        if (!bridge()) {
-            html += '<div class="rwl-download-empty">' + esc(t('Tool downloads and updates run inside the Rickware - Labs Launcher.')) + '</div>';
-        } else if (!downloads.length) {
-            html += '<div class="rwl-download-empty">' + esc(t('No active downloads')) + '</div>';
+        if (!downloads.length) {
+            html += '<div class="rwl-download-empty">' + esc(t(bridge() ? 'No active downloads' : 'No active downloads. Source code downloads appear here, everything else runs inside the Rickware - Labs Launcher.')) + '</div>';
         } else {
             downloads.forEach(function (entry) {
                 var total = Number(entry.total) || 0;
                 var received = Number(entry.received) || 0;
-                var percent = total ? Math.min(100, Math.round(received / total * 100)) : 0;
+                var percent = entry.status === 'completed' ? 100 : (total ? Math.min(100, Math.round(received / total * 100)) : 0);
                 var speed = Number(entry.speed) || 0;
                 var remaining = speed > 0 && total ? (total - received) / speed : 0;
                 html += '<div class="rwl-download-item"><div class="rwl-download-title"><span translate="no">' + esc(entry.name || entry.product_id || 'Tool') + '</span><span>' + percent + '%</span></div>' +
                     '<div class="rwl-progress"><span style="--rwl-keep:1;width:' + percent + '%"></span></div>' +
                     '<div class="rwl-download-meta"><span>' + esc(formatBytes(received)) + ' / ' + esc(formatBytes(total)) + '</span><span>' + esc(formatBytes(speed)) + '/s</span><span>' + (remaining ? esc(formatDuration(remaining)) : '-') + '</span></div>' +
-                    '<div class="rwl-download-meta"><span>' + esc(t(entry.kind === 'update' ? 'Update' : 'Download')) + '</span><span>' + esc(t(entry.status === 'verifying' ? 'Verifying' : 'Downloading')) + '</span></div></div>';
+                    '<div class="rwl-download-meta"><span>' + esc(t(entry.web ? 'Browser Download' : (entry.kind === 'update' ? 'Update' : 'Download'))) + '</span><span>' + esc(downloadStatusLabel(entry)) + '</span></div></div>';
             });
         }
         html += '<div class="rwl-download-group">' + esc(t('Running Sessions')) + '</div>';
@@ -294,15 +320,16 @@
     }
 
     function pollDownloads() {
+        var activeWeb = global.RWLWebDownloads ? global.RWLWebDownloads.active() : 0;
         if (!bridge()) {
-            updateDownloadBadge(0);
+            updateDownloadBadge(activeWeb);
             if (downloadPopup && !downloadPopup.hidden) renderDownloads([], []);
             return;
         }
         Promise.all([bridgeCall('getDownloads'), bridgeCall('getInstalledTools')]).then(function (results) {
             var downloads = (results[0] && results[0].downloads) || [];
             var tools = Array.isArray(results[1]) ? results[1] : ((results[1] && results[1].tools) || []);
-            updateDownloadBadge(downloads.length);
+            updateDownloadBadge(downloads.length + activeWeb);
             if (downloadPopup && !downloadPopup.hidden) renderDownloads(downloads, tools);
         });
     }
@@ -339,6 +366,10 @@
         });
         document.addEventListener('click', function (event) {
             if (!downloadPopup.hidden && !downloadPopup.contains(event.target) && !host.contains(event.target)) downloadPopup.hidden = true;
+        });
+        global.addEventListener('rwl-web-downloads', function (event) {
+            if (event.detail && event.detail.open) downloadPopup.hidden = false;
+            pollDownloads();
         });
         downloadTimer = setInterval(function () {
             if (!document.hidden) pollDownloads();
@@ -388,17 +419,26 @@
                 return;
             }
             var button = event.currentTarget;
-            button.disabled = true;
-            RWL.apiRequest('/api/bank/exchange', { method: 'POST', body: { xp: parseInt(input.value, 10) } }).then(function (result) {
-                if (typeof global.setLcBalance === 'function') global.setLcBalance(result.state.lab_coins);
-                renderBankExchange(card, result.state);
-                var done = document.createElement('div');
-                done.className = 'bank-exchange-quote';
-                done.textContent = '+' + Number(result.lab_coins).toLocaleString() + ' LC · -' + Number(result.xp_used).toLocaleString() + ' XP';
-                card.appendChild(done);
-            }).catch(function (error) {
-                button.disabled = false;
-                showError(error.message || t('The exchange failed. Please try again.'));
+            var amount = parseInt(input.value, 10);
+            var coins = Math.floor(amount / (Number(state.effective_xp_per_lab_coin) || 1));
+            global.RWLDialog.confirm({
+                title: 'Exchange XP To Lab Coins',
+                message: 'Exchange ' + amount.toLocaleString() + ' XP for about ' + coins.toLocaleString() + ' LC? This cannot be undone.',
+                confirmText: 'Exchange'
+            }).then(function (confirmed) {
+                if (!confirmed) return;
+                button.disabled = true;
+                RWL.apiRequest('/api/bank/exchange', { method: 'POST', body: { xp: amount } }).then(function (result) {
+                    if (typeof global.setLcBalance === 'function') global.setLcBalance(result.state.lab_coins);
+                    renderBankExchange(card, result.state);
+                    var done = document.createElement('div');
+                    done.className = 'bank-exchange-quote';
+                    done.textContent = '+' + Number(result.lab_coins).toLocaleString() + ' LC · -' + Number(result.xp_used).toLocaleString() + ' XP';
+                    card.appendChild(done);
+                }).catch(function (error) {
+                    button.disabled = false;
+                    showError(error.message || t('The exchange failed. Please try again.'));
+                });
             });
         });
     }

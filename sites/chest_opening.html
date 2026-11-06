@@ -494,6 +494,51 @@ white-space:nowrap;
 overflow:hidden;
 text-overflow:ellipsis;
 }
+.frame{transition:box-shadow .5s ease,border-color .5s ease}
+.frame.spinning{box-shadow:0 0 120px rgba(170,0,255,0.42);border-color:rgba(200,120,255,0.45)}
+.frame.landed{box-shadow:0 0 130px var(--rarity,rgba(170,0,255,0.5));border-color:var(--rarity,rgba(200,120,255,0.6))}
+.viewport::before,.viewport::after{content:"";position:absolute;top:0;bottom:0;width:20%;z-index:4;pointer-events:none}
+.viewport::before{left:0;background:linear-gradient(90deg,#07060e 8%,transparent)}
+.viewport::after{right:0;background:linear-gradient(270deg,#07060e 8%,transparent)}
+.viewport.fast .track{filter:blur(1.1px) saturate(1.15)}
+.centerLine{opacity:.55;transition:opacity .3s ease}
+.frame.spinning .centerLine{opacity:.9}
+.frame.landed .centerLine{opacity:0}
+.marker{position:absolute;left:50%;width:0;height:0;margin-left:-11px;border-left:11px solid transparent;border-right:11px solid transparent;z-index:6;filter:drop-shadow(0 0 7px #c200ff);pointer-events:none}
+.markerTop{top:6px;border-top:15px solid #e0aaff}
+.markerBottom{bottom:6px;border-bottom:15px solid #e0aaff}
+.frame.landed .marker{filter:drop-shadow(0 0 11px var(--rarity,#c200ff))}
+.item{will-change:transform,opacity;transform-origin:50% 50%}
+.track.landed .item{opacity:.28!important;transform:scale(.94)!important;transition:opacity .35s ease,transform .35s ease}
+.track.landed .item.won{opacity:1!important;transform:scale(1.13)!important;z-index:3;border-color:var(--rarity,#c97eff)!important;box-shadow:0 0 34px var(--rarity,#c97eff);transition:transform .42s cubic-bezier(.2,1.7,.4,1),box-shadow .42s ease}
+.phaseLabel.pop{animation:phasePop .42s cubic-bezier(.2,1.5,.4,1)}
+@keyframes phasePop{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
+.win{overflow:hidden}
+.win::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,var(--rarity,rgba(170,0,255,0.5)) 0%,transparent 58%);opacity:0;transition:opacity .5s ease}
+.win.active::before{opacity:.34}
+.rays{position:absolute;left:50%;top:50%;width:150vmax;height:150vmax;margin:-75vmax 0 0 -75vmax;background:repeating-conic-gradient(from 0deg,var(--rarity,#c97eff) 0deg 5deg,transparent 5deg 30deg);-webkit-mask:radial-gradient(circle,#000 0%,transparent 42%);mask:radial-gradient(circle,#000 0%,transparent 42%);opacity:0;pointer-events:none}
+.win.active .rays{opacity:.16;animation:raysSpin 26s linear infinite,raysIn .7s ease-out}
+@keyframes raysSpin{to{transform:rotate(360deg)}}
+@keyframes raysIn{from{opacity:0}to{opacity:.16}}
+.shock{position:absolute;left:50%;top:50%;width:220px;height:220px;margin:-110px 0 0 -110px;border-radius:50%;border:2px solid var(--rarity,#c97eff);opacity:0;pointer-events:none}
+.win.active .shock{animation:shockOut .85s cubic-bezier(.15,.7,.3,1)}
+.win.active .shockLate{animation:shockOut 1.05s cubic-bezier(.15,.7,.3,1) .14s}
+@keyframes shockOut{0%{opacity:.75;transform:scale(.5)}100%{opacity:0;transform:scale(3.4)}}
+.burst{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.box{z-index:2}
+.win.active .box.reveal{animation:boxReveal .62s cubic-bezier(.18,1.4,.35,1) both;box-shadow:0 0 90px var(--rarity,rgba(170,0,255,0.5));border-color:var(--rarity,rgba(180,80,255,0.6))}
+@keyframes boxReveal{0%{opacity:0;transform:perspective(900px) translateY(26px) scale(.72) rotateX(14deg)}100%{opacity:1;transform:none}}
+.box.reveal::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:45%;background:linear-gradient(100deg,transparent,rgba(255,255,255,0.32),transparent);transform:skewX(-14deg);pointer-events:none;animation:boxSheen 1.05s ease-out .42s both}
+@keyframes boxSheen{from{left:-60%}to{left:125%}}
+.box.reveal .caption{animation:captionRise .5s ease-out .28s both}
+@keyframes captionRise{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+.box .result .swatch span{display:none}
+.rarityPill{display:inline-block;align-self:center;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:rgba(5,5,10,.55);border:1px solid currentColor}
+.summaryEntry{animation:summaryIn .34s ease-out both}
+@keyframes summaryIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.rwl-low-fx .rays,.rwl-low-fx .shock,.rwl-low-fx .burst,.rwl-low-fx .box.reveal::after{display:none}
+.rwl-low-fx .viewport.fast .track{filter:none}
+@media (prefers-reduced-motion:reduce){.rays,.shock,.burst,.box.reveal::after{display:none}.viewport.fast .track{filter:none}.win.active .box.reveal,.summaryEntry,.box.reveal .caption{animation-duration:.01s;animation-delay:0s}}
 </style>
 <script src="../js/rwl_boot.js"></script>
 </head>
@@ -506,8 +551,10 @@ text-overflow:ellipsis;
 
 <div class="phaseLabel" id="phaseLabel"></div>
 
-<div class="frame">
-<div class="viewport">
+<div class="frame" id="frame">
+<span class="marker markerTop" aria-hidden="true"></span>
+<span class="marker markerBottom" aria-hidden="true"></span>
+<div class="viewport" id="viewport">
 <div class="centerLine"></div>
 <div class="track" id="track"></div>
 </div>
@@ -527,6 +574,10 @@ text-overflow:ellipsis;
 </div>
 
 <div class="win" id="win">
+<div class="rays" aria-hidden="true"></div>
+<div class="shock" aria-hidden="true"></div>
+<div class="shock shockLate" aria-hidden="true"></div>
+<canvas class="burst" id="burst" aria-hidden="true"></canvas>
 <div class="topBtn back" id="back" title="Back to the chest">←</div>
 <div class="box" id="box"></div>
 </div>
@@ -561,6 +612,11 @@ const ITEM_GAP=14
 const TRACK_PADDING=120
 const CATEGORY_SPIN_MS=4200
 const ITEM_SPIN_MS=6800
+const SETTLE_MS=460
+const LAND_HOLD_MS=720
+const FOCUS_RANGE=3
+const FAST_SPEED_PX_PER_SECOND=1500
+const BURST_COUNTS={"Common":22,"Uncommon":30,"Rare":42,"Epic":58,"Mythical":76,"Ultra Rare":92,"Ultra Mythical":120}
 const MEDIA_WINDOW_BEFORE=12
 const MEDIA_WINDOW_AFTER=4
 const IDLE_SPEED_PX_PER_SECOND=42
@@ -569,6 +625,10 @@ const SKIP_STORAGE_KEY="rwl_chest_skip_animation"
 const KEEP="--rwl-keep:1;"
 
 const track=document.getElementById("track")
+const frameEl=document.getElementById("frame")
+const viewportEl=document.getElementById("viewport")
+const markers=frameEl.querySelectorAll(".marker")
+const burstCanvas=document.getElementById("burst")
 const spin=document.getElementById("spin")
 const openAll=document.getElementById("openAll")
 const openTen=document.getElementById("openTen")
@@ -591,6 +651,120 @@ let lastChests=null
 let idleLast=0
 let idleWidth=0
 let animationDone=null
+let focusedCards=[]
+let lastTickIndex=-1
+let burstFrame=null
+
+function motionAllowed(){
+return !document.documentElement.classList.contains("rwl-low-fx")&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)
+}
+
+function centerIndexFloat(){
+return (pos+viewportEl.clientWidth/2-TRACK_PADDING-ITEM_WIDTH/2)/(ITEM_WIDTH+ITEM_GAP)
+}
+
+function applyPosition(){
+track.style.transform="translate3d("+(-pos)+"px,0,0)"
+const center=centerIndexFloat()
+const nearest=Math.round(center)
+const cards=track.children
+const next=[]
+for(let index=Math.max(0,nearest-FOCUS_RANGE);index<=Math.min(cards.length-1,nearest+FOCUS_RANGE);index++){
+const distance=Math.min(1,Math.abs(index-center)/FOCUS_RANGE)
+const card=cards[index]
+card.style.transform="scale("+(1.09-distance*0.17).toFixed(3)+")"
+card.style.opacity=(1-distance*0.42).toFixed(3)
+next.push(card)
+}
+focusedCards.forEach(function(card){
+if(next.indexOf(card)<0){card.style.transform="";card.style.opacity=""}
+})
+focusedCards=next
+return nearest
+}
+
+function pulseMarkers(){
+if(!motionAllowed())return
+markers.forEach(function(marker,index){
+const lift=index===0?-5:5
+marker.animate([{transform:"translateY("+lift+"px) scale(1.18)"},{transform:"none"}],{duration:130,easing:"ease-out"})
+})
+}
+
+function setRarity(color){
+const value=color||"#c97eff"
+;[frameEl,track,win,box].forEach(function(element){
+element.style.setProperty("--rwl-keep","1")
+element.style.setProperty("--rarity",value)
+})
+}
+
+function clearLanding(){
+frameEl.classList.remove("landed")
+track.classList.remove("landed")
+const won=track.querySelector(".won")
+if(won)won.classList.remove("won")
+}
+
+function landOn(index,color,hold,done){
+setRarity(color)
+frameEl.classList.remove("spinning")
+if(skipEnabled()||(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)){
+done()
+return
+}
+const card=track.children[index]
+if(card)card.classList.add("won")
+track.classList.add("landed")
+frameEl.classList.add("landed")
+setTimeout(done,hold)
+}
+
+function playBurst(rarity,color){
+cancelAnimationFrame(burstFrame)
+const context=burstCanvas.getContext("2d")
+if(!context||!motionAllowed())return
+const ratio=Math.min(window.devicePixelRatio||1,2)
+burstCanvas.width=Math.round(burstCanvas.clientWidth*ratio)
+burstCanvas.height=Math.round(burstCanvas.clientHeight*ratio)
+context.setTransform(ratio,0,0,ratio,0,0)
+const width=burstCanvas.clientWidth
+const height=burstCanvas.clientHeight
+const count=BURST_COUNTS[rarity]||30
+const particles=[]
+for(let index=0;index<count;index++){
+const angle=Math.random()*Math.PI*2
+const speed=120+Math.random()*420
+particles.push({x:width/2,y:height/2,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,size:1.2+Math.random()*2.6,life:0.7+Math.random()*0.8,white:Math.random()<0.28})
+}
+let previous=performance.now()
+let age=0
+function draw(now){
+const delta=Math.min(0.05,(now-previous)/1000)
+previous=now
+age+=delta
+context.clearRect(0,0,width,height)
+let alive=false
+particles.forEach(function(particle){
+const remaining=1-age/particle.life
+if(remaining<=0)return
+alive=true
+particle.vx*=0.985
+particle.vy=particle.vy*0.985+120*delta
+particle.x+=particle.vx*delta
+particle.y+=particle.vy*delta
+context.globalAlpha=Math.max(0,remaining)
+context.fillStyle=particle.white?"#ffffff":color
+context.beginPath()
+context.arc(particle.x,particle.y,particle.size,0,Math.PI*2)
+context.fill()
+})
+context.globalAlpha=1
+if(alive)burstFrame=requestAnimationFrame(draw)
+else context.clearRect(0,0,width,height)
+}
+burstFrame=requestAnimationFrame(draw)
+}
 
 function categoryImage(category){
 return CATEGORY_IMAGES[category]||idleImages[0]
@@ -651,7 +825,7 @@ if(!idleLast)idleLast=now
 const delta=Math.min(100,now-idleLast)
 idleLast=now
 pos=(pos+IDLE_SPEED_PX_PER_SECOND*delta/1000)%idleWidth
-track.style.transform="translate3d("+(-pos)+"px,0,0)"
+applyPosition()
 raf=requestAnimationFrame(idleLoop)
 }
 
@@ -659,6 +833,9 @@ function startIdle(){
 cancelAnimationFrame(raf)
 pos=0
 idleLast=0
+focusedCards=[]
+clearLanding()
+frameEl.classList.remove("spinning")
 buildIdle()
 raf=requestAnimationFrame(idleLoop)
 }
@@ -711,17 +888,24 @@ function easeOutQuart(t){
 return 1-Math.pow(1-t,4)
 }
 
+function easeInOutCubic(t){
+return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2
+}
+
 function skipEnabled(){
 return alwaysSkip.checked
 }
 
-function animateTo(target,duration,done){
+function animateTo(index,duration,done){
 cancelAnimationFrame(raf)
+const rest=centerFor(index)
+const target=targetFor(index)
 animationDone=function(){
 animationDone=null
 cancelAnimationFrame(raf)
-pos=target
-track.style.transform="translate3d("+(-pos)+"px,0,0)"
+viewportEl.classList.remove("fast")
+pos=rest
+applyPosition()
 skipSpin.hidden=true
 done()
 }
@@ -729,26 +913,50 @@ if(skipEnabled()){
 animationDone()
 return
 }
+clearLanding()
+frameEl.classList.add("spinning")
 skipSpin.hidden=false
 const start=performance.now()
+let previousPos=pos
+let previousNow=start
+lastTickIndex=-1
+function settle(){
+viewportEl.classList.remove("fast")
+const from=pos
+const settleStart=performance.now()
+function settleStep(now){
+const progress=Math.min(1,(now-settleStart)/SETTLE_MS)
+pos=from+(rest-from)*easeInOutCubic(progress)
+applyPosition()
+if(progress<1)raf=requestAnimationFrame(settleStep)
+else if(animationDone)animationDone()
+}
+raf=requestAnimationFrame(settleStep)
+}
 function step(now){
 const progress=Math.min(1,(now-start)/duration)
 pos=target*easeOutQuart(progress)
-track.style.transform="translate3d("+(-pos)+"px,0,0)"
-if(progress<1){
-raf=requestAnimationFrame(step)
-}else if(animationDone){
-animationDone()
+const nearest=applyPosition()
+if(nearest!==lastTickIndex){
+if(lastTickIndex>=0)pulseMarkers()
+lastTickIndex=nearest
 }
+const speed=Math.abs(pos-previousPos)/Math.max(1,now-previousNow)*1000
+previousPos=pos
+previousNow=now
+viewportEl.classList.toggle("fast",motionAllowed()&&speed>FAST_SPEED_PX_PER_SECOND)
+if(progress<1)raf=requestAnimationFrame(step)
+else settle()
 }
 raf=requestAnimationFrame(step)
 }
 
+function centerFor(winIndex){
+return Math.max(0,TRACK_PADDING+winIndex*(ITEM_WIDTH+ITEM_GAP)+ITEM_WIDTH/2-viewportEl.clientWidth/2)
+}
+
 function targetFor(winIndex){
-const viewport=track.parentElement
-const center=viewport.clientWidth/2
-const jitter=(Math.random()-0.5)*(ITEM_WIDTH*0.6)
-return Math.max(0,TRACK_PADDING+winIndex*(ITEM_WIDTH+ITEM_GAP)+ITEM_WIDTH/2-center+jitter)
+return Math.max(0,centerFor(winIndex)+(Math.random()-0.5)*(ITEM_WIDTH*0.6))
 }
 
 function setButton(text,disabled){
@@ -796,9 +1004,15 @@ notes.push(reward.compensation_lab_coins?"Duplicate · +"+reward.compensation_la
 if(reward.voucher){
 notes.push("Voucher added to Special Items")
 }
-box.style.cssText=KEEP+"border-color:"+RWL.rarityColor(reward.rarity)+";"
-box.innerHTML='<div class="result">'+itemVisualHtml(reward,true)+'<div class="caption"><span translate="no">'+esc(reward.name||"Item")+'</span><small style="'+KEEP+'color:'+esc(RWL.rarityColor(reward.rarity))+';">'+esc((reward.rarity||"")+" "+(reward.category_label||""))+'</small>'+(notes.length?'<small>'+esc(notes.join(" · "))+'</small>':"")+'</div></div>'
+const rarityColor=RWL.rarityColor(reward.rarity)
+box.style.cssText=KEEP
+setRarity(rarityColor)
+box.classList.remove("reveal")
+box.innerHTML='<div class="result">'+itemVisualHtml(reward,true)+'<div class="caption"><span translate="no">'+esc(reward.name||"Item")+'</span><span class="rarityPill" style="'+KEEP+'color:'+esc(rarityColor)+';">'+esc(reward.rarity||"")+'</span><small>'+esc(reward.category_label||"")+'</small>'+(notes.length?'<small>'+esc(notes.join(" · "))+'</small>':"")+'</div></div>'
+void box.offsetWidth
+box.classList.add("reveal")
 win.classList.add("active")
+playBurst(reward.rarity,rarityColor)
 pendingResult=null
 phaseLabel.textContent=""
 opening=false
@@ -813,10 +1027,14 @@ updateOpenAll()
 const result=pendingResult
 const reel=Array.isArray(result.reel)&&result.reel.length?result.reel:[result.reward]
 const winIndex=Math.max(0,Math.min(result.win_index||0,reel.length-1))
+clearLanding()
+focusedCards=[]
 buildReel(reel,winIndex)
 pos=0
-track.style.transform="translateX(0px)"
-animateTo(targetFor(winIndex),ITEM_SPIN_MS,function(){finish(result)})
+applyPosition()
+animateTo(winIndex,ITEM_SPIN_MS,function(){
+landOn(winIndex,RWL.rarityColor((result.reward||{}).rarity),LAND_HOLD_MS,function(){finish(result)})
+})
 }
 
 function categoryLanded(result){
@@ -824,6 +1042,9 @@ opening=false
 pendingResult=result
 const label=(result.category_label||CATEGORY_LABELS[result.category]||"Item").toUpperCase()
 phaseLabel.textContent="Category: "+(result.category_label||CATEGORY_LABELS[result.category]||"Item")
+phaseLabel.classList.remove("pop")
+void phaseLabel.offsetWidth
+phaseLabel.classList.add("pop")
 setButton("SPIN "+label,false)
 updateOpenAll()
 }
@@ -859,10 +1080,14 @@ preloadReward(result.reward)
 const categoryReel=Array.isArray(result.category_reel)&&result.category_reel.length?result.category_reel:[{category:(result.reward||{}).category,label:result.category_label}]
 const categoryIndex=Math.max(0,Math.min(result.category_win_index||0,categoryReel.length-1))
 setButton("SPINNING...",true)
+clearLanding()
+focusedCards=[]
 buildCategoryReel(categoryReel)
 pos=0
-track.style.transform="translateX(0px)"
-animateTo(targetFor(categoryIndex),CATEGORY_SPIN_MS,function(){categoryLanded(result)})
+applyPosition()
+animateTo(categoryIndex,CATEGORY_SPIN_MS,function(){
+landOn(categoryIndex,"#c97eff",0,function(){categoryLanded(result)})
+})
 }
 
 function showSummary(result){
@@ -870,14 +1095,17 @@ const rewards=result.rewards||[]
 let html='<div class="summary"><h2>'+esc(String(result.opened||rewards.length))+' chests opened</h2>'
 html+='<div class="summaryMeta">'+(result.lab_coins_awarded?esc("+"+result.lab_coins_awarded+" LC for duplicates · "):"")+'All rewards were added to your inventory.</div>'
 html+='<div class="summaryGrid">'
-rewards.forEach(function(reward){
+rewards.forEach(function(reward,index){
 const note=reward.duplicate?(reward.compensation_lab_coins?"Duplicate · +"+reward.compensation_lab_coins+" LC":"Duplicate · already owned"):(reward.voucher?"Voucher added to Special Items":"Added to your locker")
-html+='<div class="summaryEntry" style="'+KEEP+'border-color:'+esc(RWL.rarityColor(reward.rarity))+';"><strong translate="no">'+esc(reward.name||"Item")+'</strong><span style="'+KEEP+'color:'+esc(RWL.rarityColor(reward.rarity))+';">'+esc(reward.rarity||"")+'</span><span>'+esc(reward.category_label||"")+'</span><span>'+esc(note)+'</span></div>'
+html+='<div class="summaryEntry" style="'+KEEP+'border-color:'+esc(RWL.rarityColor(reward.rarity))+';animation-delay:'+Math.min(index*28,900)+'ms;"><strong translate="no">'+esc(reward.name||"Item")+'</strong><span style="'+KEEP+'color:'+esc(RWL.rarityColor(reward.rarity))+';">'+esc(reward.rarity||"")+'</span><span>'+esc(reward.category_label||"")+'</span><span>'+esc(note)+'</span></div>'
 })
 html+='</div></div>'
+box.classList.remove("reveal")
 box.style.cssText="width:auto;height:auto;background:transparent;border:none;box-shadow:none;overflow:visible;"
 box.innerHTML=html
+setRarity("#c97eff")
 win.classList.add("active")
+playBurst("Rare","#c97eff")
 }
 
 function requestCustomOpen(){
@@ -917,8 +1145,12 @@ phaseLabel.textContent=error.status===429?"You are opening chests too fast. Plea
 
 function backToChest(){
 win.classList.remove("active")
+box.classList.remove("reveal")
 box.innerHTML=""
 box.style.cssText=""
+cancelAnimationFrame(burstFrame)
+const context=burstCanvas.getContext("2d")
+if(context)context.clearRect(0,0,burstCanvas.width,burstCanvas.height)
 if(!spin.disabled&&!pendingResult)startIdle()
 }
 

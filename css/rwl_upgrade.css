@@ -838,3 +838,180 @@ body {
         animation: none !important;
     }
 }
+
+.rwl-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(6px);
+    animation: rwlDialogFade 0.16s ease-out;
+}
+
+.rwl-dialog {
+    width: min(440px, 100%);
+    padding: 22px;
+    border-radius: 16px;
+    background: #0d0914;
+    border: 1px solid rgba(155, 0, 204, 0.55);
+    box-shadow: 0 0 44px rgba(123, 44, 191, 0.45);
+    color: #ffffff;
+    animation: rwlDialogRise 0.2s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+
+.rwl-dialog-danger {
+    border-color: rgba(255, 77, 109, 0.6);
+    box-shadow: 0 0 44px rgba(255, 77, 109, 0.3);
+}
+
+.rwl-dialog-title {
+    margin: 0 0 10px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #e0aaff;
+}
+
+.rwl-dialog-message {
+    margin: 0 0 20px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.82);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.rwl-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.rwl-dialog-button {
+    min-width: 96px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid rgba(155, 0, 204, 0.5);
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.rwl-dialog-cancel {
+    background: transparent;
+    color: #e0aaff;
+}
+
+.rwl-dialog-cancel:hover {
+    background: rgba(155, 0, 204, 0.16);
+}
+
+.rwl-dialog-confirm {
+    background: linear-gradient(135deg, #9d4edd, #7b2cbf);
+    color: #ffffff;
+    box-shadow: 0 0 14px rgba(157, 78, 221, 0.5);
+}
+
+.rwl-dialog-confirm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(157, 78, 221, 0.8);
+}
+
+.rwl-dialog-danger .rwl-dialog-confirm {
+    background: linear-gradient(135deg, #ff4d6d, #c9184a);
+    box-shadow: 0 0 14px rgba(255, 77, 109, 0.5);
+}
+
+.rwl-dialog-button:focus-visible {
+    outline: 2px solid #e0aaff;
+    outline-offset: 2px;
+}
+
+@keyframes rwlDialogFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes rwlDialogRise {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+}
+
+.product-stock,
+.product-stock svg,
+.modal-owner-row,
+.modal-owner-row svg,
+.modal-meta-item,
+.modal-meta-item span {
+    color: #c97eff;
+}
+
+.product-owner-label {
+    color: #c97eff;
+}
+
+.product-btn-wishlist,
+.modal-btn-wishlist {
+    color: #c97eff;
+}
+
+.product-btn-wishlist:hover,
+.product-btn-wishlist.active,
+.modal-btn-wishlist:hover,
+.modal-btn-wishlist.active {
+    color: #e0aaff;
+    border-color: #c97eff;
+}
+
+.product-btn-download,
+.modal-btn-download {
+    background: linear-gradient(135deg, #9d4edd, #63008a);
+    color: #ffffff;
+}
+
+.modal-btn-download:hover {
+    background: linear-gradient(135deg, #c97eff, #7b2cbf);
+}
+
+.modal-btn-website:hover {
+    background: rgba(155, 0, 204, 0.28) !important;
+}
+
+.modal-title .shiny-text-js {
+    font-weight: 700;
+}
+
+.user-profile-btn.rwl-frame,
+.user-profile-btn.rwl-frame:hover {
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.profile-header.rwl-frame {
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.discord-join-btn .shiny-text {
+    white-space: nowrap;
+}
+
+.cp-stat-value small {
+    font-size: 12px;
+    font-weight: 600;
+    color: #c97eff;
+    white-space: nowrap;
+}
+
+.inv-labpass-owned,
+.inv-labpass-owned:hover {
+    cursor: default;
+    transform: none;
+    opacity: 0.85;
+    box-shadow: none;
+}

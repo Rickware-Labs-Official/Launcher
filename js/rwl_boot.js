@@ -391,6 +391,88 @@
         useVisitorLanguage();
     }
 
+    var dialogQueue = Promise.resolve();
+
+    function dialogText(value) {
+        return translateMessage(String(value === undefined || value === null ? '' : value));
+    }
+
+    function showDialog(options) {
+        return new Promise(function (resolve) {
+            whenBodyReady(function () {
+                var previousFocus = document.activeElement;
+                var overlay = document.createElement('div');
+                overlay.className = 'rwl-dialog-overlay';
+                var card = document.createElement('div');
+                card.className = 'rwl-dialog' + (options.danger ? ' rwl-dialog-danger' : '');
+                card.setAttribute('role', 'alertdialog');
+                card.setAttribute('aria-modal', 'true');
+                var title = document.createElement('h2');
+                title.className = 'rwl-dialog-title';
+                title.textContent = dialogText(options.title || 'Please confirm');
+                card.appendChild(title);
+                var message = document.createElement('p');
+                message.className = 'rwl-dialog-message';
+                message.textContent = dialogText(options.message);
+                card.appendChild(message);
+                var actions = document.createElement('div');
+                actions.className = 'rwl-dialog-actions';
+                var confirmButton = document.createElement('button');
+                confirmButton.type = 'button';
+                confirmButton.className = 'rwl-dialog-button rwl-dialog-confirm';
+                confirmButton.textContent = dialogText(options.confirmText || 'OK');
+                function close(result) {
+                    document.removeEventListener('keydown', onKey, true);
+                    overlay.remove();
+                    if (previousFocus && previousFocus.focus) {
+                        try { previousFocus.focus(); } catch (error) {}
+                    }
+                    resolve(result);
+                }
+                function onKey(event) {
+                    if (event.key === 'Escape') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        close(false);
+                    } else if (event.key === 'Enter') {
+                        event.preventDefault();
+                        close(document.activeElement && document.activeElement.classList.contains('rwl-dialog-cancel') ? false : true);
+                    }
+                }
+                if (options.cancelable) {
+                    var cancelButton = document.createElement('button');
+                    cancelButton.type = 'button';
+                    cancelButton.className = 'rwl-dialog-button rwl-dialog-cancel';
+                    cancelButton.textContent = dialogText(options.cancelText || 'Cancel');
+                    cancelButton.addEventListener('click', function () { close(false); });
+                    actions.appendChild(cancelButton);
+                }
+                confirmButton.addEventListener('click', function () { close(true); });
+                actions.appendChild(confirmButton);
+                card.appendChild(actions);
+                overlay.appendChild(card);
+                overlay.addEventListener('mousedown', function (event) {
+                    if (event.target === overlay && options.cancelable) close(false);
+                });
+                document.addEventListener('keydown', onKey, true);
+                document.body.appendChild(overlay);
+                confirmButton.focus();
+            });
+        });
+    }
+
+    function queueDialog(options) {
+        var result = dialogQueue.then(function () { return showDialog(options); });
+        dialogQueue = result.catch(function () {});
+        return result;
+    }
+
+    global.RWLDialog = {
+        confirm: function (options) { return queueDialog(Object.assign({ cancelable: true }, options)); },
+        alert: function (options) { return queueDialog(typeof options === 'string' ? { title: 'Notice', message: options } : Object.assign({ title: 'Notice' }, options)); }
+    };
+    global.alert = function (message) { global.RWLDialog.alert(String(message)); };
+
     var COLOR_PATTERN = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z])|rgba?\(\s*[\d.]+%?\s*[\s,]\s*[\d.]+%?\s*[\s,]\s*[\d.]+%?\s*(?:[,/]\s*[\d.]+%?\s*)?\)/g;
     var COLOR_HINT = /#[0-9a-fA-F]{3}|rgba?\(/;
     var KEEP_MARKER = '--rwl-keep';
@@ -676,6 +758,11 @@
         link.rel = 'stylesheet';
         link.href = baseUrl + 'css/rwl_upgrade.css';
         (document.head || document.documentElement).appendChild(link);
+        var frames = document.createElement('link');
+        frames.id = 'rwlFrameStyles';
+        frames.rel = 'stylesheet';
+        frames.href = baseUrl + 'css/rwl_frames.css';
+        (document.head || document.documentElement).appendChild(frames);
     }
 
     function lowEndDevice() {
@@ -706,8 +793,13 @@
         }
         if (scenesRequested || !baseUrl) return;
         scenesRequested = true;
+        var pieces = document.createElement('script');
+        pieces.src = baseUrl + 'js/rwl_scene_pieces.js';
+        pieces.async = false;
+        (document.head || document.documentElement).appendChild(pieces);
         var script = document.createElement('script');
         script.src = baseUrl + 'js/rwl_scenes.js';
+        script.async = false;
         script.onload = function () {
             whenBodyReady(function () { if (pendingScene && global.RWLScenes) global.RWLScenes.set(pendingScene.scene, pendingScene.speed); });
         };

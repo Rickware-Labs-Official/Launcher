@@ -21,22 +21,24 @@
             '@keyframes rwlxDisco{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}',
             '@keyframes rwlxSway{0%,100%{transform:rotate(-0.7deg) translateX(-5px)}50%{transform:rotate(0.7deg) translateX(5px)}}',
             '@keyframes rwlxWave{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}',
-            '@keyframes rwlxBeat{0%,30%,100%{transform:scale(1)}10%,22%{transform:scale(1.008)}}',
+            '@keyframes rwlxBeat{0%,30%,100%{transform:scale(1)}10%,22%{transform:scale(1.022)}}',
+            '@keyframes rwlxRain{from{transform:translateY(-8vh) rotate(0)}to{transform:translateY(108vh) rotate(300deg)}}',
             '@keyframes rwlxFall{to{transform:translateY(60vh) rotate(420deg);opacity:0}}',
             '@keyframes rwlxFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}',
             'body.rwlx-disco_wash{animation:rwlxDisco 18s linear infinite}',
             'body.rwlx-drunk_sway{animation:rwlxSway 6s ease-in-out infinite;transform-origin:center top}',
-            'body.rwlx-tilted_world{transform:rotate(1.1deg);transform-origin:center}',
-            'body.rwlx-letter_chaos h1,body.rwlx-letter_chaos h2,body.rwlx-letter_chaos h3,body.rwlx-letter_chaos button,body.rwlx-letter_chaos a{letter-spacing:.14em}',
+            'body.rwlx-tilted_world{transform:rotate(2.4deg);transform-origin:center}',
+            'body.rwlx-letter_chaos *{letter-spacing:.14em;word-spacing:.5em}',
             'body.rwlx-shrinking_buttons button:not([data-fx-protected]):hover{transform:scale(.72)!important;transition:transform .25s ease}',
-            'body.rwlx-giant_cursor,body.rwlx-giant_cursor *{cursor:url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'64\' height=\'64\'><path d=\'M4 2 L4 54 L18 42 L28 62 L38 58 L28 38 L46 38 Z\' fill=\'%239d4edd\' stroke=\'white\' stroke-width=\'2\'/></svg>") 2 2,auto!important}',
-            'body.rwlx-pixel_vision img{image-rendering:pixelated;filter:contrast(1.2)}',
+            'body.rwlx-giant_cursor,body.rwlx-giant_cursor *{cursor:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2764%27 height=%2764%27%3E%3Cpath d=%27M4 2 L4 54 L18 42 L28 62 L38 58 L28 38 L46 38 Z%27 fill=%27%239d4edd%27 stroke=%27white%27 stroke-width=%272%27/%3E%3C/svg%3E") 2 2,auto!important}',
+            'body.rwlx-pixel_vision img,body.rwlx-pixel_vision video{filter:url(#rwlxPixelate) contrast(1.15)}',
             'html.rwlx-grayscale_world{filter:grayscale(1)}',
             'html.rwlx-negative_colors{filter:invert(1) hue-rotate(180deg)}',
-            'body.rwlx-wave_text h1,body.rwlx-wave_text h2,body.rwlx-wave_text h3{animation:rwlxWave 1.6s ease-in-out infinite}',
+            'body.rwlx-wave_text h1,body.rwlx-wave_text h2,body.rwlx-wave_text h3,body.rwlx-wave_text .nav-item span,body.rwlx-wave_text .product-title{display:inline-block;animation:rwlxWave 1.6s ease-in-out infinite}',
             'body.rwlx-shouting_text *{text-transform:uppercase}',
             'body.rwlx-page_heartbeat{animation:rwlxBeat 1.8s ease-in-out infinite;transform-origin:center}',
-            '.rwlx-float{position:fixed;z-index:2147482600;pointer-events:none;font-size:18px}',
+            '.rwlx-float{position:fixed;left:0;top:0;z-index:2147482600;pointer-events:none;font-size:18px}',
+            '.rwlx-drop{position:fixed;top:0;z-index:2147482600;pointer-events:none;will-change:transform}',
             '.rwlx-card{position:fixed;z-index:2147482600;background:#0a0a0d;border:1px solid rgba(157,78,221,.6);border-radius:12px;color:#fff;font:13px/1.4 "Segoe UI",sans-serif;padding:10px 14px;box-shadow:0 8px 28px #000;animation:rwlxFade .3s ease both;max-width:280px}',
             '.rwlx-update{position:fixed;inset:0;z-index:2147482700;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font:16px "Segoe UI",sans-serif;cursor:pointer;text-align:center;padding:20px}',
             '.rwlx-update-bar{width:min(420px,80vw);height:8px;border-radius:8px;background:#222;overflow:hidden}',
@@ -93,14 +95,40 @@
             global.addEventListener('pointerdown', handlers.confetti_clicks, { passive: true });
         },
         fake_achievements: function () {
-            timers.fake_achievements = setInterval(function () {
-                if (!document.hidden) card(pick(ACHIEVEMENTS), 18, 18, 5);
-            }, 28000);
+            function showAchievement() {
+                if (!document.hidden) card('🏆 ' + pick(ACHIEVEMENTS), 18, 18, 5);
+            }
+            showAchievement();
+            timers.fake_achievements = setInterval(showAchievement, 12000);
         },
         helper_bubble: function () {
-            timers.helper_bubble = setInterval(function () {
+            function showTip() {
                 if (!document.hidden) card('📎 ' + pick(TIPS), 18, 90, 7);
-            }, 37000);
+            }
+            showTip();
+            timers.helper_bubble = setInterval(showTip, 16000);
+        },
+        emoji_rain: function () {
+            function spawnDrop() {
+                if (document.hidden || document.querySelectorAll('.rwlx-drop').length > 60) return;
+                var seconds = 4 + Math.random() * 4;
+                var element = document.createElement('div');
+                element.className = 'rwlx-drop';
+                element.textContent = pick(EMOJIS);
+                element.style.left = (Math.random() * 100).toFixed(1) + 'vw';
+                element.style.fontSize = (16 + Math.random() * 22).toFixed(0) + 'px';
+                element.style.animation = 'rwlxRain ' + seconds.toFixed(1) + 's linear forwards';
+                document.body.appendChild(element);
+                setTimeout(function () { element.remove(); }, seconds * 1000);
+            }
+            for (var index = 0; index < 8; index++) spawnDrop();
+            timers.emoji_rain = setInterval(spawnDrop, 260);
+            nodes.emoji_rain_cleanup = { remove: function () { document.querySelectorAll('.rwlx-drop').forEach(function (drop) { drop.remove(); }); } };
+        },
+        reverse_text: function () {
+            reversedText = new Map();
+            applyReversedText();
+            timers.reverse_text = setInterval(applyReversedText, 1500);
         },
         fake_update: function () {
             var overlay = document.createElement('div');
@@ -162,7 +190,10 @@
                     if (element.children.length) return;
                     var text = element.textContent;
                     PIRATE_WORDS.forEach(function (entry) { text = text.replace(entry[0], entry[1]); });
-                    if (text !== element.textContent) element.textContent = text;
+                    if (text !== element.textContent) {
+                        if (!PIRATE_RESTORE.has(element)) PIRATE_RESTORE.set(element, element.textContent);
+                        element.textContent = text;
+                    }
                 });
             }
             translate();
@@ -170,8 +201,59 @@
         }
     };
 
+    var reversedText = new Map();
+    var REVERSE_SKIP = 'script,style,noscript,textarea,input,select,code,pre,svg,[data-fx-protected],.product-card-actions,.checkout-modal,.product-modal';
+
+    function applyReversedText() {
+        if (!document.body) return;
+        var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+        var node = walker.nextNode();
+        while (node) {
+            var value = node.nodeValue;
+            var known = reversedText.get(node);
+            if ((!known || known.output !== value) && /[A-Za-z]/.test(value) && node.parentElement && !node.parentElement.closest(REVERSE_SKIP)) {
+                var output = Array.from(value).reverse().join('');
+                reversedText.set(node, { source: value, output: output });
+                node.nodeValue = output;
+            }
+            node = walker.nextNode();
+        }
+    }
+
+    function restoreReversedText() {
+        reversedText.forEach(function (record, node) {
+            if (node.nodeValue === record.output) node.nodeValue = record.source;
+        });
+        reversedText = new Map();
+    }
+
+    var PIRATE_RESTORE = new Map();
+
+    function restorePirateWords() {
+        PIRATE_RESTORE.forEach(function (source, element) {
+            if (element.isConnected) element.textContent = source;
+        });
+        PIRATE_RESTORE = new Map();
+    }
+
+    function ensurePixelFilter() {
+        if (document.getElementById('rwlxPixelSvg')) return;
+        var host = document.createElement('div');
+        host.id = 'rwlxPixelSvg';
+        host.setAttribute('aria-hidden', 'true');
+        host.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+        host.innerHTML = '<svg width="0" height="0"><filter id="rwlxPixelate" x="0" y="0" width="100%" height="100%"><feFlood x="3" y="3" width="1" height="1"/><feComposite width="7" height="7"/><feTile result="grid"/><feComposite in="SourceGraphic" in2="grid" operator="in"/><feMorphology operator="dilate" radius="3"/></filter></svg>';
+        document.body.appendChild(host);
+    }
+
     function stop(name) {
         toggleClass(name, false);
+        if (name === 'reverse_text') restoreReversedText();
+        if (name === 'pirate_speak') restorePirateWords();
+        if (name === 'emoji_rain' && nodes.emoji_rain_cleanup) {
+            nodes.emoji_rain_cleanup.remove();
+            delete nodes.emoji_rain_cleanup;
+        }
         if (timers[name]) clearInterval(timers[name]);
         delete timers[name];
         if (handlers[name]) {
@@ -201,6 +283,7 @@
             list.forEach(function (name) {
                 if (active[name]) return;
                 active[name] = true;
+                if (name === 'pixel_vision') ensurePixelFilter();
                 if (CSS_EFFECTS.indexOf(name) >= 0) toggleClass(name, true);
                 else if (STARTERS[name]) STARTERS[name]();
             });

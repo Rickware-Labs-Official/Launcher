@@ -91,6 +91,11 @@
     var GRID_GAP = 9;
     var GRID_BUFFER_ROWS = 2;
     var CONFIGURABLE_CATALOGS = { name_colors: true, nameplates: true, avatar_decorations: true, launcher_themes: true, nameplate_outlines: true, content_borders: true };
+    var COLOR_CATALOGS = { nameplate_outlines: true, content_borders: true };
+    var FILTER_CATALOGS = { nameplates: true, avatar_decorations: true };
+    var SEARCH_ALL = 'all';
+    var SEARCH_STANDARD = 'standard';
+    var searchState = {};
     var DIRECTION_LABELS = { ltr: 'Left To Right', rtl: 'Right To Left', ttb: 'Top To Bottom', btt: 'Bottom To Top', center_out: 'Center To Outside', edge_in: 'Outside To Center' };
     var HOVER_DELAY_MS = 220;
     var THEME_PREVIEW_WIDTH = 1280;
@@ -348,28 +353,30 @@
     function cosmeticSlotHtml(catalogKey, item, owned, equipped, fresh) {
         var classes = 'inv-slot inv-slot-item inv-slot-visible' + (owned ? '' : ' inv-slot-locked') + (equipped ? ' inv-slot-equipped' : '') + (fresh ? ' inv-slot-new' : '') + ' inv-slot-' + catalogKey.replace(/_/g, '-');
         var settings = itemSettings(catalogKey, item.item_id);
+        var filterAttribute = FILTER_CATALOGS[catalogKey] ? mediaFilterAttribute(settingsFilter(settings)) : '';
         var visual;
         if (catalogKey === 'name_colors') {
             var swatchItem = Object.assign({}, item, { speed: settings.speed, direction: settings.direction });
             visual = '<div class="inv-item-swatch" style="' + esc(RWL.swatchStyle(swatchItem)) + '"></div>';
         } else if (catalogKey === 'nameplates') {
-            visual = '<video class="inv-item-media" muted loop playsinline preload="none" data-rwl-speed="' + settings.speed + '" data-src="' + esc(item.asset_url || '') + '"></video>';
+            visual = '<video class="inv-item-media"' + filterAttribute + ' muted loop playsinline preload="none" data-rwl-speed="' + settings.speed + '" data-src="' + esc(item.asset_url || '') + '"></video>';
         } else if (catalogKey === 'avatar_decorations') {
-            visual = '<img class="inv-item-media inv-item-media-contain" alt="" decoding="async" data-src="' + esc(item.thumb_url || item.asset_url || '') + '">';
+            visual = '<img class="inv-item-media inv-item-media-contain"' + filterAttribute + ' alt="" decoding="async" data-src="' + esc(item.thumb_url || item.asset_url || '') + '">';
         } else if (catalogKey === 'launcher_themes') {
-            visual = themePreviewHtml(item);
+            visual = themePreviewHtml(item) + (item.icon ? '<span class="inv-theme-icon" aria-hidden="true" translate="no">' + esc(item.icon) + '</span>' : '');
         } else if (catalogKey === 'nameplate_outlines') {
-            visual = '<div class="inv-frame-sample inv-frame-plate' + RWL.frameClasses(item) + '" style="' + esc(RWL.frameStyle(Object.assign({}, item, { speed: settings.speed }))) + '"><span translate="no">' + esc(item.name) + '</span></div>';
+            visual = '<div class="inv-frame-sample inv-frame-plate' + RWL.frameClasses(item) + '" style="' + esc(RWL.frameStyle(frameItem(item, settings))) + '"><span translate="no">' + esc(item.name) + '</span></div>';
         } else if (catalogKey === 'content_borders') {
-            visual = '<div class="inv-frame-sample inv-frame-box' + RWL.frameClasses(item) + '" style="' + esc(RWL.frameStyle(Object.assign({}, item, { speed: settings.speed }))) + '"><span></span><span></span><span></span></div>';
+            visual = '<div class="inv-frame-sample inv-frame-box' + RWL.frameClasses(item) + '" style="' + esc(RWL.frameStyle(frameItem(item, settings))) + '"><span></span><span></span><span></span></div>';
         } else {
             visual = '<div class="inv-slot-text">' + esc(item.name) + '</div>';
         }
         return '<div class="' + classes + '" style="' + KEEP_STYLE + 'border-color:' + esc(RWL.rarityColor(item.rarity)) + ';" data-item-id="' + esc(item.item_id) + '" data-owned="' + (owned ? '1' : '0') + '" data-new-key="' + esc(catalogKey) + '" data-new-id="' + esc(item.item_id) + '" title="' + esc(item.name + ' · ' + item.rarity + (owned ? (equipped ? ' · Equipped' : ' · Click to equip') : ' · Locked')) + '">' +
             '<div class="rwl-rarity-banner" style="' + KEEP_STYLE + 'background:' + esc(RWL.rarityColor(item.rarity)) + ';">' + esc(item.rarity) + '</div>' +
+            (item.exclusive ? '<div class="rwl-exclusive-banner">Exclusive</div>' : '') +
             '<div class="inv-item-visual">' + visual + '</div>' +
             '<div class="inv-item-name" translate="no">' + esc(item.name) + '</div>' +
-            (owned && item.animated && CONFIGURABLE_CATALOGS[catalogKey] && !item.is_default ? '<button type="button" class="inv-item-config" data-config-item="' + esc(item.item_id) + '" title="Change the playback speed' + (catalogKey === 'name_colors' ? ' and direction' : '') + '" aria-label="Item settings">⚙</button>' : '') +
+            (owned && (item.animated || FILTER_CATALOGS[catalogKey]) && CONFIGURABLE_CATALOGS[catalogKey] && !item.is_default ? '<button type="button" class="inv-item-config" data-config-item="' + esc(item.item_id) + '" title="' + (COLOR_CATALOGS[catalogKey] || FILTER_CATALOGS[catalogKey] ? 'Change the speed and colors' : 'Change the playback speed' + (catalogKey === 'name_colors' ? ' and direction' : '')) + '" aria-label="Item settings">⚙</button>' : '') +
             (equipped ? '<div class="inv-item-badge">Equipped</div>' : '') +
             (fresh ? '<div class="inv-item-new">NEW</div>' : '') +
             (owned ? '' : '<div class="inv-item-lock">' + LOCK_SVG + '</div>') +
@@ -380,8 +387,36 @@
         var stored = ((state.inventory && state.inventory.cosmetic_settings) || {})[catalogKey + ':' + itemId];
         return {
             speed: stored && stored.speed ? Math.max(0.5, Math.min(2, parseFloat(stored.speed) || 1)) : 1,
-            direction: stored && stored.direction ? stored.direction : 'ltr'
+            direction: stored && stored.direction ? stored.direction : 'ltr',
+            colors: stored && Array.isArray(stored.colors) ? stored.colors : [],
+            hue: settingNumber(stored, 'hue', 0),
+            saturation: settingNumber(stored, 'saturation', 100),
+            brightness: settingNumber(stored, 'brightness', 100)
         };
+    }
+
+    function settingNumber(stored, key, fallback) {
+        var value = stored ? parseInt(stored[key], 10) : NaN;
+        return isNaN(value) ? fallback : value;
+    }
+
+    function effectiveColors(item, settings) {
+        var defaults = item.colors || [];
+        return settings.colors.length === defaults.length && defaults.length ? settings.colors : defaults;
+    }
+
+    function frameItem(item, settings) {
+        return Object.assign({}, item, { speed: settings.speed, colors: effectiveColors(item, settings) });
+    }
+
+    function settingsFilter(values) {
+        if (values.hue === 0 && values.saturation === 100 && values.brightness === 100) return '';
+        return 'hue-rotate(' + values.hue + 'deg) saturate(' + values.saturation + '%) brightness(' + values.brightness + '%)';
+    }
+
+    function mediaFilterAttribute(filter) {
+        var style = RWL.mediaFilterStyle(filter);
+        return style ? ' style="' + esc(style) + '"' : '';
     }
 
     function cosmeticGrids(categoryId) {
@@ -390,18 +425,29 @@
         var owned = ownedSet(cosmetic.catalog);
         var fresh = newSet(cosmetic.catalog);
         var ownedItems = catalog.items.filter(function(item) { return isOwned(cosmetic.catalog, item.item_id, owned); });
-        ownedItems.sort(function(left, right) { return (fresh[right.item_id] ? 1 : 0) - (fresh[left.item_id] ? 1 : 0); });
+        ownedItems.sort(function(left, right) {
+            if (left.exclusive || right.exclusive) {
+                return (right.exclusive ? 1 : 0) - (left.exclusive ? 1 : 0) || (left.calendar_order || 0) - (right.calendar_order || 0);
+            }
+            return (fresh[right.item_id] ? 1 : 0) - (fresh[left.item_id] ? 1 : 0);
+        });
         var isThemes = cosmetic.catalog === 'launcher_themes';
         var leading = isThemes ? [DEFAULT_THEME] : [];
         var emptyText = catalog.items.length ? 'No ' + cosmetic.label.toLowerCase() + 's yet. Open Mystery Chests or progress the Lab-Pass to unlock them.' : 'No ' + cosmetic.label.toLowerCase() + 's are available yet.';
         return {
-            ownedItems: leading.concat(ownedItems),
-            indexItems: leading.concat(catalog.items),
+            ownedItems: withDefaultAfterSpecials(leading, ownedItems),
+            indexItems: withDefaultAfterSpecials(leading, catalog.items),
             emptyOwned: ownedItems.length || leading.length ? '' : emptyText,
             emptyIndex: catalog.items.length || leading.length ? '' : emptyText,
             ownedCount: ownedItems.length,
             total: catalog.items.length
         };
+    }
+
+    function withDefaultAfterSpecials(leading, items) {
+        var specials = items.filter(function(item) { return item.exclusive; });
+        var others = items.filter(function(item) { return !item.exclusive; });
+        return specials.concat(leading, others);
     }
 
     function slotForItem(cosmetic, item, cache) {
@@ -484,6 +530,15 @@
         for (var position = 0; position < slots.length; position++) activateSlotMedia(slots[position]);
     };
 
+    VirtualGrid.prototype.setItems = function(items) {
+        this.items = items;
+        this.viewport.scrollTop = 0;
+        this.rowHeight = 0;
+        this.renderedStart = -1;
+        this.measure();
+        this.render(true);
+    };
+
     VirtualGrid.prototype.refresh = function() {
         this.render(true);
     };
@@ -516,7 +571,9 @@
             panel.innerHTML = '<div class="inv-slots-grid">' + emptyNote(emptyText) + '</div>';
             return;
         }
-        activeGrids.push(new VirtualGrid(panel, items, cosmetic));
+        var grid = new VirtualGrid(panel, items, cosmetic);
+        grid.panelName = panelName;
+        activeGrids.push(grid);
     }
 
     function chestSlotHtml(clickable) {
@@ -761,10 +818,87 @@
         bodyHtml += '<button type="button" class="inv-modal-tab" data-tab="index">' + esc(indexLabel || 'Index') + '</button>';
         bodyHtml += '</div>';
         bodyHtml += '<div class="inv-modal-tab-panels">';
-        bodyHtml += '<div class="inv-tab-panel inv-tab-panel-active" data-tab-panel="owned"><div class="inv-slots-viewport"><div class="inv-slots-grid">' + ownedHtml + '</div></div></div>';
-        bodyHtml += '<div class="inv-tab-panel" data-tab-panel="index"><div class="inv-slots-viewport"><div class="inv-slots-grid">' + indexHtml + '</div></div></div>';
+        bodyHtml += '<div class="inv-tab-panel inv-tab-panel-active" data-tab-panel="owned">' + searchRowHtml() + '<div class="inv-slots-viewport"><div class="inv-slots-grid">' + ownedHtml + '</div></div></div>';
+        bodyHtml += '<div class="inv-tab-panel" data-tab-panel="index">' + searchRowHtml() + '<div class="inv-slots-viewport"><div class="inv-slots-grid">' + indexHtml + '</div></div></div>';
         bodyHtml += '</div>';
         return bodyHtml;
+    }
+
+    function searchRowHtml() {
+        return '<div class="inv-search-row"><input type="search" class="inv-search-input" maxlength="60" placeholder="Search items..." title="Search this list by name or rarity" autocomplete="off" spellcheck="false"><div class="inv-search-chips"></div></div>' +
+            '<div class="inv-search-empty" hidden>No items match your search.</div>';
+    }
+
+    function searchEntry(panelName) {
+        var key = state.activeCategory + ':' + panelName;
+        if (!searchState[key]) searchState[key] = { term: '', group: SEARCH_ALL };
+        return searchState[key];
+    }
+
+    function itemMatchesSearch(item, entry) {
+        if (entry.group === SEARCH_STANDARD && item.exclusive) return false;
+        if (entry.group !== SEARCH_ALL && entry.group !== SEARCH_STANDARD && String(item.special_year) !== entry.group) return false;
+        if (!entry.term) return true;
+        return [item.name, item.rarity, item.effect, item.special_year].join(' ').replace(/_/g, ' ').toLowerCase().indexOf(entry.term) !== -1;
+    }
+
+    function themeGroupChipsHtml(items, active) {
+        var years = {};
+        items.forEach(function(item) { if (item.special_year) years[item.special_year] = true; });
+        var groups = Object.keys(years).sort();
+        if (!groups.length) return '';
+        var chip = function(value, label, title) {
+            return '<button type="button" class="inv-search-chip' + (active === value ? ' inv-search-chip-active' : '') + '" data-search-group="' + esc(value) + '" title="' + esc(title) + '">' + esc(label) + '</button>';
+        };
+        return chip(SEARCH_ALL, 'All', 'Show every theme') +
+            groups.map(function(year) { return chip(year, year, 'Show the special themes of ' + year); }).join('') +
+            chip(SEARCH_STANDARD, 'Standard', 'Show the themes without a season or event');
+    }
+
+    function setupSearch(bodyEl, lists) {
+        Array.prototype.forEach.call(bodyEl.querySelectorAll('.inv-tab-panel'), function(panel) {
+            var panelName = panel.getAttribute('data-tab-panel');
+            var input = panel.querySelector('.inv-search-input');
+            if (!input) return;
+            var entry = searchEntry(panelName);
+            var empty = panel.querySelector('.inv-search-empty');
+            var chips = panel.querySelector('.inv-search-chips');
+            var items = lists ? lists[panelName] : null;
+            var runSearch = function() {
+                var visible = 0;
+                var grid = activeGrids.filter(function(candidate) { return candidate.panelName === panelName; })[0];
+                if (items && grid) {
+                    var matches = items.filter(function(item) { return itemMatchesSearch(item, entry); });
+                    grid.setItems(matches);
+                    visible = matches.length;
+                } else if (!items) {
+                    Array.prototype.forEach.call(panel.querySelectorAll('.inv-slot'), function(slot) {
+                        var matches = !entry.term || slot.textContent.toLowerCase().indexOf(entry.term) !== -1;
+                        slot.classList.toggle('inv-search-hidden', !matches);
+                        if (matches) visible += 1;
+                    });
+                } else {
+                    return;
+                }
+                empty.hidden = visible > 0 || (!entry.term && entry.group === SEARCH_ALL);
+            };
+            input.value = entry.term;
+            input.addEventListener('input', function() {
+                entry.term = input.value.trim().toLowerCase();
+                runSearch();
+            });
+            if (items && chips && state.activeCategory && COSMETIC_CATEGORIES[state.activeCategory].catalog === 'launcher_themes') {
+                chips.innerHTML = themeGroupChipsHtml(items, entry.group);
+                chips.addEventListener('click', function(event) {
+                    var chip = event.target.closest('[data-search-group]');
+                    if (!chip) return;
+                    entry.group = chip.getAttribute('data-search-group');
+                    Array.prototype.forEach.call(chips.children, function(other) { other.classList.toggle('inv-search-chip-active', other === chip); });
+                    runSearch();
+                });
+            }
+            if (entry.term || entry.group !== SEARCH_ALL) runSearch();
+        });
     }
 
     function activeTabName(bodyEl) {
@@ -782,6 +916,7 @@
         var bodyEl = document.getElementById('invModalBody');
         if (!cat || !bodyEl) return;
         var previousTab = keepTab ? activeTabName(bodyEl) : 'owned';
+        if (!keepTab) searchState = {};
         var cosmetic = COSMETIC_CATEGORIES[categoryId];
         destroyGrids();
         hideHoverPreview();
@@ -806,6 +941,7 @@
             setupModalTabEvents(bodyEl);
             mountVirtualGrid('owned', grids.ownedItems, cosmetic, grids.emptyOwned);
             mountVirtualGrid('index', grids.indexItems, cosmetic, grids.emptyIndex);
+            setupSearch(bodyEl, { owned: grids.ownedItems, index: grids.indexItems });
             restoreTab(bodyEl, previousTab);
             activeGrids.forEach(function(grid) { grid.schedule(true); });
             return;
@@ -832,6 +968,7 @@
             bodyEl.innerHTML = tabbedBodyHtml(voucherSlotsHtml(true), voucherSlotsHtml(false), 'Available', 'All');
         }
         setupModalTabEvents(bodyEl);
+        setupSearch(bodyEl, null);
         restoreTab(bodyEl, previousTab);
         observeSlots(bodyEl);
     }
@@ -871,11 +1008,69 @@
         return catalog ? catalog.byId[itemId] : null;
     }
 
+    function configPreviewHtml(catalogKey, item, settings) {
+        if (COLOR_CATALOGS[catalogKey]) {
+            var sampleClass = catalogKey === 'nameplate_outlines' ? 'inv-frame-plate' : 'inv-frame-box';
+            return '<div class="inv-config-preview"><div class="inv-frame-sample ' + sampleClass + RWL.frameClasses(item) + '" data-config-preview style="' + esc(RWL.frameStyle(frameItem(item, settings))) + '"><span translate="no">' + esc(item.name) + '</span></div></div>';
+        }
+        if (catalogKey === 'nameplates') {
+            return '<div class="inv-config-preview"><video data-config-preview' + mediaFilterAttribute(settingsFilter(settings)) + ' autoplay loop muted playsinline src="' + esc(item.asset_url || '') + '"></video></div>';
+        }
+        if (catalogKey === 'avatar_decorations') {
+            return '<div class="inv-config-preview inv-config-preview-square"><img data-config-preview' + mediaFilterAttribute(settingsFilter(settings)) + ' alt="" src="' + esc(item.thumb_url || item.asset_url || '') + '"></div>';
+        }
+        return '';
+    }
+
+    function configColorsHtml(item, settings) {
+        return '<div class="inv-config-colors">' + effectiveColors(item, settings).map(function(color, index) {
+            return '<label class="inv-config-color" title="Choose this color of the effect"><span>Color ' + (index + 1) + '</span><input type="color" data-config-color value="' + esc(RWL.sanitizeHex(color, '#9d4edd').toLowerCase()) + '"></label>';
+        }).join('') + '</div>';
+    }
+
+    function configFilterHtml(settings) {
+        var slider = function(key, label, title, minimum, maximum, unit) {
+            return '<label class="inv-config-field" title="' + esc(title) + '"><span>' + esc(label) + ' <strong data-config-filter-value="' + key + '">' + settings[key] + unit + '</strong></span><input type="range" data-config-filter="' + key + '" data-config-unit="' + unit + '" min="' + minimum + '" max="' + maximum + '" step="1" value="' + settings[key] + '"></label>';
+        };
+        return slider('hue', 'Hue', 'Shift all colors of this item', -180, 180, '°') +
+            slider('saturation', 'Saturation', 'Make the colors stronger or weaker', 0, 300, '%') +
+            slider('brightness', 'Brightness', 'Make this item brighter or darker', 50, 150, '%');
+    }
+
+    function readConfigValues(bar) {
+        var values = { speed: parseFloat(bar.querySelector('#invConfigSpeed').value), hue: 0, saturation: 100, brightness: 100 };
+        Array.prototype.forEach.call(bar.querySelectorAll('[data-config-filter]'), function(input) {
+            values[input.getAttribute('data-config-filter')] = parseInt(input.value, 10);
+        });
+        var colorInputs = bar.querySelectorAll('[data-config-color]');
+        if (colorInputs.length) values.colors = Array.prototype.map.call(colorInputs, function(input) { return input.value.toUpperCase(); });
+        return values;
+    }
+
+    function updateConfigPreview(bar, cosmetic, item) {
+        var preview = bar.querySelector('[data-config-preview]');
+        if (!preview) return;
+        var values = readConfigValues(bar);
+        if (COLOR_CATALOGS[cosmetic.catalog]) {
+            preview.setAttribute('style', RWL.frameStyle(Object.assign({}, item, { speed: values.speed, colors: values.colors })));
+        } else {
+            preview.style.filter = RWL.mediaFilterValue(settingsFilter(values));
+            if (preview.tagName === 'VIDEO') preview.playbackRate = values.speed;
+        }
+    }
+
+    function closeConfigBar(bar) {
+        releaseMedia(bar);
+        bar.innerHTML = '';
+        bar.hidden = true;
+    }
+
     function openConfigBar(itemId) {
         var bar = document.getElementById('invConfigBar');
         var cosmetic = COSMETIC_CATEGORIES[state.activeCategory];
         var item = selectedConfigItem(itemId);
         if (!bar || !cosmetic || !item) return;
+        releaseMedia(bar);
         var settings = itemSettings(cosmetic.catalog, itemId);
         var directionHtml = '';
         if (cosmetic.catalog === 'name_colors') {
@@ -883,25 +1078,42 @@
                 return '<option value="' + key + '"' + (key === settings.direction ? ' selected' : '') + '>' + esc(DIRECTION_LABELS[key]) + '</option>';
             }).join('') + '</select></label>';
         }
+        var editable = COLOR_CATALOGS[cosmetic.catalog] || FILTER_CATALOGS[cosmetic.catalog];
         bar.innerHTML = '<div class="inv-config-name" translate="no">' + esc(item.name) + '</div>' +
-            '<label class="inv-config-field"><span>Speed <strong id="invConfigSpeedValue">' + settings.speed.toFixed(2) + 'x</strong></span><input type="range" id="invConfigSpeed" min="0.5" max="2" step="0.25" value="' + settings.speed + '" title="Slower or faster playback"></label>' +
+            configPreviewHtml(cosmetic.catalog, item, settings) +
+            '<label class="inv-config-field"><span>Speed <strong id="invConfigSpeedValue">' + settings.speed.toFixed(2) + 'x</strong></span><input type="range" id="invConfigSpeed" min="0.5" max="2" step="0.25" value="' + settings.speed + '" title="Change the animation speed"></label>' +
             directionHtml +
+            (COLOR_CATALOGS[cosmetic.catalog] ? configColorsHtml(item, settings) : '') +
+            (FILTER_CATALOGS[cosmetic.catalog] ? configFilterHtml(settings) : '') +
             '<button type="button" class="inv-chest-action-btn" id="invConfigSave" title="Save these settings, they apply everywhere">Save</button>' +
+            (editable ? '<button type="button" class="inv-chest-action-btn inv-chest-action-secondary" id="invConfigDefault" title="Reset this item to its default look and speed">Default</button>' : '') +
             '<button type="button" class="inv-chest-action-btn inv-chest-action-secondary" id="invConfigClose" title="Close the settings">Close</button>';
         bar.hidden = false;
         bar.setAttribute('data-item-id', itemId);
         var speedInput = bar.querySelector('#invConfigSpeed');
         speedInput.addEventListener('input', function() {
             bar.querySelector('#invConfigSpeedValue').textContent = parseFloat(speedInput.value).toFixed(2) + 'x';
+            updateConfigPreview(bar, cosmetic, item);
         });
-        bar.querySelector('#invConfigClose').addEventListener('click', function() { bar.hidden = true; });
-        bar.querySelector('#invConfigSave').addEventListener('click', function(event) { saveConfig(itemId, cosmetic, event.currentTarget); });
+        Array.prototype.forEach.call(bar.querySelectorAll('[data-config-color], [data-config-filter]'), function(input) {
+            input.addEventListener('input', function() {
+                var key = input.getAttribute('data-config-filter');
+                if (key) bar.querySelector('[data-config-filter-value="' + key + '"]').textContent = input.value + input.getAttribute('data-config-unit');
+                updateConfigPreview(bar, cosmetic, item);
+            });
+        });
+        bar.querySelector('#invConfigClose').addEventListener('click', function() { closeConfigBar(bar); });
+        bar.querySelector('#invConfigSave').addEventListener('click', function(event) { saveConfig(itemId, cosmetic, item, event.currentTarget, false); });
+        var defaultButton = bar.querySelector('#invConfigDefault');
+        if (defaultButton) defaultButton.addEventListener('click', function(event) { saveConfig(itemId, cosmetic, item, event.currentTarget, true); });
     }
 
-    async function saveConfig(itemId, cosmetic, button) {
+    async function saveConfig(itemId, cosmetic, item, button, useDefaults) {
         var bar = document.getElementById('invConfigBar');
         var directionInput = bar.querySelector('#invConfigDirection');
-        var payload = { category: cosmetic.catalog, item_id: itemId, speed: parseFloat(bar.querySelector('#invConfigSpeed').value) };
+        var values = useDefaults ? { speed: 1, hue: 0, saturation: 100, brightness: 100 } : readConfigValues(bar);
+        var payload = { category: cosmetic.catalog, item_id: itemId, speed: values.speed, hue: values.hue, saturation: values.saturation, brightness: values.brightness };
+        if (values.colors && values.colors.join() !== (item.colors || []).join().toUpperCase()) payload.colors = values.colors;
         if (directionInput) payload.direction = directionInput.value;
         button.disabled = true;
         try {
@@ -912,8 +1124,9 @@
             if (window.RWLTheme && cosmetic.catalog === 'launcher_themes') RWLTheme.sync(state.inventory.equipped_cosmetics || {});
             activeGrids.forEach(function(grid) { grid.refresh(); });
             renderEquippedPanel();
-            bar.hidden = true;
-            toast('Saved. The settings apply everywhere.', 'success');
+            if (useDefaults) openConfigBar(itemId);
+            else closeConfigBar(bar);
+            toast(useDefaults ? 'Reset to the default look.' : 'Saved. The settings apply everywhere.', 'success');
         } catch (error) {
             toast(error.message || 'The settings could not be saved.', 'error');
         } finally {
@@ -994,9 +1207,9 @@
         var outlineData = cosmetics.nameplate_outline_data;
         var outlineClass = RWL.frameClasses(outlineData);
         var outlineStyle = outlineData ? ' style="' + esc(RWL.frameStyle(outlineData)) + '"' : '';
-        var plate = cosmetics.nameplate_url ? '<video class="inv-strip-plate" autoplay loop muted playsinline data-rwl-speed="' + (cosmetics.nameplate_speed || 1) + '" src="' + esc(cosmetics.nameplate_url) + '"></video>' : '';
+        var plate = cosmetics.nameplate_url ? '<video class="inv-strip-plate"' + mediaFilterAttribute(cosmetics.nameplate_filter) + ' autoplay loop muted playsinline data-rwl-speed="' + (cosmetics.nameplate_speed || 1) + '" src="' + esc(cosmetics.nameplate_url) + '"></video>' : '';
         var picture = avatar ? '<img class="inv-strip-avatar" src="' + esc(avatar) + '" alt="">' : '<div class="inv-strip-avatar inv-strip-initial">' + esc(username.charAt(0).toUpperCase()) + '</div>';
-        var decoration = cosmetics.avatar_decoration_url ? '<img class="inv-strip-deco" src="' + esc(cosmetics.avatar_decoration_url) + '" alt="">' : '';
+        var decoration = cosmetics.avatar_decoration_url ? '<img class="inv-strip-deco"' + mediaFilterAttribute(cosmetics.avatar_decoration_filter) + ' src="' + esc(cosmetics.avatar_decoration_url) + '" alt="">' : '';
         var permission = account.account_permissions ? '<span class="inv-strip-badge inv-strip-perm">' + esc(account.account_permissions) + '</span>' : '';
         return '<div class="inv-profile-strip' + outlineClass + '"' + outlineStyle + '>' + plate +
             '<div class="inv-strip-avatar-wrap">' + picture + decoration + '</div>' +
@@ -1010,8 +1223,10 @@
         if (catalogKey === 'nameplates') {
             equipped.nameplate_url = item.asset_url;
             equipped.nameplate_speed = settings.speed;
+            equipped.nameplate_filter = settingsFilter(settings);
         } else if (catalogKey === 'avatar_decorations') {
             equipped.avatar_decoration_url = item.thumb_url || item.asset_url;
+            equipped.avatar_decoration_filter = settingsFilter(settings);
         } else if (catalogKey === 'name_colors') {
             equipped.name_color_hex = item.hex;
             equipped.name_color_animated = !!(item.animated && item.gradient);
@@ -1021,7 +1236,7 @@
             equipped.name_color_speed = settings.speed;
             equipped.name_color_direction = settings.direction;
         } else if (catalogKey === 'nameplate_outlines') {
-            equipped.nameplate_outline_data = Object.assign({}, item, { speed: settings.speed });
+            equipped.nameplate_outline_data = frameItem(item, settings);
         }
         return equipped;
     }
@@ -1032,7 +1247,7 @@
         themeFrameReady = false;
         themeFrame = null;
         if (catalogKey === 'content_borders') {
-            var frameStyle = esc(RWL.frameStyle(Object.assign({}, item, { speed: itemSettings(catalogKey, item.item_id).speed })));
+            var frameStyle = esc(RWL.frameStyle(frameItem(item, itemSettings(catalogKey, item.item_id))));
             box.innerHTML = '<div class="inv-border-demo' + RWL.frameClasses(item) + '" style="' + frameStyle + '"><strong translate="no">' + esc(item.name) + '</strong><span>Reviews, forum posts, comments and replies use this border.</span></div>';
         } else {
             box.innerHTML = profileStripHtml(previewCosmetics(catalogKey, item));
@@ -1288,8 +1503,21 @@
 
     async function loadLabPassPromo() {
         try {
-            var info = await RWL.apiRequest('/api/season_pass/info');
+            var info = await RWL.apiRequest('/api/season_pass');
             if (!info || !info.season) return;
+            var owned = !!(info.progress && info.progress.premium);
+            var buyButton = document.getElementById('invLabPassBuyBtn');
+            var passButton = document.getElementById('invLabPassFreeBtn');
+            if (buyButton) {
+                buyButton.textContent = owned ? 'Owned' : 'Buy Bundle';
+                buyButton.disabled = owned;
+                buyButton.classList.toggle('inv-labpass-owned', owned);
+                buyButton.title = owned ? 'You already own the Lab-Pass of this season' : 'Open the Lab-Pass to buy the bundle';
+            }
+            if (passButton) {
+                passButton.textContent = owned ? 'Go To Premium-Pass' : 'Go To Free-Pass';
+                passButton.title = owned ? 'Open your premium Lab-Pass track' : 'Open the free Lab-Pass track';
+            }
             var newPrice = document.querySelector('.inv-labpass-price-new');
             var oldPrice = document.querySelector('.inv-labpass-price-old');
             var subtitle = document.querySelector('.inv-labpass-promo-sub');
