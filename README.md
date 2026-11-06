@@ -55,6 +55,10 @@ Patterns use numbered placeholders: `{0}` matches any text and `{#0}` matches a 
 
 Visitors get the language of their IP address. Signed in users get English unless they choose another language in Preferences.
 
+## Server Status Banner
+
+`js/rwl_boot.js` checks `GET /health` on every page load, for visitors and signed in users, and watches all API requests. Problems show a banner at the top of the page right away: server problems, no connection, blocked connection, too many requests or limited service. It checks again with growing pauses, and shows a short note with a Reload button when the server is back. Analytics and live viewer failures alone never show it, because ad blockers can cause them. Maintenance and freeze keep their own screen.
+
 ## Dialogs
 
 Native browser popups are not used. Use `RWLDialog.confirm({ title, message, confirmText, danger })` and `RWLDialog.alert(message)` from `rwl_boot.js`. Both return a promise. `window.alert` opens the same dialog.

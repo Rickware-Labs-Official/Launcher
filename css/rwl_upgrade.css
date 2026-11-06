@@ -1015,3 +1015,104 @@ body {
     opacity: 0.85;
     box-shadow: none;
 }
+
+.rwl-server-banner {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2147483000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: min(760px, calc(100vw - 24px));
+    padding: 12px 14px;
+    border: 1px solid #ff4d6d;
+    border-radius: 12px;
+    background: #1a0b16;
+    color: #ffffff;
+    font-size: 13px;
+    line-height: 1.4;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6), 0 0 18px rgba(255, 77, 109, 0.35);
+}
+
+.rwl-server-banner-limited,
+.rwl-server-banner-degraded {
+    border-color: #ffb347;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6), 0 0 18px rgba(255, 179, 71, 0.3);
+}
+
+.rwl-server-banner-restored {
+    border-color: #9d4edd;
+    background: #160f24;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6), 0 0 18px rgba(157, 78, 221, 0.5);
+}
+
+.rwl-server-banner-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.rwl-server-banner-content strong {
+    font-size: 14px;
+}
+
+.rwl-server-banner-action {
+    flex-shrink: 0;
+    padding: 7px 13px;
+    border: 1px solid #e0aaff;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #7b2cbf, #9d4edd);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    animation: rwlServerBannerGlow 2.4s ease-in-out infinite;
+    transition: filter 0.2s ease;
+}
+
+.rwl-server-banner-action:hover {
+    filter: brightness(1.2);
+}
+
+@keyframes rwlServerBannerGlow {
+    0%, 100% { box-shadow: 0 0 6px rgba(157, 78, 221, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(224, 170, 255, 0.8); }
+}
+
+.rwl-server-banner-close {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.rwl-server-banner-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 560px) {
+    .rwl-server-banner {
+        flex-wrap: wrap;
+    }
+
+    .rwl-server-banner-content {
+        flex-basis: calc(100% - 40px);
+    }
+
+    .rwl-server-banner-action {
+        order: 3;
+        width: 100%;
+    }
+}

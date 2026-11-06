@@ -974,4 +974,216 @@
     }
     var initialTheme = previewMode ? null : storedTheme();
     if (initialTheme) applyTheme(initialTheme, false);
+
+    var SERVER_HEALTH_URL = API_BASE + '/health';
+    var SERVER_PROBE_TIMEOUT_MS = 8000;
+    var SERVER_QUICK_RETRY_MS = 1500;
+    var SERVER_RETRY_STEPS_MS = [15000, 30000, 60000];
+    var SERVER_NOTICE_MS = 60000;
+    var SERVER_RESTORED_MS = 12000;
+    var SERVER_FAILURE_WINDOW_MS = 30000;
+    var SERVER_FAILURE_LIMIT = 2;
+    var SERVER_BACKGROUND_PATH = /\/api\/(presence|analytics|client\/state)/;
+    var SERVER_PROBLEM_STATES = { server: true, network: true, blocked: true };
+    var SERVER_STATUS_COPY = {
+        server: { title: 'Server Problems', text: 'We are currently having problems with our server. Some features may not work right now. We are working on it.' },
+        network: { title: 'No Connection', text: 'You appear to be offline. Please check your internet connection.' },
+        blocked: { title: 'Connection Blocked', text: 'Your connection was temporarily blocked by our security system. Please try again later.' },
+        limited: { title: 'Too Many Requests', text: 'Too many requests came from your connection. Please wait a moment.' },
+        degraded: { title: 'Limited Service', text: 'Some features are currently not working correctly. We are working on it.' },
+        restored: { title: 'Connection Restored', text: 'The server is reachable again. Reload the page if something is missing.' }
+    };
+    var serverState = null;
+    var serverDismissed = null;
+    var serverProbeRunning = false;
+    var serverProbeTimer = null;
+    var serverClearTimer = null;
+    var serverFailedProbes = 0;
+    var serverQuickRetried = false;
+    var serverFailures = [];
+    var pageUnloading = false;
+
+    function removeServerBanner() {
+        var banner = document.getElementById('rwlServerBanner');
+        if (banner && banner.parentNode) banner.parentNode.removeChild(banner);
+    }
+
+    function serverButton(className, label, title, action) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = className;
+        button.textContent = label;
+        button.title = title;
+        button.setAttribute('aria-label', title);
+        button.addEventListener('click', action);
+        return button;
+    }
+
+    function renderServerBanner() {
+        removeServerBanner();
+        if (!serverState || serverDismissed === serverState || !document.body) return;
+        var copy = SERVER_STATUS_COPY[serverState];
+        var banner = document.createElement('div');
+        banner.id = 'rwlServerBanner';
+        banner.className = 'rwl-server-banner rwl-server-banner-' + serverState;
+        banner.setAttribute('role', 'alert');
+        var content = document.createElement('div');
+        content.className = 'rwl-server-banner-content';
+        var title = document.createElement('strong');
+        title.textContent = copy.title;
+        var text = document.createElement('span');
+        text.textContent = copy.text;
+        content.appendChild(title);
+        content.appendChild(text);
+        banner.appendChild(content);
+        if (serverState === 'restored') {
+            banner.appendChild(serverButton('rwl-server-banner-action', 'Reload', 'Reload this page', function () { global.location.reload(); }));
+        } else {
+            banner.appendChild(serverButton('rwl-server-banner-action', 'Try Again', 'Check the server connection again', function () { serverQuickRetried = true; probeServer(); }));
+        }
+        banner.appendChild(serverButton('rwl-server-banner-close', '\u00d7', 'Hide this message', function () { serverDismissed = serverState; removeServerBanner(); }));
+        document.body.appendChild(banner);
+    }
+
+    function setServerState(state, clearAfterMs) {
+        global.clearTimeout(serverClearTimer);
+        serverClearTimer = null;
+        if (state !== serverState) {
+            serverState = state;
+            serverDismissed = null;
+            whenBodyReady(renderServerBanner);
+        }
+        if (clearAfterMs) {
+            serverClearTimer = global.setTimeout(function () {
+                serverState = null;
+                removeServerBanner();
+            }, clearAfterMs);
+        }
+    }
+
+    function scheduleServerProbe(delay) {
+        global.clearTimeout(serverProbeTimer);
+        serverProbeTimer = global.setTimeout(function () {
+            if (document.hidden) scheduleServerProbe(delay);
+            else probeServer();
+        }, delay);
+    }
+
+    function recentServerFailures() {
+        var now = Date.now();
+        serverFailures = serverFailures.filter(function (stamp) { return now - stamp < SERVER_FAILURE_WINDOW_MS; });
+        return serverFailures.length;
+    }
+
+    function handleServerHealth(data) {
+        var hadProblem = !!SERVER_PROBLEM_STATES[serverState];
+        serverFailedProbes = 0;
+        serverQuickRetried = false;
+        var blockedSeconds = data ? parseInt(data.blocked_seconds, 10) || 0 : 0;
+        if (blockedSeconds > 0) {
+            setServerState('blocked');
+            scheduleServerProbe(Math.max(SERVER_RETRY_STEPS_MS[2], Math.min(blockedSeconds * 1000, 300000)));
+            return;
+        }
+        if ((data && data.status === 'degraded') || recentServerFailures() >= SERVER_FAILURE_LIMIT) {
+            setServerState('degraded', SERVER_NOTICE_MS);
+            if (data && data.status === 'degraded') scheduleServerProbe(SERVER_RETRY_STEPS_MS[2]);
+            return;
+        }
+        if (hadProblem) setServerState('restored', SERVER_RESTORED_MS);
+    }
+
+    function handleServerProbeFailure(timedOut) {
+        if (global.navigator && global.navigator.onLine === false) {
+            setServerState('network');
+            scheduleServerProbe(SERVER_RETRY_STEPS_MS[0]);
+            return;
+        }
+        if (!timedOut && !serverQuickRetried) {
+            serverQuickRetried = true;
+            scheduleServerProbe(SERVER_QUICK_RETRY_MS);
+            return;
+        }
+        setServerState('server');
+        var step = SERVER_RETRY_STEPS_MS[Math.min(serverFailedProbes, SERVER_RETRY_STEPS_MS.length - 1)];
+        serverFailedProbes += 1;
+        scheduleServerProbe(step * (0.85 + Math.random() * 0.3));
+    }
+
+    function probeServer() {
+        if (serverProbeRunning) return;
+        serverProbeRunning = true;
+        global.clearTimeout(serverProbeTimer);
+        var timedOut = false;
+        var controller = global.AbortController ? new AbortController() : null;
+        var timeout = global.setTimeout(function () {
+            timedOut = true;
+            if (controller) controller.abort();
+        }, SERVER_PROBE_TIMEOUT_MS);
+        rawServerFetch.call(global, SERVER_HEALTH_URL, { cache: 'no-store', credentials: 'omit', signal: controller ? controller.signal : undefined }).then(function (response) {
+            if (!response.ok) throw new Error('status');
+            return response.json().catch(function () { return {}; });
+        }).then(function (data) {
+            global.clearTimeout(timeout);
+            serverProbeRunning = false;
+            handleServerHealth(data);
+        }).catch(function () {
+            global.clearTimeout(timeout);
+            serverProbeRunning = false;
+            handleServerProbeFailure(timedOut);
+        });
+    }
+
+    function noteServerFailure(counts) {
+        if (counts) serverFailures.push(Date.now());
+        if (!serverProbeRunning) scheduleServerProbe(SERVER_QUICK_RETRY_MS);
+    }
+
+    function observeServerResponse(response, background) {
+        var status = response.status;
+        if (status === 429 && !background) {
+            setServerState('limited', SERVER_NOTICE_MS);
+        } else if (status === 403) {
+            response.clone().json().then(function (body) {
+                if (body && body.ip_blocked) {
+                    setServerState('blocked');
+                    scheduleServerProbe(SERVER_RETRY_STEPS_MS[2]);
+                }
+            }).catch(function () {});
+        } else if (status === 503) {
+            response.clone().json().then(function (body) {
+                if (!body || !body.system_state) noteServerFailure(!background);
+            }).catch(function () { noteServerFailure(!background); });
+        } else if (status >= 500) {
+            noteServerFailure(!background);
+        }
+    }
+
+    var rawServerFetch = typeof global.fetch === 'function' ? global.fetch : null;
+    if (rawServerFetch && !previewMode) {
+        global.fetch = function (input) {
+            var result = rawServerFetch.apply(this, arguments);
+            try {
+                var url = String((input && input.url) || input || '');
+                if (url.indexOf(API_BASE) === 0 && url.indexOf(SERVER_HEALTH_URL) !== 0) {
+                    var background = SERVER_BACKGROUND_PATH.test(url);
+                    result.then(function (response) {
+                        observeServerResponse(response, background);
+                    }, function (error) {
+                        if (pageUnloading || (error && error.name === 'AbortError') || background) return;
+                        noteServerFailure(true);
+                    });
+                }
+            } catch (error) {}
+            return result;
+        };
+        global.addEventListener('pagehide', function () { pageUnloading = true; });
+        global.addEventListener('pageshow', function () { pageUnloading = false; });
+        global.addEventListener('online', probeServer);
+        global.addEventListener('offline', function () { setServerState('network'); });
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && SERVER_PROBLEM_STATES[serverState]) probeServer();
+        });
+        probeServer();
+    }
 })(window);
