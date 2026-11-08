@@ -84,6 +84,26 @@
             </div>
 
             <div class="settings-section">
+                <div class="profile-banner-section">
+                    <h3>Profile Banner</h3>
+                    <div class="profile-banner-preview" id="settingsBannerPreview">
+                        <video id="settingsBannerPlate" class="settings-banner-media" muted loop playsinline preload="metadata" hidden></video>
+                        <img src="" alt="" id="settingsBannerImage" class="settings-banner-media" decoding="async" hidden>
+                        <span class="profile-banner-badge" id="settingsBannerBadge">Nameplate</span>
+                    </div>
+                    <div class="profile-picture-actions">
+                        <input type="file" id="bannerImageInput" accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp,image/x-icon,.png,.jpg,.jpeg,.gif,.webp,.avif,.bmp,.ico" hidden>
+                        <div class="profile-banner-buttons">
+                            <button class="btn-secondary" id="uploadBannerBtn" title="Choose a banner for your extended profile">Upload Banner</button>
+                            <button class="btn-secondary btn-danger-soft" id="removeBannerBtn" title="Remove your banner and show your nameplate again" hidden>Remove Banner</button>
+                        </div>
+                        <small id="bannerHint">PNG, JPG, GIF, WebP, AVIF, BMP or ICO · animated files work too · max 20 MB</small>
+                        <small>Your banner is only shown in your extended profile. Without a banner your nameplate is shown.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <h3>Personal Information</h3>
                 <div class="settings-form">
                     <div class="form-group">

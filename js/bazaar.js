@@ -15,6 +15,14 @@
         return document.getElementById(id);
     }
 
+    function signedIn() {
+        return !!RWL.getToken();
+    }
+
+    function requireLogin() {
+        global.location.href = './login_register.html?tab=login';
+    }
+
     function api(path, options) {
         return RWL.apiRequest('/api/bazaar' + path, options);
     }
@@ -219,7 +227,7 @@
         return (listing.slots || []).map(function (slot) {
             return '<div class="bz-slot' + (slot.available ? ' bz-slot-ready' : '') + '">' +
                 '<div class="bz-slot-head"><strong>' + esc(t('Slot') + ' ' + (slot.index + 1)) + '</strong>' +
-                    (listing.is_mine ? '' : (slot.available ? '<button type="button" class="bz-btn bz-btn-primary" data-trade="' + slot.index + '" title="' + esc(t('Trade these items for the offered item')) + '">' + esc(t('Trade With This Slot')) + '</button>' : '<span class="bz-sub">' + esc(slot.seller_owns_one ? t('The seller already owns an item of this slot') : t('You are missing items of this slot')) + '</span>')) +
+                    (listing.is_mine || !signedIn() ? '' : (slot.available ? '<button type="button" class="bz-btn bz-btn-primary" data-trade="' + slot.index + '" title="' + esc(t('Trade these items for the offered item')) + '">' + esc(t('Trade With This Slot')) + '</button>' : '<span class="bz-sub">' + esc(slot.seller_owns_one ? t('The seller already owns an item of this slot') : t('You are missing items of this slot')) + '</span>')) +
                 '</div>' +
                 '<div class="bz-slot-items">' + slot.items.map(function (item) {
                     return '<div class="bz-slot-item' + (item.you_have ? ' bz-have' : ' bz-missing') + '" title="' + esc(item.you_have ? t('You have this item') : t('You do not have this item')) + '"><div class="bz-mini-visual">' + itemVisual(item) + '</div><span translate="no">' + esc(item.name) + '</span></div>';
@@ -234,7 +242,9 @@
             var listing = await api('/listings/' + encodeURIComponent(listingId));
             var item = listing.item || {};
             var actions = '';
-            if (listing.status === 'active' && !listing.is_mine) {
+            if (!signedIn()) {
+                if (listing.status === 'active') actions = '<button type="button" class="bz-btn bz-btn-primary bz-btn-large" data-login title="' + esc(t('Log in to buy, bid or trade')) + '">' + esc(t('Log in to buy, bid or trade')) + '</button>';
+            } else if (listing.status === 'active' && !listing.is_mine) {
                 if (listing.you_own_item) actions = '<p class="bz-note">' + esc(t('You already own this item.')) + '</p>';
                 else if (listing.kind === 'fixed') actions = '<button type="button" class="bz-btn bz-btn-primary bz-btn-large" data-buy title="' + esc(t('Buy this item now')) + '">' + esc(t('Buy for') + ' ' + price(listing.price, listing.currency)) + '</button>';
                 else if (listing.kind === 'auction') actions = '<form class="bz-bid-form" data-bid><input type="number" class="rwl-input" min="' + listing.next_min_bid + '" step="1" value="' + listing.next_min_bid + '" title="' + esc(t('Your bid')) + '"><button type="submit" class="bz-btn bz-btn-primary" title="' + esc(t('Place your bid, it is reserved until you are outbid')) + '">' + esc(t('Place Bid')) + '</button></form><p class="bz-note">' + esc(t('Minimum bid') + ': ' + price(listing.next_min_bid, listing.currency) + ' · ' + (listing.reserve_met ? t('Minimum price reached') : t('Minimum price not reached yet'))) + '</p>';
@@ -265,6 +275,8 @@
     }
 
     function bindDetail(modal, listing) {
+        var login = modal.querySelector('[data-login]');
+        if (login) login.addEventListener('click', requireLogin);
         var buy = modal.querySelector('[data-buy]');
         if (buy) buy.addEventListener('click', async function () {
             if (!(await confirmDialog(t('Buy Item'), t('Buy') + ' ' + listing.item.name + ' ' + t('for') + ' ' + price(listing.price, listing.currency) + '?'))) return;
@@ -634,7 +646,12 @@
         byId('bzTabs').addEventListener('click', function (event) {
             var tab = event.target.closest('.bz-tab');
             if (!tab) return;
-            state.tab = tab.getAttribute('data-tab');
+            var requested = tab.getAttribute('data-tab');
+            if ((requested === 'mine' || requested === 'bids') && !signedIn()) {
+                requireLogin();
+                return;
+            }
+            state.tab = requested;
             syncTabs();
             loadListings(false);
         });
@@ -658,8 +675,8 @@
                 openDetail(card.getAttribute('data-listing'));
             }
         });
-        byId('bzSellBtn').addEventListener('click', openSell);
-        byId('bzHistoryBtn').addEventListener('click', openHistory);
+        byId('bzSellBtn').addEventListener('click', function () { if (signedIn()) openSell(); else requireLogin(); });
+        byId('bzHistoryBtn').addEventListener('click', function () { if (signedIn()) openHistory(); else requireLogin(); });
         byId('bzHistoryClose').addEventListener('click', function () { byId('bzHistory').hidden = true; });
         byId('bzHistoryList').addEventListener('click', function (event) {
             var row = event.target.closest('[data-history-listing]');
@@ -677,14 +694,30 @@
         setInterval(tickCountdowns, 1000);
     }
 
+    function applyGuestMode() {
+        document.body.classList.add('bz-guest');
+        var sell = byId('bzSellBtn');
+        sell.textContent = t('Log In');
+        sell.title = t('Log in to buy, bid, sell or trade');
+        var balance = byId('bzBalance').closest('.bz-stat');
+        if (balance) balance.style.display = 'none';
+        var notice = document.createElement('div');
+        notice.className = 'bz-guest-notice bz-card';
+        notice.innerHTML = '<span>' + esc(t('You are browsing the Lab Bazaar as a guest. Log in to buy, bid, sell or trade.')) + '</span>' +
+            '<button type="button" class="bz-btn bz-btn-primary" data-login title="' + esc(t('Log in to buy, bid, sell or trade')) + '">' + esc(t('Log In')) + '</button>';
+        notice.querySelector('[data-login]').addEventListener('click', requireLogin);
+        var tabs = byId('bzTabs');
+        tabs.parentNode.insertBefore(notice, tabs);
+    }
+
     function init() {
-        if (!RWL.getToken()) {
-            global.location.href = './login_register.html?tab=login';
-            return;
-        }
         bind();
-        loadSellable();
-        loadHistoryCount();
+        if (signedIn()) {
+            loadSellable();
+            loadHistoryCount();
+        } else {
+            applyGuestMode();
+        }
         loadListings(false);
     }
 

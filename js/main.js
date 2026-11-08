@@ -1382,25 +1382,26 @@ function buildDashboardCard(member) {
         ? '<span class="dashboard-perms-badge">' + escHtml(Array.isArray(member.account_permissions) ? member.account_permissions.join(', ') : member.account_permissions) + '</span>' : '';
     var speed = member.nameplate_speed ? parseFloat(member.nameplate_speed) : 1;
     var plateFilter = RWL.mediaFilterStyle(member.nameplate_filter);
+    var lastOnline = member.last_online ? new Date(member.last_online) : null;
+    var statusText = member.online ? 'Online now' : (lastOnline && !isNaN(lastOnline.getTime()) ? 'Last online: ' + lastOnline.toLocaleDateString() : (member.member_since ? 'Member since ' + member.member_since : ''));
     var card = document.createElement('div');
     card.className = 'dashboard-member-card rwl-plate-card' + (member.online ? ' online' : '');
-    card.setAttribute('translate', 'no');
     card.setAttribute('data-username', member.username || '');
     card.setAttribute('tabindex', '0');
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', (member.username || '') + ' profile');
+    if (member.member_since) card.setAttribute('title', 'Member since ' + member.member_since);
     card.innerHTML =
         '<div class="rwl-plate' + outlineClasses(member) + '"' + outlineStyleAttr(member) + '>' +
             '<video class="rwl-plate-bg"' + (plateFilter ? ' style="' + escHtml(plateFilter) + '"' : '') + ' muted loop playsinline preload="none" data-rwl-speed="' + (isNaN(speed) ? 1 : speed) + '" data-src="' + escHtml(userNameplateSrc(member)) + '"></video>' +
-            '<div class="rwl-plate-avatar">' + avatar + decorationHtml + '<span class="rwl-plate-presence' + (member.online ? ' online' : '') + '"></span></div>' +
+            '<div class="rwl-plate-avatar" translate="no">' + avatar + decorationHtml + '<span class="rwl-plate-presence' + (member.online ? ' online' : '') + '"></span></div>' +
             '<div class="rwl-plate-text">' +
-                '<span class="rwl-plate-name" style="' + escHtml(userNameStyle(member)) + '">' + escHtml(member.username) + '</span>' +
-                '<span class="rwl-plate-badges">' + dashboardRankBadge(member) + permsHtml + '</span>' +
+                '<span class="rwl-plate-line">' +
+                    '<span class="rwl-plate-name" translate="no" style="' + escHtml(userNameStyle(member)) + '">' + escHtml(member.username) + '</span>' +
+                    '<span class="rwl-plate-badges">' + dashboardRankBadge(member) + permsHtml + '</span>' +
+                '</span>' +
+                '<span class="rwl-plate-status' + (member.online ? ' online' : '') + '">' + escHtml(statusText) + '</span>' +
             '</div>' +
-        '</div>' +
-        '<div class="rwl-plate-meta">' +
-            '<span class="dashboard-member-since">' + (member.online ? 'Online now' : (member.member_since ? 'Member since ' + escHtml(member.member_since) : '')) + '</span>' +
-            (!member.online && member.last_online ? '<span class="dashboard-last-online" data-rwl-time="' + escHtml(member.last_online) + '">Last online: ' + escHtml(new Date(member.last_online).toLocaleString()) + '</span>' : '') +
         '</div>';
     if (window.RWLSocial && window.RWLSocial.observeCard) window.RWLSocial.observeCard(card);
     return card;
@@ -1550,10 +1551,6 @@ function setupNavigation() {
                 return;
             }
             if (page === 'bazaar') {
-                if (!currentUser) {
-                    window.location.href = './sites/login_register.html?tab=login';
-                    return;
-                }
                 window.location.href = './sites/bazaar.html';
                 return;
             }

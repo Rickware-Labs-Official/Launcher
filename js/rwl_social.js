@@ -2,9 +2,10 @@
     if (global.RWLSocial || !global.RWL) return;
 
     var esc = RWL.escapeHtml;
-    var HOVER_DELAY_MS = 260;
-    var HIDE_DELAY_MS = 220;
+    var HOVER_DELAY_MS = 320;
     var PROFILE_CACHE_MS = 20000;
+    var PENDING_KEY_ID = 0;
+    var BANNER_PATH = '/api/profile_banner/';
     var MAX_TEXT = 4000;
     var VAULT_ITERATIONS = 600000;
     var GROUP_MS = 7 * 60 * 1000;
@@ -25,8 +26,8 @@
         unlocking: null,
         chat: null,
         hoverTimer: null,
-        hideTimer: null,
         popoutUser: '',
+        deliveringAll: null,
         centerTab: 'messages',
         initialized: false,
         mediaObserver: null
@@ -102,6 +103,26 @@
         if (!src) return '';
         var speed = parseFloat(user.nameplate_speed) || 1;
         return '<video class="rwl-plate-bg ' + (extraClass || '') + '"' + filterAttr(user.nameplate_filter) + ' muted loop playsinline preload="none" data-rwl-speed="' + speed + '" data-src="' + esc(src) + '"></video>';
+    }
+
+    function lowEffects() {
+        var connection = navigator.connection || {};
+        if (connection.saveData) return true;
+        if (document.documentElement.classList.contains('rwl-low-fx')) return true;
+        return !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    function trustedBanner(url) {
+        var value = String(url || '');
+        return value.indexOf(RWL.apiBase + BANNER_PATH) === 0 && /^[A-Za-z0-9_.\-\/:]+$/.test(value) ? value : '';
+    }
+
+    function bannerHtml(profile, large) {
+        var full = large ? trustedBanner(profile.banner_url) : '';
+        if (!full) return plateVideo(profile, '');
+        var poster = trustedBanner(profile.banner_poster_url);
+        var source = lowEffects() && poster ? poster : full;
+        return '<img class="rwl-profile-banner-img" src="' + esc(source) + '" alt="" decoding="async" draggable="false">';
     }
 
     function badgesHtml(user) {
@@ -248,10 +269,13 @@
             '<div><div class="rwl-profile-label">' + esc(t('Friends')) + '</div><div class="rwl-profile-text">' + esc(String(profile.friends || 0)) + (rel.self ? '' : ' · ' + esc(String(profile.mutual_friends || 0)) + ' ' + esc(t('mutual'))) + '</div></div>' +
             (profile.discord_linked ? '<div><div class="rwl-profile-label">Discord</div><div class="rwl-profile-text" translate="no">' + esc(profile.discord_display_name || t('Linked')) + '</div></div>' : '') +
             '</div>';
-        var quick = rel && !rel.self ? '<div class="rwl-profile-quick">' +
+        var quick = large && rel && !rel.self ? '<div class="rwl-profile-quick">' +
             (rel.blocked_by_me ? '' : '<button type="button" class="rwl-icon-btn" data-social-action="block" title="' + esc(t('Block this member')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></button>') +
             '</div>' : '';
-        return '<div class="rwl-profile-banner">' + plateVideo(profile, '') + '</div>' +
+        var footer = large
+            ? (signedIn() ? '<div class="rwl-profile-actions">' + relationButtons(profile, false) + '</div>' : '')
+            : '<div class="rwl-profile-hint">' + esc(t('Click to open the full profile')) + '</div>';
+        return '<div class="rwl-profile-banner">' + bannerHtml(profile, large) + '</div>' +
             '<div class="rwl-profile-head"><div class="rwl-profile-avatar">' + avatarHtml(profile, 'rwl-profile-picture', true, true) + '</div>' + quick + '</div>' +
             '<div class="rwl-profile-card" translate="no">' +
                 '<div class="rwl-profile-name" style="' + esc(nameStyle(profile)) + '">' + esc(profile.username) + '</div>' +
@@ -260,7 +284,7 @@
                 '<div class="rwl-profile-divider"></div>' +
                 '<div class="rwl-profile-label">' + esc(t('About Me')) + '</div>' + bio +
                 '<div class="rwl-profile-divider"></div>' + meta +
-                (signedIn() ? '<div class="rwl-profile-actions">' + relationButtons(profile, !large) + '</div>' : '') +
+                footer +
             '</div>';
     }
 
@@ -271,9 +295,7 @@
         element.id = 'rwlSocialPopout';
         element.className = 'rwl-popout';
         element.hidden = true;
-        element.addEventListener('mouseenter', function () { clearTimeout(state.hideTimer); });
-        element.addEventListener('mouseleave', scheduleHide);
-        element.addEventListener('click', onActionClick);
+        element.setAttribute('aria-hidden', 'true');
         document.body.appendChild(element);
         return element;
     }
@@ -290,12 +312,18 @@
         element.style.top = top + 'px';
     }
 
+    function profileOverlayOpen() {
+        var overlay = document.getElementById('rwlProfileOverlay');
+        return !!(overlay && !overlay.hidden);
+    }
+
     async function showPopout(anchor, username) {
+        if (profileOverlayOpen()) return;
         var element = popoutElement();
         state.popoutUser = username;
         try {
             var profile = await loadProfile(username);
-            if (state.popoutUser !== username || !anchor.isConnected) return;
+            if (state.popoutUser !== username || !anchor.isConnected || profileOverlayOpen()) return;
             stopMedia(element);
             element.innerHTML = profileBody(profile, false);
             element.setAttribute('data-username', profile.username);
@@ -315,11 +343,6 @@
             stopMedia(element);
             element.hidden = true;
         }
-    }
-
-    function scheduleHide() {
-        clearTimeout(state.hideTimer);
-        state.hideTimer = setTimeout(hidePopout, HIDE_DELAY_MS);
     }
 
     function overlayElement() {
@@ -349,6 +372,14 @@
             stopMedia(modal);
             modal.innerHTML = '<button type="button" class="rwl-icon-btn rwl-profile-close" data-social-close title="' + esc(t('Close')) + '">✕</button>' + profileBody(profile, true);
             modal.setAttribute('data-username', profile.username);
+            var bannerImage = modal.querySelector('.rwl-profile-banner-img');
+            if (bannerImage) bannerImage.addEventListener('error', function () {
+                var holder = bannerImage.parentNode;
+                if (!holder) return;
+                holder.innerHTML = plateVideo(profile, '');
+                watchMedia(holder);
+                startMedia(holder);
+            }, { once: true });
             watchMedia(modal);
             startMedia(modal);
         } catch (error) {
@@ -432,18 +463,20 @@
             var card = event.target.closest('[data-username]');
             if (!card || card.contains(event.relatedTarget)) return;
             clearTimeout(state.hoverTimer);
-            clearTimeout(state.hideTimer);
+            if (state.popoutUser && state.popoutUser !== card.getAttribute('data-username')) hidePopout();
             state.hoverTimer = setTimeout(function () { showPopout(card, card.getAttribute('data-username')); }, HOVER_DELAY_MS);
         });
         grid.addEventListener('mouseout', function (event) {
             var card = event.target.closest('[data-username]');
             if (!card || card.contains(event.relatedTarget)) return;
             clearTimeout(state.hoverTimer);
-            scheduleHide();
+            hidePopout();
         });
         grid.addEventListener('click', function (event) {
             var card = event.target.closest('[data-username]');
-            if (card) openProfile(card.getAttribute('data-username'));
+            if (!card) return;
+            clearTimeout(state.hoverTimer);
+            openProfile(card.getAttribute('data-username'));
         });
         grid.addEventListener('keydown', function (event) {
             if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -547,7 +580,8 @@
         }
         var html = '';
         if (state.centerTab === 'messages') {
-            if (!data.channels.length) html = '<div class="rwl-center-empty">' + esc(t('No conversations yet. Hover a member on the dashboard and press Message.')) + '</div>';
+            if (state.overview && state.overview.keys && !state.overview.keys.exists && !vaultReady()) html += '<div class="rwl-center-cta"><span>' + esc(t('Activate encrypted messages so other members can reach you.')) + '</span><button type="button" class="rwl-btn" data-center-activate title="' + esc(t('Choose your chat passphrase')) + '">' + esc(t('Activate')) + '</button></div>';
+            if (!data.channels.length) html += '<div class="rwl-center-empty">' + esc(t('No conversations yet. Click a member on the dashboard and press Message.')) + '</div>';
             data.channels.forEach(function (channel) {
                 var sub = channel.unread ? '<strong style="color:#f87171">' + esc(channel.unread + ' ' + t('new')) + '</strong>' : esc(channel.last_message_at ? formatStamp(channel.last_message_at) : t('No messages yet'));
                 html += centerRow(channel.partner, sub, iconButton('hide', t('Close this conversation'), ICONS.cross, 'rwl-decline', 'data-channel="' + esc(channel.channel_id) + '"'), 'data-open-channel="' + esc(channel.channel_id) + '"');
@@ -609,6 +643,13 @@
             state.centerTab = tab.getAttribute('data-center-tab');
             renderCenter();
             if (state.centerTab === 'friends') loadFriends();
+            return;
+        }
+        if (event.target.closest('[data-center-activate]')) {
+            event.stopPropagation();
+            var activated = await ensureVault();
+            if (activated && state.overview) state.overview.keys = { exists: true };
+            renderCenter();
             return;
         }
         var actionButton = event.target.closest('[data-center-action]');
@@ -850,7 +891,9 @@
             try {
                 var keys = await api('/keys/me');
                 state.keys = keys;
-                return await vaultDialog(keys.exists ? 'unlock' : 'create');
+                var unlocked = await vaultDialog(keys.exists ? 'unlock' : 'create');
+                if (unlocked) deliverAllPending();
+                return unlocked;
             } catch (error) {
                 notify(error.message || t('Encryption could not be started.'), 'error');
                 return false;
@@ -881,19 +924,40 @@
         return key;
     }
 
+    async function selfKey(channelId, keyId) {
+        var cacheKey = channelId + ':self:' + keyId;
+        if (state.sharedKeys[cacheKey]) return state.sharedKeys[cacheKey];
+        var privateKey = state.privateKeys[String(keyId)];
+        var jwk = state.vaultData && state.vaultData.keys ? state.vaultData.keys[String(keyId)] : null;
+        if (!privateKey || !jwk || !jwk.x || !jwk.y) throw new Error('missing key');
+        var publicKey = await subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y, ext: true }, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+        var bits = await subtle.deriveBits({ name: 'ECDH', public: publicKey }, privateKey, 256);
+        var material = await subtle.importKey('raw', bits, 'HKDF', false, ['deriveKey']);
+        var key = await subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: encoder.encode(channelId), info: encoder.encode('rwl-dm-self-v1') }, material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+        state.sharedKeys[cacheKey] = key;
+        return key;
+    }
+
+    function isPending(message) {
+        return Number(message && message.recipient_key_id) === PENDING_KEY_ID;
+    }
+
     async function encryptPayload(chat, payload) {
-        var key = await sharedKey(chat.id, state.myKeyId, chat.partnerKeys, chat.partnerKeys.key_id);
+        var pending = !chat.partnerKeys || !chat.partnerKeys.exists;
+        var key = pending ? await selfKey(chat.id, state.myKeyId) : await sharedKey(chat.id, state.myKeyId, chat.partnerKeys, chat.partnerKeys.key_id);
         var iv = randomBytes(12);
         var sealed = await subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, encoder.encode(JSON.stringify(payload)));
-        return { ciphertext: toBase64(sealed), iv: toBase64(iv), sender_key_id: state.myKeyId, recipient_key_id: chat.partnerKeys.key_id };
+        return { ciphertext: toBase64(sealed), iv: toBase64(iv), sender_key_id: state.myKeyId, recipient_key_id: pending ? PENDING_KEY_ID : chat.partnerKeys.key_id };
     }
 
     async function decryptMessage(chat, message) {
         var mine = message.sender === 'me';
+        var pending = isPending(message);
+        if (pending && !mine) return { text: t('This message is waiting for delivery. It appears as soon as the sender is online again.'), files: [], ok: false, waiting: true };
         var myKeyId = mine ? message.sender_key_id : message.recipient_key_id;
         var partnerKeyId = mine ? message.recipient_key_id : message.sender_key_id;
         try {
-            var key = await sharedKey(chat.id, myKeyId, chat.partnerKeys, partnerKeyId);
+            var key = pending ? await selfKey(chat.id, message.sender_key_id) : await sharedKey(chat.id, myKeyId, chat.partnerKeys, partnerKeyId);
             var plain = await subtle.decrypt({ name: 'AES-GCM', iv: fromBase64(message.iv) }, key, fromBase64(message.ciphertext));
             var data = JSON.parse(decoder.decode(plain));
             return { text: String(data.t || '').slice(0, MAX_TEXT), files: Array.isArray(data.a) ? data.a : [], ok: true };
@@ -924,13 +988,27 @@
         }
     }
 
+    function currentDraft() {
+        var input = document.querySelector('#rwlChat .rwl-composer-input');
+        return input ? input.value : '';
+    }
+
+    function restoreDraft(text) {
+        var input = document.querySelector('#rwlChat .rwl-composer-input');
+        if (!text || !input || input.disabled) return;
+        input.value = text;
+        input.dispatchEvent(new Event('input'));
+    }
+
     async function openChat(channelId) {
         if (!(await ensureVault())) return;
+        var draft = state.chat && state.chat.id === channelId ? currentDraft() : '';
         var center = document.getElementById('rwlSocialCenter');
         if (center) center.hidden = true;
         var element = chatElement();
         stopMedia(element);
         element.hidden = false;
+        document.body.classList.add('rwl-chat-open');
         element.innerHTML = '<div class="rwl-center-empty">' + esc(t('Decrypting conversation...')) + '</div>';
         try {
             var detail = await api('/channels/' + encodeURIComponent(channelId) + '?limit=50');
@@ -953,7 +1031,9 @@
             renderChatShell();
             await ingestMessages(detail.messages, false);
             renderMessages(true);
+            restoreDraft(draft);
             markRead();
+            deliverOpenChat();
         } catch (error) {
             element.innerHTML = '<div class="rwl-center-empty">' + esc(error.message || t('The conversation could not be loaded.')) + '</div>';
         }
@@ -961,12 +1041,75 @@
 
     function closeChat() {
         var element = document.getElementById('rwlChat');
+        document.body.classList.remove('rwl-chat-open');
         if (!element) return;
         stopMedia(element);
         revokeObjectUrls();
         element.hidden = true;
         element.innerHTML = '';
         state.chat = null;
+    }
+
+    async function applyDelivered(channelId, messageId, data) {
+        var chat = state.chat;
+        if (!chat || chat.id !== channelId) return;
+        var row = chat.byId[messageId];
+        if (!row || row.ciphertext === data.ciphertext) return;
+        row.ciphertext = data.ciphertext;
+        row.iv = data.iv;
+        row.sender_key_id = data.sender_key_id;
+        row.recipient_key_id = data.recipient_key_id;
+        row.pending = false;
+        row.plain = await decryptMessage(chat, row);
+        renderMessages(false);
+    }
+
+    async function deliverMessages(channelId, partnerKeys, messages) {
+        if (!vaultReady() || !partnerKeys || !partnerKeys.exists) return 0;
+        var delivered = 0;
+        for (var index = 0; index < messages.length; index++) {
+            var message = messages[index];
+            if (message.sender !== 'me' || !isPending(message)) continue;
+            try {
+                var source = await selfKey(channelId, message.sender_key_id);
+                var plain = await subtle.decrypt({ name: 'AES-GCM', iv: fromBase64(message.iv) }, source, fromBase64(message.ciphertext));
+                var target = await sharedKey(channelId, state.myKeyId, partnerKeys, partnerKeys.key_id);
+                var iv = randomBytes(12);
+                var sealed = await subtle.encrypt({ name: 'AES-GCM', iv: iv }, target, plain);
+                var body = { ciphertext: toBase64(sealed), iv: toBase64(iv), sender_key_id: state.myKeyId, recipient_key_id: partnerKeys.key_id };
+                await api('/messages/' + encodeURIComponent(message.id) + '/deliver', { method: 'POST', body: body });
+                delivered++;
+                await applyDelivered(channelId, message.id, body);
+            } catch (error) {
+                if (error && (error.status === 403 || error.status === 429 || error.status === 401)) break;
+            }
+        }
+        return delivered;
+    }
+
+    function deliverAllPending() {
+        if (!vaultReady() || state.deliveringAll) return state.deliveringAll;
+        state.deliveringAll = (async function () {
+            try {
+                var data = await api('/pending');
+                var channels = (data && data.channels) || [];
+                for (var index = 0; index < channels.length; index++) {
+                    await deliverMessages(channels[index].channel_id, channels[index].partner_keys, channels[index].messages || []);
+                }
+            } catch (error) {
+            } finally {
+                state.deliveringAll = null;
+            }
+        })();
+        return state.deliveringAll;
+    }
+
+    function deliverOpenChat() {
+        var chat = state.chat;
+        if (!chat || !chat.partnerKeys || !chat.partnerKeys.exists) return;
+        var own = chat.messages.filter(function (message) { return message.sender === 'me' && isPending(message); });
+        if (!own.length) return;
+        deliverMessages(chat.id, chat.partnerKeys, own).then(function () { deliverAllPending(); });
     }
 
     var objectUrls = [];
@@ -1000,7 +1143,10 @@
         if (detail.incoming_request) banner = '<span>' + esc(t('This member wants to send you messages.')) + '</span><button type="button" class="rwl-btn rwl-btn-success" data-chat-action="accept_request">' + esc(t('Accept')) + '</button><button type="button" class="rwl-btn rwl-btn-danger" data-chat-action="decline_request">' + esc(t('Decline')) + '</button>';
         else if (detail.status === 'request') banner = '<span>' + esc(t('Message request sent. You can send up to 3 messages until it is accepted.')) + '</span>';
         else if (detail.status === 'declined') banner = '<span>' + esc(t('This member declined your message request.')) + '</span>';
-        else if (!chat.partnerKeys || !chat.partnerKeys.exists) banner = '<span>' + esc(t('This member has not activated encrypted messages yet. You can write as soon as they open their messages once.')) + '</span>';
+        else if (!chat.partnerKeys || !chat.partnerKeys.exists) banner = '<span>' + esc(t('This member has not activated encrypted messages yet. Your messages stay sealed and are delivered automatically as soon as they open their messages.')) + '</span>';
+        var locked = !canSend();
+        var lockText = detail.incoming_request ? t('Accept the message request to reply') : (detail.status === 'declined' ? t('This member declined your message request.') : t('You cannot send messages in this conversation'));
+        var lockAttribute = locked ? ' disabled' : '';
         element.innerHTML =
             '<div class="rwl-chat-head" data-username="' + esc(partner.username) + '">' + plateVideo(partner, '') +
                 '<div class="rwl-center-avatar">' + avatarHtml(partner, 'rwl-center-img', false, true) + '</div>' +
@@ -1017,11 +1163,11 @@
             '<div class="rwl-composer">' +
                 '<div class="rwl-composer-context" hidden><span data-context-text></span><button type="button" class="rwl-icon-btn" data-chat-action="cancel_context" title="' + esc(t('Cancel')) + '">✕</button></div>' +
                 '<div class="rwl-composer-files" hidden></div>' +
-                '<div class="rwl-composer-box">' +
-                    (canAttach ? '<button type="button" class="rwl-icon-btn" data-chat-action="attach" title="' + esc(t('Attach a file')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><input type="file" hidden multiple data-file-input accept="' + esc(accept) + '">' : '') +
-                    '<textarea class="rwl-composer-input" rows="1" maxlength="' + MAX_TEXT + '" placeholder="' + esc(t('Message') + ' @' + partner.username) + '"' + (canSend() && chat.partnerKeys && chat.partnerKeys.exists ? '' : ' disabled') + '></textarea>' +
-                    '<button type="button" class="rwl-icon-btn" data-chat-action="emoji" title="' + esc(t('Emoji')) + '">😊</button>' +
-                    '<button type="button" class="rwl-icon-btn" data-chat-action="send" title="' + esc(t('Send')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>' +
+                '<div class="rwl-composer-box' + (locked ? ' rwl-composer-locked' : '') + '">' +
+                    (canAttach && !locked ? '<button type="button" class="rwl-icon-btn" data-chat-action="attach" title="' + esc(t('Attach a file')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><input type="file" hidden multiple data-file-input accept="' + esc(accept) + '">' : '') +
+                    '<textarea class="rwl-composer-input" rows="1" maxlength="' + MAX_TEXT + '" placeholder="' + esc(locked ? lockText : t('Message') + ' @' + partner.username) + '"' + lockAttribute + '></textarea>' +
+                    '<button type="button" class="rwl-icon-btn" data-chat-action="emoji" title="' + esc(t('Emoji')) + '"' + lockAttribute + '>😊</button>' +
+                    '<button type="button" class="rwl-icon-btn" data-chat-action="send" title="' + esc(t('Send')) + '"' + lockAttribute + '><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>' +
                 '</div>' +
                 '<div class="rwl-composer-hint">' + esc(detail.can_send.links ? t('Enter to send, Shift + Enter for a new line. **bold** *italic* __underline__ ~~strike~~ `code` ||spoiler||') : t('Links are not allowed for your account. Enter to send, Shift + Enter for a new line.')) + '</div>' +
             '</div>';
@@ -1193,7 +1339,7 @@
             return;
         }
         input.classList.remove('rwl-invalid');
-        if (!chat.partnerKeys || !chat.partnerKeys.exists) return;
+        if (!canSend()) return;
         var sendButton = element.querySelector('[data-chat-action="send"]');
         sendButton.disabled = true;
         input.disabled = true;
@@ -1233,7 +1379,7 @@
     }
 
     async function encryptEditPayload(chat, original, payload) {
-        var key = await sharedKey(chat.id, original.sender_key_id, chat.partnerKeys, original.recipient_key_id);
+        var key = isPending(original) ? await selfKey(chat.id, original.sender_key_id) : await sharedKey(chat.id, original.sender_key_id, chat.partnerKeys, original.recipient_key_id);
         var iv = randomBytes(12);
         var sealed = await subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, encoder.encode(JSON.stringify(payload)));
         return { ciphertext: toBase64(sealed), iv: toBase64(iv), sender_key_id: original.sender_key_id, recipient_key_id: original.recipient_key_id };
@@ -1332,6 +1478,8 @@
             (mine && plain.ok ? '<button type="button" class="rwl-tool" data-tool="edit" title="' + esc(t('Edit')) + '">✎</button>' : '') +
             (mine ? '<button type="button" class="rwl-tool rwl-tool-danger" data-tool="delete" title="' + esc(t('Delete')) + '">🗑</button>' : '') +
         '</div>';
+        var waitingNote = mine && isPending(message) ? '<span class="rwl-msg-pending-note" title="' + esc(t('Delivered automatically as soon as this member activates encrypted messages')) + '">⏳ ' + esc(t('Waiting for delivery')) + '</span>' : '';
+        var bodyState = plain.ok ? '' : (plain.waiting ? ' rwl-msg-waiting' : ' rwl-msg-locked');
         var head = grouped
             ? '<span class="rwl-msg-time-gutter">' + esc(formatTime(message.created_at)) + '</span>'
             : avatarHtml(authorUser, 'rwl-msg-avatar', false, false).replace('class="rwl-msg-avatar"', 'class="rwl-msg-avatar" data-chat-action="profile_author" data-author="' + esc(mine ? 'me' : 'partner') + '"');
@@ -1339,7 +1487,7 @@
             reply + head +
             '<div class="rwl-msg-content">' +
                 (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(nameStyle(authorUser)) + '" data-chat-action="profile_author" data-author="' + (mine ? 'me' : 'partner') + '">' + esc(author) + '</span><span class="rwl-msg-time">' + esc(formatStamp(message.created_at)) + '</span></div>') +
-                '<div class="rwl-msg-body' + (plain.ok ? '' : ' rwl-msg-locked') + '" translate="no">' + body + (message.edited_at ? '<span class="rwl-msg-edited">(' + esc(t('edited')) + ')</span>' : '') + '</div>' +
+                '<div class="rwl-msg-body' + bodyState + '" translate="no">' + body + (message.edited_at ? '<span class="rwl-msg-edited">(' + esc(t('edited')) + ')</span>' : '') + waitingNote + '</div>' +
                 (attachments ? '<div class="rwl-attachments">' + attachments + '</div>' : '') +
                 (reactions ? '<div class="rwl-reactions">' + reactions + '</div>' : '') +
             '</div>' + tools +
@@ -1622,6 +1770,12 @@
                 edited.plain = await decryptMessage(chat, edited);
                 renderMessages(false);
             }
+        } else if (entry.type === 'message_delivered' && forChat) {
+            await applyDelivered(entry.channel_id, entry.message_id, entry);
+        } else if (entry.type === 'partner_keys_ready') {
+            if (forChat) openChat(chat.id);
+            else if (vaultReady()) deliverAllPending();
+            else if (global.RWLSocialNotify && global.RWLSocialNotify.popup) global.RWLSocialNotify.popup({ title: entry.username || t('Messages'), body: t('Activated encrypted messages. Open the chat to deliver your messages.'), icon: '🔐', onOpen: function () { openChat(entry.channel_id); } });
         } else if (entry.type === 'message_delete' && forChat) {
             delete chat.byId[entry.message_id];
             chat.messages = chat.messages.filter(function (message) { return message.id !== entry.message_id; });

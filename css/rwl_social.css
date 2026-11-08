@@ -14,12 +14,56 @@
 }
 
 .dashboard-member-card.rwl-plate-card {
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    padding: 0;
+    display: block;
+    border-radius: 16px;
     cursor: pointer;
     outline: none;
+    background: rgba(20, 0, 38, 0.65);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    contain: layout paint;
+}
+
+.dashboard-member-card.rwl-plate-card .rwl-plate {
+    height: 58px;
+    padding: 6px 14px 6px 8px;
+    border: none;
+    border-radius: inherit;
+    background: transparent;
+}
+
+.dashboard-member-card.rwl-plate-card .rwl-plate-text {
+    flex: 1 1 auto;
+    gap: 2px;
+}
+
+.rwl-plate-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.rwl-plate-line .rwl-plate-name {
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.rwl-plate-line .rwl-plate-badges {
+    flex: 0 0 auto;
+}
+
+.rwl-plate-status {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.78);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rwl-plate-status.online {
+    color: #86efac;
 }
 
 .dashboard-member-card.rwl-plate-card:focus-visible {
@@ -147,15 +191,6 @@
     padding: 1px 6px;
     border-radius: 8px;
     white-space: nowrap;
-}
-
-.rwl-plate-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 0 6px;
-    font-size: 11px;
-    color: var(--text-secondary);
 }
 
 .rwl-social-bell {
@@ -377,6 +412,24 @@
     color: var(--text-tertiary);
 }
 
+.rwl-center-cta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 2px 2px 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(201, 126, 255, 0.45);
+    background: rgba(123, 44, 191, 0.18);
+    font-size: 12px;
+    color: #f3e8ff;
+}
+
+.rwl-center-cta span {
+    flex: 1;
+    min-width: 0;
+}
+
 .rwl-icon-btn {
     width: 32px;
     height: 32px;
@@ -454,10 +507,18 @@
     background: #120320;
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65), 0 0 22px rgba(155, 0, 204, 0.22);
     animation: rwlSocialFadeIn 0.16s ease;
+    pointer-events: none;
 }
 
 .rwl-popout[hidden] {
     display: none;
+}
+
+.rwl-profile-hint {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #d8b4fe;
+    text-align: center;
 }
 
 .rwl-profile-banner {
@@ -467,7 +528,8 @@
     background: linear-gradient(135deg, #3b0057, #9b00cc);
 }
 
-.rwl-profile-banner video {
+.rwl-profile-banner video,
+.rwl-profile-banner .rwl-profile-banner-img {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -671,7 +733,7 @@
     flex-direction: column;
     border-radius: 18px;
     border: 1px solid rgba(155, 0, 204, 0.45);
-    background: rgba(14, 3, 26, 0.98);
+    background: #0e031a;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65), 0 0 26px rgba(155, 0, 204, 0.2);
     animation: rwlSocialFadeIn 0.2s ease;
     overflow: hidden;
@@ -1181,6 +1243,45 @@
     color: var(--text-tertiary);
 }
 
+.rwl-composer-input:disabled {
+    cursor: not-allowed;
+}
+
+.rwl-composer-box.rwl-composer-locked {
+    border-style: dashed;
+    opacity: 0.75;
+}
+
+.rwl-composer-box.rwl-composer-locked .rwl-composer-input::placeholder {
+    color: #fca5a5;
+}
+
+.rwl-msg-pending-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+    font-size: 10px;
+    color: #fcd34d;
+}
+
+.rwl-msg-body.rwl-msg-waiting {
+    color: #d8b4fe;
+    font-style: italic;
+}
+
+html.rwl-launcher-host .rwl-composer {
+    padding-right: 62px;
+}
+
+html.rwl-launcher-host .rwl-pop-stack {
+    bottom: 80px;
+}
+
+body.rwl-chat-open .rwl-pop-stack {
+    right: calc(min(460px, 100vw - 24px) + 24px);
+}
+
 .rwl-composer-hint {
     padding: 4px 6px 0;
     font-size: 10px;
@@ -1513,6 +1614,12 @@ html.rwl-low-fx .rwl-social-bell {
         bottom: 0;
         width: 100vw;
         border-radius: 0;
+    }
+
+    body.rwl-chat-open .rwl-pop-stack {
+        top: 12px;
+        right: 12px;
+        bottom: auto;
     }
 
     .rwl-popout {

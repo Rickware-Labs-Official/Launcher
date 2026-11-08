@@ -438,6 +438,7 @@
     }
 
     function initialize() {
+        if (isLauncher()) document.documentElement.classList.add('rwl-launcher-host');
         observeProductModal();
         installDesktopSettings();
         if (isLauncher() && RWL.getToken()) connect();

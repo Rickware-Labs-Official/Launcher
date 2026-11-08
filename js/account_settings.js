@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadAccountSettings(user);
     setupProfileUpload();
+    setupBannerUpload();
     setupSaveCancel();
     setupPasswordToggles();
 });
@@ -35,6 +36,170 @@ async function loadAccountSettings(user) {
 
     const profileImg = document.getElementById('settingsProfileImage');
     if (!pendingProfilePictureFile) profileImg.src = userProfileImageSrc(user);
+    renderBannerPreview(user);
+}
+
+const BANNER_PATH = '/api/profile_banner/';
+let bannerBusy = false;
+
+function setBannerHint(message, state) {
+    const hint = document.getElementById('bannerHint');
+    const preview = document.getElementById('settingsBannerPreview');
+    if (hint) {
+        hint.textContent = message;
+        hint.classList.toggle('profile-image-error', state === 'error');
+        hint.classList.toggle('profile-image-ready', state === 'ready');
+    }
+    if (preview) preview.classList.toggle('profile-banner-error', state === 'error');
+}
+
+function bannerLimitHint(user) {
+    const limit = Number(user && user.profile_banner_max_mb) || 20;
+    return 'PNG, JPG, GIF, WebP, AVIF, BMP or ICO · animated files work too · max ' + limit + ' MB';
+}
+
+function trustedBannerUrl(url) {
+    const value = String(url || '');
+    return value.indexOf(RWL.apiBase + BANNER_PATH) === 0 && /^[A-Za-z0-9_.\-\/:]+$/.test(value) ? value : '';
+}
+
+function renderBannerPreview(user) {
+    const image = document.getElementById('settingsBannerImage');
+    const plate = document.getElementById('settingsBannerPlate');
+    const remove = document.getElementById('removeBannerBtn');
+    const badge = document.getElementById('settingsBannerBadge');
+    if (!image || !plate) return;
+    const banner = trustedBannerUrl(user && user.profile_banner_url);
+    if (remove) remove.hidden = !banner;
+    if (badge) badge.textContent = banner ? 'Banner' : 'Nameplate';
+    if (!bannerBusy) setBannerHint(bannerLimitHint(user), '');
+    if (banner) {
+        plate.pause();
+        plate.hidden = true;
+        if (image.getAttribute('src') !== banner) image.src = banner;
+        image.hidden = false;
+        return;
+    }
+    image.hidden = true;
+    image.removeAttribute('src');
+    const cosmetics = (user && user.equipped_cosmetics) || {};
+    const source = userNameplateSrc(cosmetics);
+    plate.style.filter = RWL.mediaFilterValue(cosmetics.nameplate_filter);
+    if (plate.getAttribute('data-src') !== source) {
+        plate.setAttribute('data-src', source);
+        plate.src = source;
+    }
+    plate.hidden = false;
+    const playing = plate.play();
+    if (playing && playing.catch) playing.catch(() => {});
+}
+
+function sendBannerFile(token, file) {
+    return new Promise(async (resolve) => {
+        const form = new FormData();
+        form.append('file', file, file.name || 'banner');
+        const request = new XMLHttpRequest();
+        const uploadUrl = apiUrl('/api/profile/banner');
+        request.open('POST', uploadUrl);
+        request.setRequestHeader('Authorization', 'Bearer ' + token);
+        try {
+            const signing = await RWL.signingHeaders('POST', uploadUrl, '', true, token);
+            if (signing) Object.keys(signing).forEach((name) => request.setRequestHeader(name, signing[name]));
+        } catch (error) {}
+        request.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+                const percent = Math.round(event.loaded / event.total * 100);
+                setBannerHint('Uploading... ' + percent + '% (' + formatMegabytes(event.loaded) + ' of ' + formatMegabytes(event.total) + ')', 'ready');
+            }
+        });
+        request.addEventListener('load', () => {
+            let data = {};
+            try { data = JSON.parse(request.responseText || '{}'); } catch (error) { data = {}; }
+            resolve({ status: request.status, data: data });
+        });
+        request.addEventListener('error', () => resolve({ status: 0, data: {} }));
+        request.addEventListener('timeout', () => resolve({ status: 0, data: {} }));
+        request.timeout = 300000;
+        setBannerHint('Uploading... 0%', 'ready');
+        request.send(form);
+    });
+}
+
+function setBannerButtonsDisabled(disabled) {
+    ['uploadBannerBtn', 'removeBannerBtn'].forEach((id) => {
+        const button = document.getElementById(id);
+        if (button) button.disabled = disabled;
+    });
+}
+
+async function uploadBanner(file) {
+    const token = RWL.getToken();
+    if (!token || bannerBusy) return;
+    bannerBusy = true;
+    setBannerButtonsDisabled(true);
+    try {
+        let result = await sendBannerFile(token, file);
+        if (result.status === 401) {
+            const refreshed = await RWL.refreshAccessToken();
+            if (refreshed) result = await sendBannerFile(refreshed, file);
+        }
+        if (result.status === 0) {
+            setBannerHint('The upload failed. Please check your connection and try again.', 'error');
+            showBanner('The upload failed. Please check your connection and try again.', 'error');
+            return;
+        }
+        if (result.status < 200 || result.status >= 300) {
+            const message = RWL.errorDetail(result.data, 'The banner could not be uploaded.');
+            setBannerHint(message, 'error');
+            showBanner(message, 'error');
+            return;
+        }
+        bannerBusy = false;
+        await refreshUserData();
+        setBannerHint('Banner uploaded. It is shown in your extended profile.', 'ready');
+        showBanner('Profile banner updated.', 'success');
+    } catch (error) {
+        setBannerHint('The banner could not be uploaded.', 'error');
+    } finally {
+        bannerBusy = false;
+        setBannerButtonsDisabled(false);
+    }
+}
+
+async function removeBanner() {
+    if (bannerBusy) return;
+    const confirmed = window.RWLDialog && RWLDialog.confirm
+        ? await RWLDialog.confirm({ title: 'Remove Banner', message: 'Remove your profile banner? Your nameplate is shown again.', confirmText: 'Remove', danger: true })
+        : window.confirm('Remove your profile banner? Your nameplate is shown again.');
+    if (!confirmed) return;
+    bannerBusy = true;
+    setBannerButtonsDisabled(true);
+    try {
+        await RWL.apiRequest('/api/profile/banner', { method: 'DELETE' });
+        bannerBusy = false;
+        await refreshUserData();
+        showBanner('Profile banner removed.', 'success');
+    } catch (error) {
+        setBannerHint(error.message || 'The banner could not be removed.', 'error');
+        showBanner(error.message || 'The banner could not be removed.', 'error');
+    } finally {
+        bannerBusy = false;
+        setBannerButtonsDisabled(false);
+    }
+}
+
+function setupBannerUpload() {
+    const uploadButton = document.getElementById('uploadBannerBtn');
+    const removeButton = document.getElementById('removeBannerBtn');
+    const input = document.getElementById('bannerImageInput');
+    if (!uploadButton || !input) return;
+    uploadButton.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+        const file = input.files && input.files[0];
+        input.value = '';
+        if (file) uploadBanner(file);
+    });
+    if (removeButton) removeButton.addEventListener('click', removeBanner);
 }
 
 const PROFILE_PICTURE_LIMIT_MB = 16;

@@ -399,6 +399,71 @@ body {
     font-weight: 600;
 }
 
+.profile-banner-section { display: flex; flex-direction: column; gap: 16px; }
+
+.profile-banner-preview {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 4 / 1;
+    min-height: 110px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border-bright);
+    background: linear-gradient(135deg, #3b0057, #9b00cc);
+    box-shadow: 0 0 24px rgba(155,0,204,0.25);
+}
+
+.profile-banner-preview.profile-banner-error {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.18);
+}
+
+.settings-banner-media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.settings-banner-media[hidden] { display: none; }
+
+.profile-banner-badge {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(13, 9, 20, 0.78);
+    border: 1px solid var(--border-color);
+    color: #e0aaff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.profile-banner-buttons { display: flex; gap: 12px; flex-wrap: wrap; max-width: 640px; }
+
+.btn-danger-soft {
+    color: #ff8a8a;
+    border-color: rgba(244, 67, 54, 0.45);
+    background: rgba(244, 67, 54, 0.08);
+}
+
+.btn-danger-soft:hover {
+    background: rgba(244, 67, 54, 0.18);
+    border-color: rgba(244, 67, 54, 0.7);
+}
+
+.btn-secondary[hidden] { display: none; }
+
+.btn-secondary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
 @media (max-width: 1024px) {
     .settings-sidebar { width: 240px; }
     .settings-content { margin-left: 240px; padding: 32px 36px; }

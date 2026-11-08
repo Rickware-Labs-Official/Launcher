@@ -104,12 +104,20 @@ speed, progress, updates and running sessions. Outside the launcher it explains 
 ## Friends, Messages And Notifications
 
 - `js/rwl_social.js` + `css/rwl_social.css`: dashboard cards in the nameplate format, hover profile popout, extended profile modal, notification center (messages, friend and message requests, friends), Discord style direct messages with end to end encryption (WebCrypto ECDH P-256, HKDF, AES-GCM). Keys only live in memory, the vault is unlocked with the chat passphrase.
+- Dashboard cards are the nameplate itself (the nameplate video fills the whole card, about 58 px high): avatar with decoration and presence, name, badges and the online or last online state. Clicking or pressing Enter on a card always opens the extended profile with Message, Add Friend and Block. Hovering shows a read only preview that never blocks clicks (`pointer-events: none`) and disappears as soon as the pointer leaves the card.
+- The extended profile shows the member's profile banner (static poster on low end devices, data saver mode or reduced motion). Without a banner, or when it fails to load, the nameplate is shown. Banner URLs are only accepted from `/api/profile_banner/` on the API host.
+- Messages to members without a key are sealed with the sender's own key and delivered automatically after the recipient activated encrypted messages (`/api/social/pending`, `/api/social/messages/{id}/deliver`). The composer stays usable; it is only locked with a visible reason for unaccepted incoming requests or declined requests. Drafts survive a conversation reload. The notification center offers **Activate** for members without a key.
+- Inside the launcher (`html.rwl-launcher-host`, set by `launcher_bridge.js`) the composer and the popups keep the bottom right corner free for the floating settings button. Popups move next to an open chat.
 - `js/rwl_social_notify.js` is loaded on every page by `api_client.js`, runs one long poll and shows popups for messages, friend requests and bazaar events.
 - `js/rwl_social_settings.js`: bio, privacy and safety section on `sites/account_settings.html`.
 
+## Profile Banner
+
+`sites/account_settings.html` and `js/account_settings.js`: section **Profile Banner** under the profile picture with a live preview (banner or the equipped nameplate), upload with progress (signed multipart request) and **Remove Banner** with a confirmation dialog. The page does not validate files; format, size (20 MB by default) and dimensions are checked by the backend and errors are shown in red.
+
 ## Lab Bazaar
 
-`sites/bazaar.html`, `js/bazaar.js`, `css/bazaar.css`: browse, buy, bid, trade, sell wizard (fixed price, auction, trade slots), history drawer. Sidebar key `bazaar_tab` in `config/config.json`.
+`sites/bazaar.html`, `js/bazaar.js`, `css/bazaar.css`: browse, buy, bid, trade, sell wizard (fixed price, auction, trade slots), history drawer. Sidebar key `bazaar_tab` in `config/config.json`. The sidebar tab always opens the bazaar. Guests can browse listings and details, every action (buy, bid, trade, sell, history, own listings and bids) leads to the login page, and the backend requires a session for all of them.
 
 ## Inventory
 
