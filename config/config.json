@@ -20,6 +20,8 @@
   "lab_pass_tab_required_permissions":"User",
   "inventory_tab": true,
   "inventory_tab_required_permissions":"User",
+  "bazaar_tab": true,
+  "bazaar_tab_required_permissions":"User",
   "reviews_tab": true,
   "reviews_tab_required_permissions":"User",
   "partner_tab": true,

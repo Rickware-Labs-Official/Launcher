@@ -65,7 +65,7 @@
         },
         {
             id: 'special-items',
-            name: 'Special Items',
+            name: 'Pass Licenses',
             section: 'inventory',
             image: 'special_items_main.webp',
             icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
@@ -117,6 +117,7 @@
         'special-items': 'license_vouchers',
         'coupons': 'reward_coupons'
     };
+    var STAR_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
     var LOCK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c97eff" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
     var CHEST_IMAGE = '../images/assets/lab_pass/rickware-labs_chest.webp';
     var KEEP_STYLE = '--rwl-keep:1;';
@@ -363,7 +364,7 @@
         } else if (catalogKey === 'avatar_decorations') {
             visual = '<img class="inv-item-media inv-item-media-contain"' + filterAttribute + ' alt="" decoding="async" data-src="' + esc(item.thumb_url || item.asset_url || '') + '">';
         } else if (catalogKey === 'launcher_themes') {
-            visual = themePreviewHtml(item) + (item.icon ? '<span class="inv-theme-icon" aria-hidden="true" translate="no">' + esc(item.icon) + '</span>' : '');
+            visual = themePreviewHtml(item) + '<span class="inv-theme-icon" aria-hidden="true">' + (global.RWLIcons ? global.RWLIcons.themeIcon(item, 22) : '') + '</span>';
         } else if (catalogKey === 'nameplate_outlines') {
             visual = '<div class="inv-frame-sample inv-frame-plate' + RWL.frameClasses(item) + '" style="' + esc(RWL.frameStyle(frameItem(item, settings))) + '"><span translate="no">' + esc(item.name) + '</span></div>';
         } else if (catalogKey === 'content_borders') {
@@ -380,7 +381,44 @@
             (equipped ? '<div class="inv-item-badge">Equipped</div>' : '') +
             (fresh ? '<div class="inv-item-new">NEW</div>' : '') +
             (owned ? '' : '<div class="inv-item-lock">' + LOCK_SVG + '</div>') +
+            (item.is_default ? '' : '<button type="button" class="inv-item-fav' + (isFavourite(catalogKey, item.item_id) ? ' inv-item-fav-on' : '') + '" data-fav-item="' + esc(item.item_id) + '" title="' + (isFavourite(catalogKey, item.item_id) ? 'Remove from favourites' : 'Add to favourites') + '" aria-label="Favourite">' + STAR_SVG + '</button>') +
         '</div>';
+    }
+
+    function favouriteSet(catalogKey) {
+        var list = ((state.inventory && state.inventory.favourites) || {})[catalogKey] || [];
+        var set = {};
+        list.forEach(function(itemId) { set[itemId] = true; });
+        return set;
+    }
+
+    function isFavourite(catalogKey, itemId) {
+        return !!favouriteSet(catalogKey)[itemId];
+    }
+
+    async function toggleFavourite(itemId) {
+        var cosmetic = COSMETIC_CATEGORIES[state.activeCategory];
+        if (!cosmetic || !state.inventory) return;
+        var favourite = !isFavourite(cosmetic.catalog, itemId);
+        try {
+            var result = await RWL.apiRequest('/api/inventory/favourites', { method: 'POST', body: { category: cosmetic.catalog, item_id: itemId, favourite: favourite } });
+            state.inventory.favourites = result.favourites || {};
+            var grids = cosmeticGrids(state.activeCategory);
+            activeGrids.forEach(function(grid) {
+                if (grid.panelName === 'favourite') {
+                    grid.setItems(grids.favouriteItems);
+                    var empty = grid.viewport.closest('.inv-tab-panel').querySelector('.inv-fav-empty');
+                    if (empty) empty.hidden = grids.favouriteItems.length > 0;
+                } else {
+                    grid.refresh();
+                }
+            });
+            var favTab = document.querySelector('.inv-modal-tab[data-tab="favourite"] .inv-tab-count');
+            if (favTab) favTab.textContent = String(grids.favouriteItems.length);
+            toast(favourite ? 'Added to your favourites.' : 'Removed from your favourites.', 'success');
+        } catch (error) {
+            toast(error.message || 'The favourites could not be saved.', 'error');
+        }
     }
 
     function itemSettings(catalogKey, itemId) {
@@ -434,7 +472,9 @@
         var isThemes = cosmetic.catalog === 'launcher_themes';
         var leading = isThemes ? [DEFAULT_THEME] : [];
         var emptyText = catalog.items.length ? 'No ' + cosmetic.label.toLowerCase() + 's yet. Open Mystery Chests or progress the Lab-Pass to unlock them.' : 'No ' + cosmetic.label.toLowerCase() + 's are available yet.';
+        var favourites = favouriteSet(cosmetic.catalog);
         return {
+            favouriteItems: catalog.items.filter(function(item) { return favourites[item.item_id]; }),
             ownedItems: withDefaultAfterSpecials(leading, ownedItems),
             indexItems: withDefaultAfterSpecials(leading, catalog.items),
             emptyOwned: ownedItems.length || leading.length ? '' : emptyText,
@@ -465,13 +505,15 @@
         this.cosmetic = cosmetic;
         this.layout = GRID_LAYOUTS[cosmetic.catalog] || { minWidth: 118, height: 124 };
         this.columns = 1;
-        this.renderedStart = -1;
-        this.renderedEnd = -1;
+        this.columnWidth = 0;
+        this.slotHeight = 0;
+        this.rowHeight = 0;
+        this.nodes = {};
         this.frame = null;
         this.spacer = document.createElement('div');
         this.spacer.className = 'inv-virtual-spacer';
         this.layer = document.createElement('div');
-        this.layer.className = 'inv-slots-grid inv-virtual-layer';
+        this.layer.className = 'inv-slots-grid inv-virtual-layer inv-virtual-keyed';
         this.spacer.appendChild(this.layer);
         viewport.innerHTML = '';
         viewport.appendChild(this.spacer);
@@ -479,68 +521,110 @@
         this.onScroll = function() { self.schedule(); };
         viewport.addEventListener('scroll', this.onScroll, { passive: true });
         if (global.ResizeObserver) {
-            this.resizeObserver = new ResizeObserver(function() { self.measure(); self.schedule(true); });
+            this.resizeObserver = new ResizeObserver(function() { if (self.measure()) self.reposition(); self.schedule(); });
             this.resizeObserver.observe(viewport);
         }
         this.measure();
-        this.render(true);
+        this.render();
     }
 
     VirtualGrid.prototype.measure = function() {
         var width = this.viewport.clientWidth - 16;
-        if (width <= 0) return;
-        this.columns = Math.max(1, Math.floor((width + GRID_GAP) / (this.layout.minWidth + GRID_GAP)));
-        var columnWidth = (width - GRID_GAP * (this.columns - 1)) / this.columns;
+        if (width <= 0) return false;
+        var columns = Math.max(1, Math.floor((width + GRID_GAP) / (this.layout.minWidth + GRID_GAP)));
+        var columnWidth = (width - GRID_GAP * (columns - 1)) / columns;
         var slotHeight = this.layout.mediaRatio ? Math.ceil(columnWidth / this.layout.mediaRatio) + this.layout.chromeHeight : this.layout.height;
+        var changed = columns !== this.columns || Math.abs(columnWidth - this.columnWidth) > 0.5 || slotHeight !== this.slotHeight;
+        this.columns = columns;
+        this.columnWidth = columnWidth;
+        this.slotHeight = slotHeight;
         this.rowHeight = slotHeight + GRID_GAP;
-        this.layer.style.gridTemplateColumns = 'repeat(' + this.columns + ', minmax(0, 1fr))';
-        this.layer.style.gridAutoRows = slotHeight + 'px';
         var rows = Math.ceil(this.items.length / this.columns);
         this.spacer.style.height = Math.max(0, rows * this.rowHeight - GRID_GAP) + 'px';
+        return changed;
+    };
+
+    VirtualGrid.prototype.place = function(node, index) {
+        var row = Math.floor(index / this.columns);
+        var column = index % this.columns;
+        node.style.position = 'absolute';
+        node.style.top = (row * this.rowHeight) + 'px';
+        node.style.left = (column * (this.columnWidth + GRID_GAP)) + 'px';
+        node.style.width = this.columnWidth + 'px';
+        node.style.height = this.slotHeight + 'px';
+    };
+
+    VirtualGrid.prototype.reposition = function() {
+        var self = this;
+        Object.keys(this.nodes).forEach(function(key) { self.place(self.nodes[key], parseInt(key, 10)); });
     };
 
     VirtualGrid.prototype.schedule = function(force) {
         var self = this;
-        if (force) this.renderedStart = -1;
+        if (force) this.clear();
         if (this.frame) return;
         this.frame = global.requestAnimationFrame(function() {
             self.frame = null;
-            self.render(false);
+            self.render();
         });
     };
 
-    VirtualGrid.prototype.render = function(force) {
+    VirtualGrid.prototype.clear = function() {
+        releaseMedia(this.layer);
+        this.layer.innerHTML = '';
+        this.nodes = {};
+    };
+
+    VirtualGrid.prototype.render = function() {
         if (!this.viewport.offsetParent) return;
-        if (force || !this.rowHeight) this.measure();
+        if (!this.rowHeight && !this.measure()) return;
         if (!this.rowHeight) return;
         var firstRow = Math.max(0, Math.floor(this.viewport.scrollTop / this.rowHeight) - GRID_BUFFER_ROWS);
         var visibleRows = Math.ceil(this.viewport.clientHeight / this.rowHeight) + GRID_BUFFER_ROWS * 2 + 1;
         var start = firstRow * this.columns;
         var end = Math.min(this.items.length, start + visibleRows * this.columns);
-        if (!force && start === this.renderedStart && end === this.renderedEnd) return;
-        this.renderedStart = start;
-        this.renderedEnd = end;
-        this.layer.style.transform = 'translateY(' + (firstRow * this.rowHeight) + 'px)';
-        var html = '';
-        var cache = { owned: ownedSet(this.cosmetic.catalog), fresh: newSet(this.cosmetic.catalog) };
-        for (var index = start; index < end; index++) html += slotForItem(this.cosmetic, this.items[index], cache);
-        releaseMedia(this.layer);
-        this.layer.innerHTML = html;
-        var slots = this.layer.querySelectorAll('.inv-slot');
-        for (var position = 0; position < slots.length; position++) activateSlotMedia(slots[position]);
+        var self = this;
+        Object.keys(this.nodes).forEach(function(key) {
+            var index = parseInt(key, 10);
+            if (index < start || index >= end) {
+                releaseMedia(self.nodes[key]);
+                self.nodes[key].remove();
+                delete self.nodes[key];
+            }
+        });
+        var cache = null;
+        var fragment = document.createDocumentFragment();
+        var created = [];
+        for (var index = start; index < end; index++) {
+            if (this.nodes[index]) continue;
+            if (!cache) cache = { owned: ownedSet(this.cosmetic.catalog), fresh: newSet(this.cosmetic.catalog) };
+            var holder = document.createElement('div');
+            holder.innerHTML = slotForItem(this.cosmetic, this.items[index], cache);
+            var node = holder.firstElementChild;
+            if (!node) continue;
+            this.place(node, index);
+            this.nodes[index] = node;
+            fragment.appendChild(node);
+            created.push(node);
+        }
+        if (created.length) {
+            this.layer.appendChild(fragment);
+            for (var position = 0; position < created.length; position++) activateSlotMedia(created[position]);
+        }
     };
 
     VirtualGrid.prototype.setItems = function(items) {
         this.items = items;
         this.viewport.scrollTop = 0;
-        this.rowHeight = 0;
-        this.renderedStart = -1;
+        this.clear();
         this.measure();
-        this.render(true);
+        this.render();
     };
 
     VirtualGrid.prototype.refresh = function() {
-        this.render(true);
+        this.clear();
+        this.measure();
+        this.render();
     };
 
     VirtualGrid.prototype.destroy = function() {
@@ -607,7 +691,7 @@
         html += '<div class="inv-open-all-title">' + esc(formatNumber(result.opened)) + ' chests opened' + (result.lab_coins_awarded ? ' · +' + esc(formatNumber(result.lab_coins_awarded)) + ' LC' : '') + '</div>';
         html += '<div class="inv-open-all-grid">';
         (result.rewards || []).forEach(function(reward) {
-            var note = reward.duplicate ? (reward.compensation_lab_coins ? 'Duplicate · +' + reward.compensation_lab_coins + ' LC' : 'Duplicate · already owned') : (reward.voucher ? 'Voucher in Special Items' : 'Added to your locker');
+            var note = reward.duplicate ? (reward.compensation_lab_coins ? 'Duplicate · +' + reward.compensation_lab_coins + ' LC' : 'Duplicate · already owned') : (reward.voucher ? 'Voucher in Pass Licenses' : 'Added to your locker');
             html += '<div class="inv-open-all-entry" style="' + KEEP_STYLE + 'border-color:' + esc(RWL.rarityColor(reward.rarity)) + ';">';
             html += '<strong translate="no">' + esc(reward.name || 'Item') + '</strong>';
             html += '<span style="' + KEEP_STYLE + 'color:' + esc(RWL.rarityColor(reward.rarity)) + ';">' + esc(reward.rarity || '') + '</span>';
@@ -648,7 +732,7 @@
             });
             html += '</div>';
         });
-        html += '<div class="inv-drop-rates-note">Every roll happens on our server. Each chest first spins the category and then the item inside that category. Category chance × rarity chance = overall chance. Duplicates are converted into Lab Coins. License drops arrive as vouchers in Special Items and can be redeemed for any paid product. New accounts receive 1 chest, Unlock All accounts receive 10 chests once, more chests are earned through the Lab-Pass.</div>';
+        html += '<div class="inv-drop-rates-note">Every roll happens on our server. Each chest first spins the category and then the item inside that category. Category chance × rarity chance = overall chance. Duplicates are converted into Lab Coins. License drops arrive as vouchers in Pass Licenses and can be redeemed for any paid product. New accounts receive 1 chest, Unlock All accounts receive 10 chests once, more chests are earned through the Lab-Pass.</div>';
         html += '</div>';
         return html;
     }
@@ -725,11 +809,29 @@
         }
     }
 
+    function retryMedia(media, source) {
+        var attempts = parseInt(media.getAttribute('data-rwl-attempt') || '0', 10);
+        if (attempts >= 3 || !media.isConnected) return;
+        media.setAttribute('data-rwl-attempt', String(attempts + 1));
+        setTimeout(function() {
+            if (!media.isConnected) return;
+            var separator = source.indexOf('?') >= 0 ? '&' : '?';
+            media.src = source + separator + 'rwl_retry=' + (attempts + 1) + '_' + Date.now();
+            if (media.tagName === 'VIDEO') {
+                var again = media.play();
+                if (again && again.catch) again.catch(function() {});
+            }
+        }, 600 * Math.pow(2, attempts));
+    }
+
     function activateSlotMedia(slot) {
         var media = slot.querySelector('[data-src]');
         if (!media || media.getAttribute('src')) return;
         var source = media.getAttribute('data-src');
         if (!source) return;
+        media.addEventListener('error', function() { retryMedia(media, source); });
+        media.addEventListener('loadeddata', function() { media.classList.add('inv-media-ready'); });
+        media.addEventListener('load', function() { media.classList.add('inv-media-ready'); });
         if (media.tagName === 'VIDEO') {
             media.muted = true;
             media.preload = 'metadata';
@@ -812,13 +914,16 @@
         if (subtitleEl) subtitleEl.textContent = subtitle;
     }
 
-    function tabbedBodyHtml(ownedHtml, indexHtml, ownedLabel, indexLabel) {
+    function tabbedBodyHtml(ownedHtml, indexHtml, ownedLabel, indexLabel, favouriteCount) {
+        var withFavourites = typeof favouriteCount === 'number';
         var bodyHtml = '<div class="inv-modal-tabs">';
         bodyHtml += '<button type="button" class="inv-modal-tab inv-modal-tab-active" data-tab="owned">' + esc(ownedLabel || 'Owned') + '</button>';
+        if (withFavourites) bodyHtml += '<button type="button" class="inv-modal-tab" data-tab="favourite" title="Your favourite items from Owned and Index">Favourite <span class="inv-tab-count">' + favouriteCount + '</span></button>';
         bodyHtml += '<button type="button" class="inv-modal-tab" data-tab="index">' + esc(indexLabel || 'Index') + '</button>';
         bodyHtml += '</div>';
         bodyHtml += '<div class="inv-modal-tab-panels">';
         bodyHtml += '<div class="inv-tab-panel inv-tab-panel-active" data-tab-panel="owned">' + searchRowHtml() + '<div class="inv-slots-viewport"><div class="inv-slots-grid">' + ownedHtml + '</div></div></div>';
+        if (withFavourites) bodyHtml += '<div class="inv-tab-panel" data-tab-panel="favourite">' + searchRowHtml() + '<div class="inv-fav-empty"' + (favouriteCount ? ' hidden' : '') + '>Press the star on any item in Owned or Index to add it to your favourites.</div><div class="inv-slots-viewport"><div class="inv-slots-grid"></div></div></div>';
         bodyHtml += '<div class="inv-tab-panel" data-tab-panel="index">' + searchRowHtml() + '<div class="inv-slots-viewport"><div class="inv-slots-grid">' + indexHtml + '</div></div></div>';
         bodyHtml += '</div>';
         return bodyHtml;
@@ -937,11 +1042,12 @@
             var grids = cosmeticGrids(categoryId);
             var everything = state.inventory && state.inventory.owns_all_cosmetics;
             modalHeader(cat, everything ? 'All ' + formatNumber(grids.total) + ' items unlocked' : formatNumber(grids.ownedCount) + ' of ' + formatNumber(grids.total) + ' items owned');
-            bodyEl.innerHTML = tabbedBodyHtml('', '') + '<div class="inv-config-bar" id="invConfigBar" hidden></div>';
+            bodyEl.innerHTML = tabbedBodyHtml('', '', null, null, grids.favouriteItems.length) + '<div class="inv-config-bar" id="invConfigBar" hidden></div>';
             setupModalTabEvents(bodyEl);
             mountVirtualGrid('owned', grids.ownedItems, cosmetic, grids.emptyOwned);
+            mountVirtualGrid('favourite', grids.favouriteItems, cosmetic, '');
             mountVirtualGrid('index', grids.indexItems, cosmetic, grids.emptyIndex);
-            setupSearch(bodyEl, { owned: grids.ownedItems, index: grids.indexItems });
+            setupSearch(bodyEl, { owned: grids.ownedItems, favourite: grids.favouriteItems, index: grids.indexItems });
             restoreTab(bodyEl, previousTab);
             activeGrids.forEach(function(grid) { grid.schedule(true); });
             return;
@@ -964,8 +1070,8 @@
             modalHeader(cat, formatNumber(coupons.filter(function(entry) { return entry.active; }).length) + ' active coupons');
             bodyEl.innerHTML = tabbedBodyHtml(couponSlotsHtml(true), couponSlotsHtml(false), 'Active', 'All');
         } else {
-            modalHeader(cat, formatNumber(activeVouchers().length) + ' redeemable items');
-            bodyEl.innerHTML = tabbedBodyHtml(voucherSlotsHtml(true), voucherSlotsHtml(false), 'Available', 'All');
+            modalHeader(cat, formatNumber(activeVouchers().length) + ' redeemable Pass Licenses');
+            bodyEl.innerHTML = '<div class="inv-modal-tab-panels"><div class="inv-tab-panel inv-tab-panel-active" data-tab-panel="owned">' + searchRowHtml() + '<div class="inv-slots-viewport"><div class="inv-slots-grid">' + (voucherSlotsHtml(true) || emptyNote('You have no Pass Licenses yet. License rewards from the Lab-Pass and Mystery Chests appear here.')) + '</div></div></div></div>';
         }
         setupModalTabEvents(bodyEl);
         setupSearch(bodyEl, null);
@@ -1024,8 +1130,96 @@
 
     function configColorsHtml(item, settings) {
         return '<div class="inv-config-colors">' + effectiveColors(item, settings).map(function(color, index) {
-            return '<label class="inv-config-color" title="Choose this color of the effect"><span>Color ' + (index + 1) + '</span><input type="color" data-config-color value="' + esc(RWL.sanitizeHex(color, '#9d4edd').toLowerCase()) + '"></label>';
+            var hex = RWL.sanitizeHex(color, '#9d4edd').toUpperCase();
+            return '<div class="inv-config-color" title="Choose this color of the effect"><span>Color ' + (index + 1) + '</span>' +
+                '<button type="button" class="inv-color-swatch" data-color-trigger style="' + KEEP_STYLE + 'background:' + esc(hex) + ';" aria-label="Pick a color"></button>' +
+                '<input type="text" class="inv-color-hex" data-config-color maxlength="7" spellcheck="false" autocomplete="off" value="' + esc(hex) + '"></div>';
         }).join('') + '</div>';
+    }
+
+    function hexToHsv(hex) {
+        var value = RWL.sanitizeHex(hex, '#9D4EDD').slice(1);
+        var red = parseInt(value.slice(0, 2), 16) / 255;
+        var green = parseInt(value.slice(2, 4), 16) / 255;
+        var blue = parseInt(value.slice(4, 6), 16) / 255;
+        var max = Math.max(red, green, blue);
+        var min = Math.min(red, green, blue);
+        var delta = max - min;
+        var hue = 0;
+        if (delta) {
+            if (max === red) hue = ((green - blue) / delta) % 6;
+            else if (max === green) hue = (blue - red) / delta + 2;
+            else hue = (red - green) / delta + 4;
+            hue = (hue * 60 + 360) % 360;
+        }
+        return { h: hue, s: max ? delta / max : 0, v: max };
+    }
+
+    function hsvToHex(hue, saturation, value) {
+        var chroma = value * saturation;
+        var section = (hue / 60) % 6;
+        var second = chroma * (1 - Math.abs(section % 2 - 1));
+        var parts = section < 1 ? [chroma, second, 0] : section < 2 ? [second, chroma, 0] : section < 3 ? [0, chroma, second] : section < 4 ? [0, second, chroma] : section < 5 ? [second, 0, chroma] : [chroma, 0, second];
+        var offset = value - chroma;
+        return '#' + parts.map(function(part) { return ('0' + Math.round((part + offset) * 255).toString(16)).slice(-2); }).join('').toUpperCase();
+    }
+
+    function openColorPicker(bar, holder) {
+        var existing = bar.querySelector('.inv-color-pop');
+        if (existing) existing.remove();
+        var input = holder.querySelector('[data-config-color]');
+        var swatch = holder.querySelector('[data-color-trigger]');
+        var current = hexToHsv(input.value);
+        var pop = document.createElement('div');
+        pop.className = 'inv-color-pop';
+        pop.innerHTML = '<div class="inv-color-sv"><div class="inv-color-sv-white"></div><div class="inv-color-sv-black"></div><span class="inv-color-knob"></span></div>' +
+            '<input type="range" class="inv-color-hue" min="0" max="359" step="1" aria-label="Hue">' +
+            '<div class="inv-color-presets">' + ['#9D4EDD', '#E0AAFF', '#7B2CBF', '#FF4D6D', '#FFB703', '#06D6A0', '#4CC9F0', '#FFFFFF'].map(function(color) { return '<button type="button" data-color-preset="' + color + '" style="' + KEEP_STYLE + 'background:' + color + ';" title="' + color + '"></button>'; }).join('') + '</div>';
+        holder.appendChild(pop);
+        var area = pop.querySelector('.inv-color-sv');
+        var knob = pop.querySelector('.inv-color-knob');
+        var hue = pop.querySelector('.inv-color-hue');
+        var apply = function(fromInput) {
+            var hex = hsvToHex(current.h, current.s, current.v);
+            area.style.backgroundColor = hsvToHex(current.h, 1, 1);
+            knob.style.left = (current.s * 100) + '%';
+            knob.style.top = ((1 - current.v) * 100) + '%';
+            hue.value = String(Math.round(current.h));
+            if (!fromInput) {
+                input.value = hex;
+                input.classList.remove('inv-color-invalid');
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            swatch.style.background = input.value;
+        };
+        var pick = function(event) {
+            var rect = area.getBoundingClientRect();
+            current.s = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+            current.v = Math.max(0, Math.min(1, 1 - (event.clientY - rect.top) / rect.height));
+            apply(false);
+        };
+        area.addEventListener('pointerdown', function(event) {
+            area.setPointerCapture(event.pointerId);
+            pick(event);
+            var move = function(moveEvent) { pick(moveEvent); };
+            var up = function() { area.removeEventListener('pointermove', move); area.removeEventListener('pointerup', up); };
+            area.addEventListener('pointermove', move);
+            area.addEventListener('pointerup', up);
+        });
+        hue.addEventListener('input', function() { current.h = parseInt(hue.value, 10) || 0; apply(false); });
+        pop.addEventListener('click', function(event) {
+            var preset = event.target.closest('[data-color-preset]');
+            if (!preset) return;
+            current = hexToHsv(preset.getAttribute('data-color-preset'));
+            apply(false);
+        });
+        apply(true);
+        var close = function(event) {
+            if (pop.contains(event.target) || holder.contains(event.target)) return;
+            pop.remove();
+            document.removeEventListener('pointerdown', close, true);
+        };
+        document.addEventListener('pointerdown', close, true);
     }
 
     function configFilterHtml(settings) {
@@ -1095,8 +1289,23 @@
             bar.querySelector('#invConfigSpeedValue').textContent = parseFloat(speedInput.value).toFixed(2) + 'x';
             updateConfigPreview(bar, cosmetic, item);
         });
+        Array.prototype.forEach.call(bar.querySelectorAll('[data-color-trigger]'), function(trigger) {
+            trigger.addEventListener('click', function() { openColorPicker(bar, trigger.closest('.inv-config-color')); });
+        });
+        Array.prototype.forEach.call(bar.querySelectorAll('[data-config-color]'), function(input) {
+            input.addEventListener('change', function() {
+                var valid = /^#[0-9a-fA-F]{6}$/.test(input.value.trim());
+                input.classList.toggle('inv-color-invalid', !valid);
+                if (valid) {
+                    input.value = input.value.trim().toUpperCase();
+                    var swatch = input.parentNode.querySelector('[data-color-trigger]');
+                    if (swatch) swatch.style.background = input.value;
+                }
+            });
+        });
         Array.prototype.forEach.call(bar.querySelectorAll('[data-config-color], [data-config-filter]'), function(input) {
             input.addEventListener('input', function() {
+                if (input.hasAttribute('data-config-color') && !/^#[0-9a-fA-F]{6}$/.test(input.value.trim())) return;
                 var key = input.getAttribute('data-config-filter');
                 if (key) bar.querySelector('[data-config-filter-value="' + key + '"]').textContent = input.value + input.getAttribute('data-config-unit');
                 updateConfigPreview(bar, cosmetic, item);
@@ -1200,6 +1409,27 @@
         postThemePreview(item.is_default ? null : item);
     }
 
+    function showThemeMiniPreview(slot, item) {
+        var box = hoverPreviewBox();
+        if (themeFrame && themeFrame.parentNode) themeFrame.parentNode.removeChild(themeFrame);
+        themeFrameReady = false;
+        themeFrame = null;
+        var shift = item.is_default ? 0 : ((parseInt(item.hue, 10) || 285) - 285);
+        var saturation = item.is_default ? 100 : Math.max(20, Math.min(200, parseInt(item.saturation, 10) || 100));
+        var lightness = item.is_default ? 100 : Math.max(70, Math.min(130, 100 + (parseInt(item.lightness, 10) || 0)));
+        var filter = 'hue-rotate(' + shift + 'deg) saturate(' + saturation + '%) brightness(' + lightness + '%)';
+        var cards = '';
+        for (var index = 0; index < 6; index++) cards += '<div class="inv-mini-card"><span></span><i></i><b></b></div>';
+        box.innerHTML = '<div class="inv-mini-home" style="' + KEEP_STYLE + 'filter:' + filter + ';">' +
+            '<div class="inv-mini-sidebar"><span class="inv-mini-logo"></span><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
+            '<div class="inv-mini-main"><div class="inv-mini-top"><span class="inv-mini-search"></span><span class="inv-mini-tab"></span><span class="inv-mini-tab"></span><span class="inv-mini-plate"></span></div>' +
+            '<div class="inv-mini-cats"><span></span><span></span><span></span><span></span></div>' +
+            '<div class="inv-mini-grid">' + cards + '</div></div></div>' +
+            '<div class="inv-hover-caption" translate="no">' + esc(item.name) + '</div>';
+        box.hidden = false;
+        positionPreview(slot, 384, 246);
+    }
+
     function profileStripHtml(cosmetics) {
         var account = (state.inventory && state.inventory.account_preview) || {};
         var username = account.username || 'Username';
@@ -1285,7 +1515,8 @@
                 var item = itemId === DEFAULT_THEME_ID ? DEFAULT_THEME : (catalog && catalog.byId[itemId]);
                 if (!item || !slot.isConnected) return;
                 if (cosmetic.catalog === 'launcher_themes') {
-                    if (!document.documentElement.classList.contains('rwl-low-fx')) showThemePreview(slot, item);
+                    if (document.documentElement.classList.contains('rwl-low-fx')) showThemeMiniPreview(slot, item);
+                    else showThemePreview(slot, item);
                 } else {
                     showProfilePreview(slot, cosmetic.catalog, item);
                 }
@@ -1398,6 +1629,12 @@
         var bodyEl = document.getElementById('invModalBody');
         if (!bodyEl) return;
         bodyEl.addEventListener('click', function(e) {
+            var favouriteButton = e.target.closest('[data-fav-item]');
+            if (favouriteButton) {
+                e.stopPropagation();
+                toggleFavourite(favouriteButton.getAttribute('data-fav-item'));
+                return;
+            }
             var configButton = e.target.closest('[data-config-item]');
             if (configButton) {
                 e.stopPropagation();

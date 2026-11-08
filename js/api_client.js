@@ -280,6 +280,7 @@
         var outgoing = init;
         if (token) outgoing = await signedInit(input, init, token);
         else outgoing = await withTurnstile(url, init);
+        outgoing = await withDeviceFingerprint(input, outgoing);
         var response = await nativeFetch(input, outgoing);
         noteServerTime(response);
         announceSystemState(response, url);
@@ -294,6 +295,42 @@
         var retryInit = Object.assign({}, init || {}, { headers: headers });
         return nativeFetch(url, await signedInit(url, retryInit, newToken));
     };
+
+    var fingerprintPromise = null;
+    var deviceHeaderEnabled = false;
+
+    function fingerprintSource() {
+        var parts = [];
+        try {
+            var screenInfo = global.screen || {};
+            parts.push(navigator.userAgent || '', navigator.platform || '', String(navigator.hardwareConcurrency || ''), String(navigator.deviceMemory || ''), String(navigator.maxTouchPoints || 0));
+            parts.push(String(screenInfo.width || 0) + 'x' + String(screenInfo.height || 0) + 'x' + String(screenInfo.colorDepth || 0), String(global.devicePixelRatio || 1));
+            parts.push((Intl.DateTimeFormat().resolvedOptions().timeZone || ''), (navigator.languages || []).join(','));
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
+            if (context) {
+                var debugInfo = context.getExtension('WEBGL_debug_renderer_info');
+                parts.push(debugInfo ? String(context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '') : String(context.getParameter(context.RENDERER) || ''));
+            }
+        } catch (error) {}
+        return parts.join('|');
+    }
+
+    function deviceFingerprint() {
+        if (!fingerprintPromise) {
+            fingerprintPromise = (global.crypto && global.crypto.subtle && encoder ? sha256Hex(fingerprintSource()) : Promise.resolve('')).catch(function () { return ''; });
+        }
+        return fingerprintPromise;
+    }
+
+    async function withDeviceFingerprint(input, init) {
+        if (!deviceHeaderEnabled) return init;
+        var fingerprint = await deviceFingerprint();
+        if (!fingerprint) return init;
+        var headers = new Headers((init && init.headers) || (input && input.headers) || undefined);
+        headers.set('X-RWL-Device', fingerprint);
+        return Object.assign({}, init || {}, { headers: headers });
+    }
 
     function authHeaders(extra) {
         var headers = Object.assign({ 'Content-Type': 'application/json' }, extra || {});
@@ -554,6 +591,8 @@
 
     loadCompanion('rwl_guard.js');
     loadCompanion('rwl_upgrade.js');
+    loadCompanion('rwl_behavior.js');
+    loadCompanion('rwl_social_notify.js');
 
     global.RWL = {
         apiBase: RWL_API_BASE,
@@ -581,7 +620,9 @@
         frameStyle: frameStyle,
         signingHeaders: signingHeaders,
         ensureCosmeticStyles: ensureCosmeticStyles,
-        trackEvent: trackEvent
+        trackEvent: trackEvent,
+        deviceFingerprint: deviceFingerprint,
+        enableDeviceHeader: function () { deviceHeaderEnabled = true; }
     };
     global.apiUrl = apiUrl;
 })(window);

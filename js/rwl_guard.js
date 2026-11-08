@@ -334,7 +334,9 @@
                 return turnstile && turnstile.enabled && turnstile[action] ? turnstileToken() : '';
             });
         },
-        recheck: recheck
+        recheck: recheck,
+        config: loadConfig,
+        showOverlay: showOverlay
     };
 
     function init() {

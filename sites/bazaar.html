@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rickware - Labs© - Lab Bazaar</title>
+    <link rel="preconnect" href="https://rickware-labs-api.apps.bot-hosting.cloud" crossorigin>
+    <link rel="stylesheet" href="../css/rwl_frames.css">
+    <link rel="stylesheet" href="../css/rwl_social.css">
+    <link rel="stylesheet" href="../css/bazaar.css">
+    <link rel="icon" type="image/webp" href="../images/main/logo.webp">
+    <script src="../js/rwl_boot.js" data-i18n-extra="community"></script>
+</head>
+<body>
+
+    <a href="../index.html" class="bz-back-btn" aria-label="Back to launcher" title="Back to Store">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
+    </a>
+
+    <div class="bz-page">
+        <header class="bz-header bz-card">
+            <div class="bz-header-left">
+                <div class="bz-header-icon">
+                    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="url(#bzHeaderGrad)" stroke-width="1.6">
+                        <defs><linearGradient id="bzHeaderGrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24"><stop offset="0%" stop-color="#c97eff"/><stop offset="100%" stop-color="#6a00b8"/></linearGradient></defs>
+                        <path d="M3 9l1.5-5h15L21 9"></path>
+                        <path d="M3 9h18v1.5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"></path>
+                        <path d="M5 13v8h14v-8"></path>
+                        <path d="M10 21v-5h4v5"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="bz-title">Lab Bazaar</h1>
+                    <div class="bz-subtitle">Sell, auction and trade your inventory items with the community</div>
+                </div>
+            </div>
+            <div class="bz-header-right">
+                <div class="bz-stat" title="Your Lab Coins"><span class="bz-stat-value" id="bzBalance">-</span><span class="bz-stat-label">Lab Coins</span></div>
+                <div class="bz-stat" title="Active listings on the bazaar"><span class="bz-stat-value" id="bzTotal">0</span><span class="bz-stat-label">Listings</span></div>
+                <button type="button" class="bz-history-btn" id="bzHistoryBtn" title="Your sales, purchases, bids and trades">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                    <span>History</span>
+                    <span class="rwl-social-count" id="bzHistoryCount" hidden>0</span>
+                </button>
+                <button type="button" class="bz-btn bz-btn-primary" id="bzSellBtn" title="List one of your items for sale, auction or trade">Sell or Trade</button>
+            </div>
+        </header>
+
+        <nav class="bz-tabs bz-card" id="bzTabs">
+            <button type="button" class="bz-tab active" data-tab="all" title="Every listing">All</button>
+            <button type="button" class="bz-tab" data-tab="fixed" title="Items with a fixed price">Buy Now</button>
+            <button type="button" class="bz-tab" data-tab="auction" title="Running auctions">Auctions</button>
+            <button type="button" class="bz-tab" data-tab="trade" title="Items offered for a trade">Trades</button>
+            <button type="button" class="bz-tab" data-tab="mine" title="Your own listings">My Listings</button>
+            <button type="button" class="bz-tab" data-tab="bids" title="Auctions you bid on">My Bids</button>
+        </nav>
+
+        <div class="bz-filters bz-card" id="bzFilters">
+            <div class="bz-search">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="search" id="bzSearch" maxlength="60" placeholder="Search items" autocomplete="off" spellcheck="false">
+            </div>
+            <select id="bzCategory" class="rwl-select" title="Filter by category">
+                <option value="">All Categories</option>
+                <option value="launcher_themes">Themes</option>
+                <option value="avatar_decorations">Avatar Decos</option>
+                <option value="name_colors">Name Colors</option>
+                <option value="nameplates">Nameplates</option>
+                <option value="nameplate_outlines">Nameplate Outlines</option>
+                <option value="content_borders">Content Borders</option>
+            </select>
+            <select id="bzCurrency" class="rwl-select" title="Filter by currency">
+                <option value="">Any Currency</option>
+                <option value="lc">Lab Coins</option>
+                <option value="xp">XP</option>
+            </select>
+            <select id="bzSort" class="rwl-select" title="Sort the listings">
+                <option value="new">Newest</option>
+                <option value="ending">Ending Soon</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+            </select>
+        </div>
+
+        <div class="bz-grid" id="bzGrid"></div>
+        <div class="bz-more-wrap"><button type="button" class="bz-btn" id="bzMore" hidden title="Load more listings">Load More</button></div>
+    </div>
+
+    <aside class="bz-history" id="bzHistory" hidden>
+        <div class="bz-history-head">
+            <strong>History &amp; Notifications</strong>
+            <button type="button" class="rwl-icon-btn" id="bzHistoryClose" title="Close">✕</button>
+        </div>
+        <p class="bz-history-note">Every sale, purchase, bid and trade is kept here as your permanent history.</p>
+        <div class="bz-history-list" id="bzHistoryList"></div>
+    </aside>
+
+    <div class="bz-overlay" id="bzOverlay" hidden>
+        <div class="bz-modal" id="bzModal" role="dialog" aria-modal="true"></div>
+    </div>
+
+    <script src="../js/api_client.js"></script>
+    <script src="../js/launcher_bridge.js"></script>
+    <script src="../js/rwl_fx.js"></script>
+    <script src="../js/rwl_icons.js"></script>
+    <script src="../js/bazaar.js"></script>
+</body>
+</html>

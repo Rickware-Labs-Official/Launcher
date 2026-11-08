@@ -1374,29 +1374,35 @@ function dashboardRankBadge(member) {
 function buildDashboardCard(member) {
     var initials = (member.username || '?').split('_').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2) || (member.username || '?')[0].toUpperCase();
     var avatar = member.profile_picture
-        ? '<img src="' + escHtml(profilePicUrl(member.profile_picture)) + '" class="dashboard-avatar-img" alt="" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'"><div class="dashboard-avatar" style="display:none;">' + escHtml(initials) + '</div>'
-        : '<div class="dashboard-avatar">' + escHtml(initials) + '</div>';
+        ? '<img src="' + escHtml(profilePicUrl(member.profile_picture)) + '" class="rwl-plate-avatar-img" alt="" decoding="async" loading="lazy" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'"><div class="rwl-plate-avatar-fallback" style="display:none;">' + escHtml(initials) + '</div>'
+        : '<div class="rwl-plate-avatar-fallback">' + escHtml(initials) + '</div>';
     var decorationSrc = userDecorationSrc(member);
-    var decorationHtml = decorationSrc ? '<img src="' + escHtml(decorationSrc) + '" alt="" class="dashboard-avatar-decoration"' + decorationFilterAttr(member) + '>' : '';
+    var decorationHtml = decorationSrc ? '<img src="' + escHtml(decorationSrc) + '" alt="" class="rwl-plate-decoration" decoding="async" loading="lazy"' + decorationFilterAttr(member) + '>' : '';
     var permsHtml = (member.account_permissions && member.account_permissions !== '' && member.account_permissions !== 'none')
         ? '<span class="dashboard-perms-badge">' + escHtml(Array.isArray(member.account_permissions) ? member.account_permissions.join(', ') : member.account_permissions) + '</span>' : '';
+    var speed = member.nameplate_speed ? parseFloat(member.nameplate_speed) : 1;
+    var plateFilter = RWL.mediaFilterStyle(member.nameplate_filter);
     var card = document.createElement('div');
-    card.className = 'dashboard-member-card' + (member.online ? ' online' : '') + outlineClasses(member);
-    if (member.nameplate_outline_data) card.style.cssText += RWL.frameStyle(member.nameplate_outline_data);
+    card.className = 'dashboard-member-card rwl-plate-card' + (member.online ? ' online' : '');
     card.setAttribute('translate', 'no');
+    card.setAttribute('data-username', member.username || '');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', (member.username || '') + ' profile');
     card.innerHTML =
-        nameplateVideoHtml(member) +
-        '<div class="dashboard-card-inner">' +
-            '<div class="dashboard-avatar-wrap">' + avatar + decorationHtml + '<span class="dashboard-presence' + (member.online ? ' online' : '') + '"></span></div>' +
-            '<div class="dashboard-member-info">' +
-                '<span class="dashboard-username" style="' + escHtml(userNameStyle(member)) + '">' + escHtml(member.username) + '</span>' +
-                '<div class="dashboard-badges">' + dashboardRankBadge(member) + permsHtml + '</div>' +
-                '<span class="dashboard-member-since">' + (member.online ? 'Online now' : (member.member_since ? 'Member since ' + escHtml(member.member_since) : '')) + '</span>' +
-                (!member.online && member.last_online ? '<span class="dashboard-last-online" data-rwl-time="' + escHtml(member.last_online) + '">Last online: ' + escHtml(new Date(member.last_online).toLocaleString()) + '</span>' : '') +
+        '<div class="rwl-plate' + outlineClasses(member) + '"' + outlineStyleAttr(member) + '>' +
+            '<video class="rwl-plate-bg"' + (plateFilter ? ' style="' + escHtml(plateFilter) + '"' : '') + ' muted loop playsinline preload="none" data-rwl-speed="' + (isNaN(speed) ? 1 : speed) + '" data-src="' + escHtml(userNameplateSrc(member)) + '"></video>' +
+            '<div class="rwl-plate-avatar">' + avatar + decorationHtml + '<span class="rwl-plate-presence' + (member.online ? ' online' : '') + '"></span></div>' +
+            '<div class="rwl-plate-text">' +
+                '<span class="rwl-plate-name" style="' + escHtml(userNameStyle(member)) + '">' + escHtml(member.username) + '</span>' +
+                '<span class="rwl-plate-badges">' + dashboardRankBadge(member) + permsHtml + '</span>' +
             '</div>' +
+        '</div>' +
+        '<div class="rwl-plate-meta">' +
+            '<span class="dashboard-member-since">' + (member.online ? 'Online now' : (member.member_since ? 'Member since ' + escHtml(member.member_since) : '')) + '</span>' +
+            (!member.online && member.last_online ? '<span class="dashboard-last-online" data-rwl-time="' + escHtml(member.last_online) + '">Last online: ' + escHtml(new Date(member.last_online).toLocaleString()) + '</span>' : '') +
         '</div>';
-    var np = card.querySelector('.mini-nameplate-bg');
-    if (np) { np.load(); np.play().catch(function(){}); }
+    if (window.RWLSocial && window.RWLSocial.observeCard) window.RWLSocial.observeCard(card);
     return card;
 }
 
@@ -1541,6 +1547,14 @@ function setupNavigation() {
                     return;
                 }
                 window.location.href = './sites/inventory.html';
+                return;
+            }
+            if (page === 'bazaar') {
+                if (!currentUser) {
+                    window.location.href = './sites/login_register.html?tab=login';
+                    return;
+                }
+                window.location.href = './sites/bazaar.html';
                 return;
             }
             if (page === 'customer' && !currentUser) {

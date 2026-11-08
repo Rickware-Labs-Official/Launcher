@@ -34,6 +34,7 @@
     <link rel="canonical" href="https://dev-rick-c137.github.io/">
     <link rel="preconnect" href="https://rickware-labs-api.apps.bot-hosting.cloud" crossorigin>
     <link rel="stylesheet" href="./css/main.css">
+    <link rel="stylesheet" href="./css/rwl_social.css">
     <link rel="icon" type="image/webp" href="./images/main/logo.webp">
     <link rel="apple-touch-icon" href="./images/main/logo.webp">
 
@@ -76,7 +77,7 @@
             .bank-packs-grid { grid-template-columns: 1fr !important; }
         }
     </style>
-    <script src="./js/rwl_boot.js"></script>
+    <script src="./js/rwl_boot.js" data-i18n-extra="community"></script>
 </head>
 <body>
 
@@ -130,6 +131,15 @@
                         <path d="M9 21V9"></path>
                     </svg>
                     <span>Inventory</span>
+                </button>
+                <button class="nav-item cfg-gated" data-page="bazaar" data-cfg-key="bazaar_tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l1.5-5h15L21 9"></path>
+                        <path d="M3 9h18v1.5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"></path>
+                        <path d="M5 13v8h14v-8"></path>
+                        <path d="M10 21v-5h4v5"></path>
+                    </svg>
+                    <span>Lab Bazaar</span>
                 </button>
                 <button class="nav-item cfg-gated" data-page="reviews" data-cfg-key="reviews_tab">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -539,6 +549,7 @@
     <script src="./js/launcher_bridge.js"></script>
     <script src="./js/rwl_fx.js"></script>
     <script src="./js/main.js"></script>
+    <script src="./js/rwl_social.js"></script>
 
     <script>
     (function() {

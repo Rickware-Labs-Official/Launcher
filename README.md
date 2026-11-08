@@ -100,3 +100,25 @@ Every inventory area has a search bar in both tabs, themes can also be filtered 
 
 Inside the launcher the page talks to `window.RickwareBridge`. The download center uses the `getDownloads` bridge method and shows
 speed, progress, updates and running sessions. Outside the launcher it explains that tool downloads run inside the launcher.
+
+## Friends, Messages And Notifications
+
+- `js/rwl_social.js` + `css/rwl_social.css`: dashboard cards in the nameplate format, hover profile popout, extended profile modal, notification center (messages, friend and message requests, friends), Discord style direct messages with end to end encryption (WebCrypto ECDH P-256, HKDF, AES-GCM). Keys only live in memory, the vault is unlocked with the chat passphrase.
+- `js/rwl_social_notify.js` is loaded on every page by `api_client.js`, runs one long poll and shows popups for messages, friend requests and bazaar events.
+- `js/rwl_social_settings.js`: bio, privacy and safety section on `sites/account_settings.html`.
+
+## Lab Bazaar
+
+`sites/bazaar.html`, `js/bazaar.js`, `css/bazaar.css`: browse, buy, bid, trade, sell wizard (fixed price, auction, trade slots), history drawer. Sidebar key `bazaar_tab` in `config/config.json`.
+
+## Inventory
+
+Owned / Favourite / Index tabs, Pass Licenses (owned only), SVG theme icons (`js/rwl_icons.js`), flicker free virtual grid with keyed tiles, automatic media retries, modern config menu with a themed color picker, lightweight theme preview on low end devices.
+
+## Behavior Analysis
+
+`js/rwl_behavior.js` (loaded by `api_client.js`) sends pointer deltas, timings and typing rhythm to the backend every 15 seconds. Password fields are ignored. The device fingerprint header `X-RWL-Device` is only sent after the backend announces support.
+
+## Languages For New Features
+
+New texts live in `js/i18n/<lang>_community.js` and are loaded by pages that set `data-i18n-extra="community"` on the `rwl_boot.js` script tag (index, inventory, bazaar, account settings).
