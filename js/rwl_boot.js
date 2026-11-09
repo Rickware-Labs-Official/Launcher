@@ -17,6 +17,7 @@
     var bootScript = document.currentScript;
     var baseUrl = bootScript && bootScript.src ? bootScript.src.replace(/js\/rwl_boot\.js(?:[?#].*)?$/, '') : './';
     var extraPacks = ((bootScript && bootScript.getAttribute('data-i18n-extra')) || '').split(/\s+/).filter(function (entry) { return /^[a-z_]+$/.test(entry); });
+    if (extraPacks.indexOf('growth') < 0) extraPacks.push('growth');
 
     function readStorage(key) {
         try { return global.localStorage.getItem(key); } catch (error) { return null; }
@@ -592,24 +593,31 @@
         return 'rgba(' + rgb.join(', ') + ', ' + (Math.round(alpha * 1000) / 1000) + ')';
     }
 
+    function themedColor(token, theme) {
+        var parsed = parseColor(token);
+        if (parsed.rgb.length !== 3 || parsed.rgb.some(isNaN) || PROTECTED_COLORS[parsed.rgb.join(',')]) return token;
+        var hsl = rgbToHsl(parsed.rgb[0], parsed.rgb[1], parsed.rgb[2]);
+        if (hsl[1] * 100 < theme.min_saturation || !inBand(hsl[0], theme)) return token;
+        var dark = hsl[2] * 100 < theme.dark_lightness;
+        var offset = (hsl[0] - theme.base_hue) * 0.5;
+        var targetHue = (dark ? theme.background_hue : theme.hue) + offset;
+        var saturation = Math.max(0, Math.min(1, hsl[1] * theme.saturation / 100));
+        var lightness = dark ? hsl[2] : Math.max(0, Math.min(1, hsl[2] + theme.lightness / 100));
+        return formatColor(hslToRgb(targetHue, saturation, lightness), parsed.alpha, parsed.hex);
+    }
+
     function transformColorToken(token) {
         var cached = colorCache.get(token);
         if (cached !== undefined) return cached;
-        var parsed = parseColor(token);
-        var result = token;
-        if (parsed.rgb.length === 3 && !parsed.rgb.some(isNaN) && !PROTECTED_COLORS[parsed.rgb.join(',')]) {
-            var hsl = rgbToHsl(parsed.rgb[0], parsed.rgb[1], parsed.rgb[2]);
-            if (hsl[1] * 100 >= activeTheme.min_saturation && inBand(hsl[0], activeTheme)) {
-                var dark = hsl[2] * 100 < activeTheme.dark_lightness;
-                var offset = (hsl[0] - activeTheme.base_hue) * 0.5;
-                var targetHue = (dark ? activeTheme.background_hue : activeTheme.hue) + offset;
-                var saturation = Math.max(0, Math.min(1, hsl[1] * activeTheme.saturation / 100));
-                var lightness = dark ? hsl[2] : Math.max(0, Math.min(1, hsl[2] + activeTheme.lightness / 100));
-                result = formatColor(hslToRgb(targetHue, saturation, lightness), parsed.alpha, parsed.hex);
-            }
-        }
+        var result = themedColor(token, activeTheme);
         colorCache.set(token, result);
         return result;
+    }
+
+    function previewValue(value, rawTheme) {
+        var theme = normalizeTheme(rawTheme);
+        if (!theme || !value || !COLOR_HINT.test(value)) return value;
+        return String(value).replace(COLOR_PATTERN, function (token) { return themedColor(token, theme); });
     }
 
     function transformValue(value) {
@@ -954,6 +962,7 @@
         },
         clear: function () { applyTheme(null, true); },
         current: function () { return activeTheme; },
+        previewValue: previewValue,
         keepMarker: KEEP_MARKER,
         sync: function (cosmetics) {
             var data = cosmetics && cosmetics.launcher_theme_data;

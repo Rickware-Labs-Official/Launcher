@@ -593,6 +593,7 @@
     loadCompanion('rwl_upgrade.js');
     loadCompanion('rwl_behavior.js');
     loadCompanion('rwl_social_notify.js');
+    loadCompanion('rwl_growth.js');
 
     global.RWL = {
         apiBase: RWL_API_BASE,

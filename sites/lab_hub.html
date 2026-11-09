@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rickware - Labs© - Lab Hub</title>
+    <link rel="preconnect" href="https://rickware-labs-api.apps.bot-hosting.cloud" crossorigin>
+    <link rel="stylesheet" href="../css/rwl_frames.css">
+    <link rel="stylesheet" href="../css/rwl_growth.css">
+    <link rel="stylesheet" href="../css/lab_hub.css">
+    <link rel="icon" type="image/webp" href="../images/main/logo.webp">
+    <script src="../js/rwl_boot.js"></script>
+</head>
+<body>
+
+    <a href="../index.html" class="lh-back-btn" aria-label="Back to launcher" title="Back to Store">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
+    </a>
+
+    <div class="lh-page">
+        <header class="lh-header lh-card">
+            <div class="lh-header-left">
+                <div class="lh-header-icon">
+                    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="url(#lhHeaderGrad)" stroke-width="1.6">
+                        <defs><linearGradient id="lhHeaderGrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24"><stop offset="0%" stop-color="#e0aaff"/><stop offset="100%" stop-color="#7b2cbf"/></linearGradient></defs>
+                        <path d="M10 2v6L4.5 18a3 3 0 0 0 2.6 4.5h9.8a3 3 0 0 0 2.6-4.5L14 8V2"></path>
+                        <path d="M8 2h8"></path>
+                        <path d="M7 15h10"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="lh-title">Lab Hub</h1>
+                    <div class="lh-subtitle">Events, leaderboards, crates, your companion and the idle lab in one place</div>
+                </div>
+            </div>
+            <div class="lh-header-right">
+                <div class="lh-stat" title="Activity points you earned this week"><span class="lh-stat-value" id="lhWeekPoints">-</span><span class="lh-stat-label">Points This Week</span></div>
+                <div class="lh-stat" title="Experiment Crates you can open"><span class="lh-stat-value" id="lhCrateCount">-</span><span class="lh-stat-label">Crates</span></div>
+                <div class="lh-stat" title="Research stored in your idle lab"><span class="lh-stat-value" id="lhResearch">-</span><span class="lh-stat-label">Research</span></div>
+            </div>
+        </header>
+
+        <nav class="lh-tabs lh-card" id="lhTabs">
+            <button type="button" class="lh-tab active" data-tab="overview" title="Events, community goals and your activity">Overview</button>
+            <button type="button" class="lh-tab" data-tab="leaderboard" title="The most active members and the highest Lab Pass levels">Leaderboard</button>
+            <button type="button" class="lh-tab" data-tab="crates" title="Open the Experiment Crates you earned through activity">Crates</button>
+            <button type="button" class="lh-tab" data-tab="companion" title="Adopt and customise your lab companion">Companion</button>
+            <button type="button" class="lh-tab" data-tab="lab" title="Run experiments that create research, even while the launcher sits in the tray">Idle Lab</button>
+            <button type="button" class="lh-tab" data-tab="card" title="Create a profile card you can share">Profile Card</button>
+            <button type="button" class="lh-tab" data-tab="codes" title="Redeem codes from Discord events and giveaways">Redeem Codes</button>
+            <button type="button" class="lh-tab" data-tab="invites" title="Rewards for inviting friends to the Discord server">Invite Rewards</button>
+            <button type="button" class="lh-tab" data-tab="bugs" title="Report bugs and earn rewards">Bug Reports</button>
+        </nav>
+
+        <main class="lh-content" id="lhContent">
+            <div class="lh-card lh-empty">Loading the Lab Hub...</div>
+        </main>
+    </div>
+
+    <script src="../js/api_client.js"></script>
+    <script src="../js/launcher_bridge.js"></script>
+    <script src="../js/rwl_fx.js"></script>
+    <script src="../js/lab_hub.js"></script>
+</body>
+</html>

@@ -257,6 +257,7 @@
         else if (rel.friend_status === 'incoming') buttons.push('<button type="button" class="rwl-btn rwl-btn-success" data-social-action="accept" title="' + esc(t('Accept the friend request')) + '">' + esc(t('Accept Request')) + '</button>');
         else if (rel.friend_status === 'friends' && !compact) buttons.push('<button type="button" class="rwl-btn rwl-btn-secondary" data-social-action="remove" title="' + esc(t('Remove this friend')) + '">' + esc(t('Remove Friend')) + '</button>');
         if (!buttons.length) buttons.push('<button type="button" class="rwl-btn rwl-btn-secondary" disabled title="' + esc(t('This member does not accept messages or friend requests')) + '">' + esc(t('Not Available')) + '</button>');
+        if (!compact && !rel.blocked_me) buttons.push('<button type="button" class="rwl-btn rwl-btn-gift" data-social-action="gift" title="' + esc(t('Send an item from your inventory as a gift')) + '">🎁 ' + esc(t('Send Gift')) + '</button>');
         return buttons.join('');
     }
 
@@ -407,6 +408,10 @@
             global.location.href = './sites/login_register.html?tab=login';
             return;
         }
+        if (action === 'gift') {
+            if (global.RWLGifts && global.RWLGifts.open) global.RWLGifts.open(username);
+            return;
+        }
         if (trigger) trigger.disabled = true;
         try {
             if (action === 'add') {
@@ -547,6 +552,23 @@
         refreshNotifications();
     }
 
+    function centerGroupsHtml() {
+        var groups = state.centerGroups;
+        if (!groups) return '<div class="rwl-center-empty">' + esc(t('Loading chats...')) + '</div>';
+        if (!groups.length) return '<div class="rwl-center-empty">' + esc(t('No group chats yet.')) + '</div>';
+        return groups.map(function (group) {
+            var sub = esc(group.member_count + ' ' + t('members')) + (group.unread ? ' · <strong style="color:#f87171">' + esc(group.unread + ' ' + t('new')) + '</strong>' : '');
+            return '<div class="rwl-center-row" data-open-group="' + esc(group.group_id) + '" translate="no"><div class="rwl-center-avatar"><span class="rwl-group-icon">' + esc(initials(group.name)) + '</span></div><div class="rwl-center-info"><span class="rwl-center-name">' + esc(group.name) + '</span><span class="rwl-center-sub">' + sub + '</span></div></div>';
+        }).join('');
+    }
+
+    async function loadCenterGroups() {
+        if (!global.RWLGroups || !global.RWLGroups.list) return;
+        try { state.centerGroups = await global.RWLGroups.list(); } catch (error) { state.centerGroups = []; }
+        var holder = document.querySelector('#rwlSocialCenter [data-center-groups]');
+        if (holder) holder.innerHTML = centerGroupsHtml();
+    }
+
     function centerRow(user, sub, actions, attributes) {
         return '<div class="rwl-center-row" data-username="' + esc(user.username) + '" ' + (attributes || '') + ' translate="no">' +
             '<div class="rwl-center-avatar">' + avatarHtml(user, 'rwl-center-img', false, true) + '</div>' +
@@ -586,6 +608,7 @@
                 var sub = channel.unread ? '<strong style="color:#f87171">' + esc(channel.unread + ' ' + t('new')) + '</strong>' : esc(channel.last_message_at ? formatStamp(channel.last_message_at) : t('No messages yet'));
                 html += centerRow(channel.partner, sub, iconButton('hide', t('Close this conversation'), ICONS.cross, 'rwl-decline', 'data-channel="' + esc(channel.channel_id) + '"'), 'data-open-channel="' + esc(channel.channel_id) + '"');
             });
+            if (global.RWLGroups) html += '<div class="rwl-center-section rwl-center-group-head"><span>' + esc(t('Group Chats')) + '</span><span class="rwl-center-group-buttons"><button type="button" class="rwl-btn rwl-btn-secondary" data-center-group="new" title="' + esc(t('Create Group')) + '">' + esc(t('New Group')) + '</button><button type="button" class="rwl-btn rwl-btn-secondary" data-center-group="join" title="' + esc(t('Join Group')) + '">' + esc(t('Join With Code')) + '</button></span></div><div data-center-groups>' + centerGroupsHtml() + '</div>';
         } else if (state.centerTab === 'requests') {
             html += '<div class="rwl-center-section">' + esc(t('Friend Requests')) + '</div>';
             if (!data.friend_requests.length) html += '<div class="rwl-center-empty">' + esc(t('No open friend requests.')) + '</div>';
@@ -614,6 +637,7 @@
         body.innerHTML = html;
         var form = body.querySelector('[data-add-friend]');
         if (form) form.addEventListener('submit', onAddFriend);
+        if (state.centerTab === 'messages' && body.querySelector('[data-center-groups]')) loadCenterGroups();
     }
 
     async function onAddFriend(event) {
@@ -650,6 +674,20 @@
             var activated = await ensureVault();
             if (activated && state.overview) state.overview.keys = { exists: true };
             renderCenter();
+            return;
+        }
+        var groupButton = event.target.closest('[data-center-group]');
+        if (groupButton && global.RWLGroups) {
+            event.stopPropagation();
+            document.getElementById('rwlSocialCenter').hidden = true;
+            if (groupButton.getAttribute('data-center-group') === 'new') global.RWLGroups.create();
+            else global.RWLGroups.join();
+            return;
+        }
+        var groupRow = event.target.closest('[data-open-group]');
+        if (groupRow && global.RWLGroups) {
+            document.getElementById('rwlSocialCenter').hidden = true;
+            global.RWLGroups.open(groupRow.getAttribute('data-open-group'));
             return;
         }
         var actionButton = event.target.closest('[data-center-action]');
@@ -1002,6 +1040,11 @@
 
     async function openChat(channelId) {
         if (!(await ensureVault())) return;
+        if (global.RWLGroups && global.RWLGroups.detach) global.RWLGroups.detach();
+        if (windowState.minimized) {
+            windowState.minimized = false;
+            if (windowState.bubble) windowState.bubble.hidden = true;
+        }
         var draft = state.chat && state.chat.id === channelId ? currentDraft() : '';
         var center = document.getElementById('rwlSocialCenter');
         if (center) center.hidden = true;
@@ -1042,6 +1085,9 @@
     function closeChat() {
         var element = document.getElementById('rwlChat');
         document.body.classList.remove('rwl-chat-open');
+        windowState.minimized = false;
+        if (windowState.bubble) windowState.bubble.hidden = true;
+        if (global.RWLGroups && global.RWLGroups.detach) global.RWLGroups.detach();
         if (!element) return;
         stopMedia(element);
         revokeObjectUrls();
@@ -1144,16 +1190,26 @@
         else if (detail.status === 'request') banner = '<span>' + esc(t('Message request sent. You can send up to 3 messages until it is accepted.')) + '</span>';
         else if (detail.status === 'declined') banner = '<span>' + esc(t('This member declined your message request.')) + '</span>';
         else if (!chat.partnerKeys || !chat.partnerKeys.exists) banner = '<span>' + esc(t('This member has not activated encrypted messages yet. Your messages stay sealed and are delivered automatically as soon as they open their messages.')) + '</span>';
+        var clearRequest = detail.clear_request;
+        if (!banner && clearRequest && clearRequest.pending) {
+            banner = clearRequest.by_me
+                ? '<span>' + esc(t('You asked to clear this chat. It is cleared as soon as your partner confirms.')) + '</span><button type="button" class="rwl-btn rwl-btn-secondary" data-chat-action="clear_cancel">' + esc(t('Cancel Request')) + '</button>'
+                : '<span>' + esc(t('Your partner wants to clear the whole chat history for both of you.')) + '</span><button type="button" class="rwl-btn rwl-btn-danger" data-chat-action="clear_confirm">' + esc(t('Clear Chat')) + '</button><button type="button" class="rwl-btn rwl-btn-secondary" data-chat-action="clear_cancel">' + esc(t('Decline')) + '</button>';
+        }
         var locked = !canSend();
         var lockText = detail.incoming_request ? t('Accept the message request to reply') : (detail.status === 'declined' ? t('This member declined your message request.') : t('You cannot send messages in this conversation'));
         var lockAttribute = locked ? ' disabled' : '';
         element.innerHTML =
-            '<div class="rwl-chat-head" data-username="' + esc(partner.username) + '">' + plateVideo(partner, '') +
-                '<div class="rwl-center-avatar">' + avatarHtml(partner, 'rwl-center-img', false, true) + '</div>' +
+            '<div class="rwl-chat-head" data-username="' + esc(partner.username) + '" title="' + esc(t('Drag to move the chat')) + '">' + plateVideo(partner, '') +
+                '<button type="button" class="rwl-icon-btn" data-chat-action="list" title="' + esc(t('All chats')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>' +
+                '<div class="rwl-center-avatar">' + avatarHtml(partner, 'rwl-center-img', true, true) + '</div>' +
                 '<div class="rwl-chat-title" data-chat-action="profile" title="' + esc(t('Open the profile')) + '" translate="no"><strong style="' + esc(nameStyle(partner)) + '">' + esc(partner.username) + '</strong><span class="rwl-chat-lock"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' + esc(t('End to end encrypted')) + '</span></div>' +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="pins" title="' + esc(t('Pinned messages')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5"/><path d="M5 17h14l-2-5V5h1V3H6v2h1v7z"/></svg></button>' +
+                '<button type="button" class="rwl-icon-btn" data-chat-action="clear" title="' + esc(t('Clear the chat history')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>' +
+                '<button type="button" class="rwl-icon-btn" data-chat-action="minimize" title="' + esc(t('Minimize the chat')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="close" title="' + esc(t('Close the conversation')) + '">✕</button>' +
             '</div>' +
+            '<div class="rwl-chat-list" hidden></div>' +
             '<div class="rwl-chat-banner"' + (banner ? '' : ' hidden') + '>' + banner + '</div>' +
             '<div class="rwl-pins-panel" hidden></div>' +
             '<div class="rwl-chat-scroll" tabindex="0"></div>' +
@@ -1174,12 +1230,229 @@
         watchMedia(element);
         startMedia(element.querySelector('.rwl-chat-head'));
         bindChat(element);
+        decorateWindow(element);
+    }
+
+    var windowState = { x: null, y: null, minimized: false, bubble: null, dragging: null };
+
+    function clampPosition(element, x, y) {
+        var width = element.offsetWidth || 420;
+        var height = element.offsetHeight || 520;
+        return {
+            x: Math.max(8, Math.min(x, global.innerWidth - Math.min(width, global.innerWidth - 16) - 8)),
+            y: Math.max(8, Math.min(y, global.innerHeight - 120))
+        };
+    }
+
+    function applyWindowPosition(element) {
+        if (windowState.x === null || windowState.y === null) return;
+        var position = clampPosition(element, windowState.x, windowState.y);
+        element.classList.add('rwl-chat-moved');
+        element.style.left = position.x + 'px';
+        element.style.top = position.y + 'px';
+    }
+
+    function decorateWindow(element) {
+        applyWindowPosition(element);
+        if (element.dataset.windowReady === '1') return;
+        element.dataset.windowReady = '1';
+        element.addEventListener('pointerdown', function (event) {
+            var head = event.target.closest('.rwl-chat-head');
+            if (!head || event.button !== 0 || event.target.closest('button, a, input, textarea, [data-chat-action="profile"]')) return;
+            var rect = element.getBoundingClientRect();
+            windowState.dragging = { offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top, pointer: event.pointerId };
+            element.classList.add('rwl-chat-dragging');
+            try { head.setPointerCapture(event.pointerId); } catch (error) {}
+            event.preventDefault();
+        });
+        element.addEventListener('pointermove', function (event) {
+            var drag = windowState.dragging;
+            if (!drag || drag.pointer !== event.pointerId) return;
+            var position = clampPosition(element, event.clientX - drag.offsetX, event.clientY - drag.offsetY);
+            windowState.x = position.x;
+            windowState.y = position.y;
+            element.classList.add('rwl-chat-moved');
+            element.style.left = position.x + 'px';
+            element.style.top = position.y + 'px';
+        });
+        function endDrag(event) {
+            if (!windowState.dragging || windowState.dragging.pointer !== event.pointerId) return;
+            windowState.dragging = null;
+            element.classList.remove('rwl-chat-dragging');
+        }
+        element.addEventListener('pointerup', endDrag);
+        element.addEventListener('pointercancel', endDrag);
+        element.addEventListener('dblclick', function (event) {
+            if (!event.target.closest('.rwl-chat-head') || event.target.closest('button')) return;
+            windowState.x = null;
+            windowState.y = null;
+            element.classList.remove('rwl-chat-moved');
+            element.style.left = '';
+            element.style.top = '';
+        });
+        global.addEventListener('resize', function () { if (!element.hidden) applyWindowPosition(element); }, { passive: true });
+    }
+
+    function bubbleElement() {
+        if (windowState.bubble && windowState.bubble.isConnected) return windowState.bubble;
+        var bubble = document.createElement('button');
+        bubble.type = 'button';
+        bubble.className = 'rwl-chat-bubble';
+        bubble.hidden = true;
+        bubble.addEventListener('click', restoreChat);
+        document.body.appendChild(bubble);
+        windowState.bubble = bubble;
+        return bubble;
+    }
+
+    function bubbleIdentity() {
+        if (state.chat && state.chat.partner) return { user: state.chat.partner, label: state.chat.partner.username };
+        var group = global.RWLGroups && global.RWLGroups.current ? global.RWLGroups.current() : null;
+        if (group) return { user: { username: group.name }, label: group.name };
+        return { user: { username: '?' }, label: t('Chat') };
+    }
+
+    function minimizeChat() {
+        var element = document.getElementById('rwlChat');
+        if (!element || element.hidden) return;
+        var identity = bubbleIdentity();
+        var bubble = bubbleElement();
+        bubble.innerHTML = '<span class="rwl-chat-bubble-avatar">' + avatarHtml(identity.user, 'rwl-center-img', true, false) + '</span><span class="rwl-chat-bubble-badge" hidden></span>';
+        bubble.title = t('Open the chat with') + ' ' + identity.label;
+        bubble.setAttribute('aria-label', bubble.title);
+        windowState.minimized = true;
+        element.classList.add('rwl-chat-minimizing');
+        setTimeout(function () {
+            element.classList.remove('rwl-chat-minimizing');
+            if (!windowState.minimized) return;
+            element.hidden = true;
+            document.body.classList.remove('rwl-chat-open');
+            bubble.hidden = false;
+            bubble.classList.remove('rwl-chat-bubble-pop');
+            void bubble.offsetWidth;
+            bubble.classList.add('rwl-chat-bubble-pop');
+        }, 260);
+    }
+
+    function restoreChat() {
+        var element = document.getElementById('rwlChat');
+        var bubble = bubbleElement();
+        bubble.hidden = true;
+        windowState.minimized = false;
+        if (!element) return;
+        element.hidden = false;
+        document.body.classList.add('rwl-chat-open');
+        element.classList.remove('rwl-chat-restoring');
+        void element.offsetWidth;
+        element.classList.add('rwl-chat-restoring');
+        setTimeout(function () { element.classList.remove('rwl-chat-restoring'); }, 320);
+        applyWindowPosition(element);
+        if (state.chat) markRead();
+    }
+
+    function bumpBubble() {
+        if (!windowState.minimized) return;
+        var bubble = bubbleElement();
+        var badge = bubble.querySelector('.rwl-chat-bubble-badge');
+        if (!badge) return;
+        var count = (parseInt(badge.textContent, 10) || 0) + 1;
+        badge.textContent = count > 99 ? '99+' : String(count);
+        badge.hidden = false;
+    }
+
+    async function renderChatList() {
+        var element = document.getElementById('rwlChat');
+        var panel = element && element.querySelector('.rwl-chat-list');
+        if (!panel) return;
+        if (!panel.hidden) {
+            panel.hidden = true;
+            return;
+        }
+        panel.hidden = false;
+        panel.innerHTML = '<div class="rwl-center-empty">' + esc(t('Loading chats...')) + '</div>';
+        if (!state.notifications) await refreshNotifications();
+        var groups = [];
+        if (global.RWLGroups && global.RWLGroups.list) {
+            try { groups = await global.RWLGroups.list(); } catch (error) { groups = []; }
+        }
+        var channels = (state.notifications && state.notifications.channels) || [];
+        var currentGroup = global.RWLGroups && global.RWLGroups.current ? global.RWLGroups.current() : null;
+        var html = '<div class="rwl-chat-list-head"><strong>' + esc(t('Direct Messages')) + '</strong>' + (global.RWLGroups ? '<button type="button" class="rwl-btn rwl-btn-secondary" data-chat-action="group_new">' + esc(t('New Group')) + '</button>' : '') + '</div>';
+        html += channels.length ? channels.map(function (row) {
+            var active = state.chat && state.chat.id === row.channel_id;
+            return '<button type="button" class="rwl-chat-list-row' + (active ? ' active' : '') + '" data-chat-action="switch_dm" data-channel="' + esc(row.channel_id) + '"><span class="rwl-center-avatar">' + avatarHtml(row.partner, 'rwl-center-img', true, true) + '</span><span class="rwl-chat-list-name" translate="no" style="' + esc(nameStyle(row.partner)) + '">' + esc(row.partner.username) + '</span>' + (row.unread ? '<span class="rwl-count-badge">' + (row.unread > 99 ? '99+' : row.unread) + '</span>' : '') + '</button>';
+        }).join('') : '<div class="rwl-center-empty">' + esc(t('No direct messages yet.')) + '</div>';
+        if (global.RWLGroups) {
+            html += '<div class="rwl-chat-list-head"><strong>' + esc(t('Group Chats')) + '</strong><button type="button" class="rwl-btn rwl-btn-secondary" data-chat-action="group_join">' + esc(t('Join With Code')) + '</button></div>';
+            html += groups.length ? groups.map(function (group) {
+                var active = currentGroup && currentGroup.group_id === group.group_id;
+                return '<button type="button" class="rwl-chat-list-row' + (active ? ' active' : '') + '" data-chat-action="switch_group" data-group="' + esc(group.group_id) + '"><span class="rwl-group-icon">' + esc(initials(group.name)) + '</span><span class="rwl-chat-list-name" translate="no">' + esc(group.name) + '</span><span class="rwl-chat-list-meta">' + group.member_count + ' ' + esc(t('members')) + '</span>' + (group.unread ? '<span class="rwl-count-badge">' + (group.unread > 99 ? '99+' : group.unread) + '</span>' : '') + '</button>';
+            }).join('') : '<div class="rwl-center-empty">' + esc(t('No group chats yet.')) + '</div>';
+        }
+        panel.innerHTML = html;
+    }
+
+    async function requestClear() {
+        var chat = state.chat;
+        if (!chat) return;
+        var rules = chat.detail.delete_rules || {};
+        var pending = chat.detail.clear_request;
+        var question = rules.staff_instant_clear ? t('Clear the whole chat history for both members now?') : (pending && pending.pending && !pending.by_me ? t('Confirm clearing the whole chat history for both of you?') : t('Ask your partner to clear the whole chat history? It is cleared as soon as both of you confirmed.'));
+        if (pending && pending.pending && pending.by_me) {
+            notify(t('Waiting for your partner to confirm the clear request.'), 'info');
+            return;
+        }
+        if (!(await confirmDialog(t('Clear Chat'), question, true))) return;
+        try {
+            var result = await api('/channels/' + encodeURIComponent(chat.id) + '/clear', { method: 'POST' });
+            notify(result.cleared ? t('The chat was cleared.') : t('Clear request sent. Your partner has to confirm it.'), 'success');
+            openChat(chat.id);
+        } catch (error) {
+            notify(error.message || t('The chat could not be cleared.'), 'error');
+        }
+    }
+
+    async function declineClear() {
+        var chat = state.chat;
+        if (!chat) return;
+        try {
+            await api('/channels/' + encodeURIComponent(chat.id) + '/clear/decline', { method: 'POST' });
+            openChat(chat.id);
+        } catch (error) {
+            notify(error.message, 'error');
+        }
+    }
+
+    function canDeleteForEveryone(message) {
+        var chat = state.chat;
+        var rules = (chat && chat.detail && chat.detail.delete_rules) || {};
+        if (rules.owner_any_time) return true;
+        var created = Date.parse(message.created_at || '');
+        var fresh = !isNaN(created) && Date.now() - created <= (rules.window_seconds || 1800) * 1000;
+        return fresh && (message.sender === 'me' || rules.staff_any_message);
+    }
+
+    async function deleteMessage(messageId, scope) {
+        var question = scope === 'me' ? t('Delete this message only for you? Your partner still sees it.') : t('Delete this message for everyone?');
+        if (!(await confirmDialog(t('Delete Message'), question, true))) return;
+        try {
+            await api('/messages/' + encodeURIComponent(messageId) + '/delete', { method: 'POST', body: { scope: scope } });
+            if (scope === 'me' && state.chat) {
+                delete state.chat.byId[messageId];
+                state.chat.messages = state.chat.messages.filter(function (message) { return message.id !== messageId; });
+                renderMessages(false);
+            }
+        } catch (error) {
+            notify(error.message, 'error');
+        }
     }
 
     function bindChat(element) {
         var scroller = element.querySelector('.rwl-chat-scroll');
         var input = element.querySelector('.rwl-composer-input');
-        element.addEventListener('click', onChatClick);
+        var firstBind = element.dataset.chatBound !== '1';
+        element.dataset.chatBound = '1';
+        if (firstBind) element.addEventListener('click', onChatClick);
         scroller.addEventListener('scroll', function () {
             var nearBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
             element.querySelector('.rwl-jump').hidden = nearBottom;
@@ -1207,12 +1480,15 @@
         });
         var fileInput = element.querySelector('[data-file-input]');
         if (fileInput) fileInput.addEventListener('change', function () { addFiles(fileInput.files); fileInput.value = ''; });
-        element.addEventListener('dragover', function (event) { if (fileInput) event.preventDefault(); });
-        element.addEventListener('drop', function (event) {
-            if (!fileInput || !event.dataTransfer || !event.dataTransfer.files.length) return;
-            event.preventDefault();
-            addFiles(event.dataTransfer.files);
-        });
+        if (firstBind) {
+            element.addEventListener('dragover', function (event) { if (element.querySelector('[data-file-input]')) event.preventDefault(); });
+            element.addEventListener('drop', function (event) {
+                var currentInput = element.querySelector('[data-file-input]');
+                if (!currentInput || !state.chat || !event.dataTransfer || !event.dataTransfer.files.length) return;
+                event.preventDefault();
+                addFiles(event.dataTransfer.files);
+            });
+        }
         input.addEventListener('paste', function (event) {
             if (fileInput && event.clipboardData && event.clipboardData.files && event.clipboardData.files.length) {
                 event.preventDefault();
@@ -1476,13 +1752,14 @@
             '<button type="button" class="rwl-tool" data-tool="pin" title="' + esc(message.pinned ? t('Unpin') : t('Pin')) + '">📌</button>' +
             (plain.ok ? '<button type="button" class="rwl-tool" data-tool="copy" title="' + esc(t('Copy text')) + '">⧉</button>' : '') +
             (mine && plain.ok ? '<button type="button" class="rwl-tool" data-tool="edit" title="' + esc(t('Edit')) + '">✎</button>' : '') +
-            (mine ? '<button type="button" class="rwl-tool rwl-tool-danger" data-tool="delete" title="' + esc(t('Delete')) + '">🗑</button>' : '') +
+            '<button type="button" class="rwl-tool" data-tool="delete_me" title="' + esc(t('Delete for me')) + '">🙈</button>' +
+            (canDeleteForEveryone(message) ? '<button type="button" class="rwl-tool rwl-tool-danger" data-tool="delete" title="' + esc(t('Delete for everyone')) + '">🗑</button>' : '') +
         '</div>';
         var waitingNote = mine && isPending(message) ? '<span class="rwl-msg-pending-note" title="' + esc(t('Delivered automatically as soon as this member activates encrypted messages')) + '">⏳ ' + esc(t('Waiting for delivery')) + '</span>' : '';
         var bodyState = plain.ok ? '' : (plain.waiting ? ' rwl-msg-waiting' : ' rwl-msg-locked');
         var head = grouped
             ? '<span class="rwl-msg-time-gutter">' + esc(formatTime(message.created_at)) + '</span>'
-            : avatarHtml(authorUser, 'rwl-msg-avatar', false, false).replace('class="rwl-msg-avatar"', 'class="rwl-msg-avatar" data-chat-action="profile_author" data-author="' + esc(mine ? 'me' : 'partner') + '"');
+            : '<div class="rwl-msg-avatar-wrap" data-chat-action="profile_author" data-author="' + esc(mine ? 'me' : 'partner') + '">' + avatarHtml(authorUser, 'rwl-msg-avatar', true, false) + '</div>';
         return '<div class="rwl-msg' + (grouped ? '' : ' rwl-msg-start') + (message.pinned ? ' rwl-msg-pinned' : '') + '" data-message-id="' + esc(message.id) + '">' +
             reply + head +
             '<div class="rwl-msg-content">' +
@@ -1687,9 +1964,9 @@
             } else if (name === 'pin') {
                 try { await api('/messages/' + encodeURIComponent(messageId) + '/pin', { method: 'POST', body: { pinned: !chat.byId[messageId].pinned } }); } catch (error) { notify(error.message, 'error'); }
             } else if (name === 'delete') {
-                if (await confirmDialog(t('Delete Message'), t('Delete this message for everyone?'), true)) {
-                    try { await api('/messages/' + encodeURIComponent(messageId), { method: 'DELETE' }); } catch (error) { notify(error.message, 'error'); }
-                }
+                await deleteMessage(messageId, 'everyone');
+            } else if (name === 'delete_me') {
+                await deleteMessage(messageId, 'me');
             }
             return;
         }
@@ -1701,6 +1978,14 @@
         }
         var action = actionButton.getAttribute('data-chat-action');
         if (action === 'close') closeChat();
+        else if (action === 'minimize') minimizeChat();
+        else if (action === 'list') renderChatList();
+        else if (action === 'clear' || action === 'clear_confirm') requestClear();
+        else if (action === 'clear_cancel') declineClear();
+        else if (action === 'switch_dm') openChat(actionButton.getAttribute('data-channel'));
+        else if (action === 'switch_group' && global.RWLGroups) global.RWLGroups.open(actionButton.getAttribute('data-group'));
+        else if (action === 'group_new' && global.RWLGroups) global.RWLGroups.create();
+        else if (action === 'group_join' && global.RWLGroups) global.RWLGroups.join();
         else if (action === 'send') submitComposer();
         else if (action === 'emoji') showEmojiPicker();
         else if (action === 'attach') document.querySelector('#rwlChat [data-file-input]').click();
@@ -1759,8 +2044,16 @@
                 await addLiveMessage(entry.message);
                 var typing = document.querySelector('#rwlChat .rwl-chat-typing');
                 if (typing && entry.message.sender === 'partner') typing.innerHTML = '';
+                if (entry.message.sender === 'partner') bumpBubble();
             }
             refreshNotifications();
+        } else if ((entry.type === 'clear_requested' || entry.type === 'clear_declined') && forChat) {
+            openChat(chat.id);
+            if (entry.type === 'clear_declined' && !entry.cancelled && entry.username !== (state.overview && state.overview.username)) notify(t('The clear request was declined.'), 'info');
+        } else if (entry.type === 'message_hidden' && forChat) {
+            delete chat.byId[entry.message_id];
+            chat.messages = chat.messages.filter(function (message) { return message.id !== entry.message_id; });
+            renderMessages(false);
         } else if (entry.type === 'message_edit' && forChat) {
             var edited = chat.byId[entry.message_id];
             if (edited) {
@@ -1851,6 +2144,21 @@
         if (signedIn()) refreshNotifications();
     }
 
+    async function ownPublicJson(keyId) {
+        var jwk = state.vaultData && state.vaultData.keys ? state.vaultData.keys[String(keyId)] : null;
+        if (!jwk || !jwk.x || !jwk.y) throw new Error('missing key');
+        return JSON.stringify({ kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y });
+    }
+
+    async function derivedKey(myKeyId, publicJson, salt, info) {
+        var privateKey = state.privateKeys[String(myKeyId)];
+        if (!privateKey || !publicJson) throw new Error('missing key');
+        var publicKey = await subtle.importKey('jwk', Object.assign({ ext: true }, JSON.parse(publicJson)), { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+        var bits = await subtle.deriveBits({ name: 'ECDH', public: publicKey }, privateKey, 256);
+        var material = await subtle.importKey('raw', bits, 'HKDF', false, ['deriveKey']);
+        return subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: encoder.encode(salt), info: encoder.encode(info) }, material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    }
+
     global.RWLSocial = {
         observeCard: observeCard,
         openProfile: openProfile,
@@ -1858,6 +2166,32 @@
         openChatWith: openChatWith,
         isChatOpenFor: isChatOpenFor,
         refresh: refreshNotifications,
+        closeChat: closeChat,
+        minimize: minimizeChat,
+        restore: restoreChat,
+        showChatList: renderChatList,
+        decorateWindow: decorateWindow,
+        chatElement: chatElement,
+        bumpBubble: bumpBubble,
+        avatarHtml: avatarHtml,
+        nameStyle: nameStyle,
+        renderMarkdown: renderMarkdown,
+        formatStamp: formatStamp,
+        confirmDialog: confirmDialog,
+        notify: notify,
+        identity: function () { return state.overview ? (state.overview.identity || { username: state.overview.username }) : null; },
+        username: function () { return state.overview ? state.overview.username : ''; },
+        crypto: {
+            ensureVault: ensureVault,
+            ready: vaultReady,
+            myKeyId: function () { return state.myKeyId; },
+            ownPublicJson: ownPublicJson,
+            derivedKey: derivedKey,
+            partnerPublic: partnerPublic,
+            toBase64: toBase64,
+            fromBase64: fromBase64,
+            randomBytes: randomBytes
+        },
         resetVault: function () { return vaultDialog('reset'); },
         changeVaultPassphrase: async function (passphrase) {
             if (!vaultReady()) throw new Error(t('Unlock your messages first.'));

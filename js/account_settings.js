@@ -37,6 +37,7 @@ async function loadAccountSettings(user) {
     const profileImg = document.getElementById('settingsProfileImage');
     if (!pendingProfilePictureFile) profileImg.src = userProfileImageSrc(user);
     renderBannerPreview(user);
+    applyAccountLimits(user);
 }
 
 const BANNER_PATH = '/api/profile_banner/';
@@ -202,10 +203,24 @@ function setupBannerUpload() {
     if (removeButton) removeButton.addEventListener('click', removeBanner);
 }
 
-const PROFILE_PICTURE_LIMIT_MB = 16;
+let profilePictureLimitMb = 16;
 const PROFILE_PICTURE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif', 'image/bmp', 'image/x-icon', 'image/vnd.microsoft.icon'];
 const PROFILE_PICTURE_EXTENSIONS = /\.(png|jpe?g|gif|webp|avif|bmp|ico)$/i;
-const PROFILE_PICTURE_HINT = 'PNG, JPG, GIF, WebP, AVIF, BMP or ICO · max ' + PROFILE_PICTURE_LIMIT_MB + ' MB';
+function profilePictureHint() {
+    return 'PNG, JPG, GIF, WebP, AVIF, BMP or ICO · max ' + profilePictureLimitMb + ' MB';
+}
+
+function applyAccountLimits(user) {
+    const pictureLimit = Number(user && user.profile_picture_max_mb);
+    if (pictureLimit > 0) profilePictureLimitMb = pictureLimit;
+    const hint = document.getElementById('profileImageHint');
+    if (hint && !pendingProfilePictureFile && !hint.classList.contains('profile-image-error') && !hint.classList.contains('profile-image-ready')) hint.textContent = profilePictureHint();
+    const bioLimit = Number(user && user.bio_max_length);
+    const bio = document.getElementById('socialBio');
+    const bioMax = document.getElementById('socialBioMax');
+    if (bioLimit > 0 && bio) bio.maxLength = bioLimit;
+    if (bioLimit > 0 && bioMax) bioMax.textContent = String(bioLimit);
+}
 let pendingProfilePictureBase64 = null;
 let pendingProfilePictureFile = null;
 let pendingProfilePreviewUrl = null;
@@ -239,9 +254,9 @@ function setupProfileUpload() {
             showBanner('Unsupported format. Allowed: PNG, JPG, GIF, WebP, AVIF, BMP, ICO.', 'error');
             return;
         }
-        if (file.size > PROFILE_PICTURE_LIMIT_MB * 1024 * 1024) {
-            setProfileImageHint('File too large: ' + formatMegabytes(file.size) + '. The limit is ' + PROFILE_PICTURE_LIMIT_MB + ' MB.', 'error');
-            showBanner('File too large: ' + formatMegabytes(file.size) + '. The limit is ' + PROFILE_PICTURE_LIMIT_MB + ' MB.', 'error');
+        if (file.size > profilePictureLimitMb * 1024 * 1024) {
+            setProfileImageHint('File too large: ' + formatMegabytes(file.size) + '. The limit is ' + profilePictureLimitMb + ' MB.', 'error');
+            showBanner('File too large: ' + formatMegabytes(file.size) + '. The limit is ' + profilePictureLimitMb + ' MB.', 'error');
             return;
         }
         if (pendingProfilePreviewUrl) URL.revokeObjectURL(pendingProfilePreviewUrl);
@@ -301,7 +316,7 @@ async function uploadPendingProfilePicture(token) {
         return false;
     }
     if (result.status < 200 || result.status >= 300) {
-        const message = RWL.errorDetail(result.data, result.status === 413 ? 'File too large (max ' + PROFILE_PICTURE_LIMIT_MB + ' MB)' : 'The picture could not be uploaded.');
+        const message = RWL.errorDetail(result.data, result.status === 413 ? 'File too large (max ' + profilePictureLimitMb + ' MB)' : 'The picture could not be uploaded.');
         setProfileImageHint(message, 'error');
         showBanner(message, 'error');
         return false;
@@ -311,7 +326,7 @@ async function uploadPendingProfilePicture(token) {
         URL.revokeObjectURL(pendingProfilePreviewUrl);
         pendingProfilePreviewUrl = null;
     }
-    setProfileImageHint('Uploaded. ' + PROFILE_PICTURE_HINT, 'ready');
+    setProfileImageHint('Uploaded. ' + profilePictureHint(), 'ready');
     return true;
 }
 

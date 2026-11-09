@@ -359,13 +359,28 @@
             '<div class="bz-mini-visual">' + itemVisual(item) + '</div><span translate="no">' + esc(item.name) + '</span></button>';
     }
 
+    function boundTile(item) {
+        var reason = item.bound_reason || t('This item is bound to your account.');
+        return '<div class="bz-pick bz-pick-bound" role="img" aria-label="' + esc(item.name + ' · ' + reason) + '" title="' + esc(reason) + '">' +
+            '<div class="bz-mini-visual">' + itemVisual(item) + '</div><span translate="no">' + esc(item.name) + '</span><small class="bz-bound-tag">🔒 ' + esc(item.source_label || t('Bound')) + '</small></div>';
+    }
+
+    function tradeableCount(data, key) {
+        return (data.items[key] || []).filter(function (item) { return item.tradeable !== false; }).length;
+    }
+
+    function sellNoteHtml(data) {
+        if (data.staff_mode) return '<p class="bz-note bz-staff-note">' + esc(t('Team mode: you can list every item except exclusive ones. Your own copy stays in your inventory.')) + '</p>';
+        return '<p class="bz-note">' + esc(t('Only items from the Lab-Pass, Mystery Chests, Experiment Crates, trades and gifts between members can be sold. Greyed out items are bound to your account.')) + '</p>';
+    }
+
     async function openSell() {
         var data = await loadSellable();
         if (!data) {
             toast(t('Your inventory could not be loaded.'), 'error');
             return;
         }
-        state.draft = { step: 1, category: CATEGORIES.filter(function (key) { return (data.items[key] || []).length; })[0] || CATEGORIES[0], item: null, kind: 'fixed', currency: 'lc', slots: [[]], activeSlot: 0, pickerCategory: 'launcher_themes', pickerQuery: '' };
+        state.draft = { step: 1, category: CATEGORIES.filter(function (key) { return tradeableCount(data, key); })[0] || CATEGORIES.filter(function (key) { return (data.items[key] || []).length; })[0] || CATEGORIES[0], item: null, kind: 'fixed', currency: 'lc', slots: [[]], activeSlot: 0, pickerCategory: 'launcher_themes', pickerQuery: '' };
         renderSell();
     }
 
@@ -375,11 +390,12 @@
         if (!draft) return;
         if (draft.step === 1) {
             var items = (data.items[draft.category] || []).filter(function (item) { return !draft.query || item.name.toLowerCase().indexOf(draft.query.toLowerCase()) >= 0; });
+            items = items.filter(function (item) { return item.tradeable !== false; }).concat(items.filter(function (item) { return item.tradeable === false; }));
             var modal = openModal(
-                '<h2>' + esc(t('Choose An Item')) + '</h2><p class="bz-note">' + esc(t('Only items in your inventory can be listed. A listed item is held safely until it is sold, traded or cancelled.')) + '</p>' +
-                '<div class="bz-sell-cats">' + CATEGORIES.map(function (key) { return '<button type="button" class="bz-chip' + (key === draft.category ? ' active' : '') + '" data-sell-cat="' + key + '">' + esc(t(CATEGORY_LABELS[key])) + ' <small>' + (data.items[key] || []).length + '</small></button>'; }).join('') + '</div>' +
+                '<h2>' + esc(t('Choose An Item')) + '</h2><p class="bz-note">' + esc(t('Only items in your inventory can be listed. A listed item is held safely until it is sold, traded or cancelled.')) + '</p>' + sellNoteHtml(data) +
+                '<div class="bz-sell-cats">' + CATEGORIES.map(function (key) { return '<button type="button" class="bz-chip' + (key === draft.category ? ' active' : '') + '" data-sell-cat="' + key + '">' + esc(t(CATEGORY_LABELS[key])) + ' <small>' + tradeableCount(data, key) + '</small></button>'; }).join('') + '</div>' +
                 '<input type="search" class="rwl-input bz-sell-search" placeholder="' + esc(t('Search your items')) + '" value="' + esc(draft.query || '') + '" maxlength="60">' +
-                '<div class="bz-pick-grid">' + (items.map(function (item) { return itemTile(item, false, 'data-sell-item="' + esc(item.item_id) + '"'); }).join('') || emptyHtml(t('No items in this category.'))) + '</div>', true);
+                '<div class="bz-pick-grid">' + (items.map(function (item) { return item.tradeable === false ? boundTile(item) : itemTile(item, false, 'data-sell-item="' + esc(item.item_id) + '"'); }).join('') || emptyHtml(t('No items in this category.'))) + '</div>', true);
             Array.prototype.forEach.call(modal.querySelectorAll('[data-sell-cat]'), function (button) {
                 button.addEventListener('click', function () { draft.category = button.getAttribute('data-sell-cat'); renderSell(); });
             });

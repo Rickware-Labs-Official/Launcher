@@ -130,3 +130,24 @@ Owned / Favourite / Index tabs, Pass Licenses (owned only), SVG theme icons (`js
 ## Languages For New Features
 
 New texts live in `js/i18n/<lang>_community.js` and are loaded by pages that set `data-i18n-extra="community"` on the `rwl_boot.js` script tag (index, inventory, bazaar, account settings).
+
+Texts of the growth round (Lab Hub, affiliate program, group chats, gifts, tool list, companion) live in `js/i18n/<lang>_growth.js`. `rwl_boot.js` loads this pack on every page automatically.
+
+## Lab Hub
+
+`sites/lab_hub.html` with `js/lab_hub.js` and `css/lab_hub.css` (sidebar tab *Lab Hub*, config key `lab_hub_tab`). Tabs: overview with events, community goals and activity, leaderboard, Experiment Crates with open odds, lab companion, idle lab, profile card, redeem codes, invite rewards and bug reports. Every value comes from `/api/growth/*`, the page never decides anything on its own. In the launcher the bug report attaches the latest launcher logs through the bridge method `getRecentLogs`.
+
+## Affiliate Program
+
+`sites/affiliate.html` with `js/affiliate.js` and `css/affiliate.css`, linked after *Sessions* in every settings page and in the profile menu. `js/rwl_growth.js` captures `?ref=CODE`, registers the visit through `/api/affiliate/visit` and keeps the returned token in `sessionStorage` until the registration sends it to the backend.
+
+## Companion, Gifts And Group Chats
+
+- `js/rwl_growth.js` (loaded by `api_client.js` on every page): floating lab companion, event banner, gift and bug reward popups.
+- `js/rwl_gifts.js`: gift picker opened from the extended profile (*Send Gift*).
+- `js/rwl_groups.js`: end to end encrypted group chats inside the chat window, invite links (`?group_invite=CODE`).
+- `js/rwl_social.js`: draggable chat window, animated minimize to a floating bubble in the top left corner, chat list with direct messages and groups, avatar decorations, delete for me or everyone and the shared clear request.
+
+## Tool List
+
+The *Owned* view has favourites, category filters and search, launch counters, beta badges and the tool of the day banner with the 24 hour free trial (`/api/growth/tools`, `/api/growth/products/public`).

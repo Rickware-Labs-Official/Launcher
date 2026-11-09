@@ -2355,7 +2355,7 @@ body {
     height: 216px;
     padding: 6px;
     border-radius: 12px;
-    background: #0f0f0f;
+    background: var(--mini-bg);
     overflow: hidden;
 }
 
@@ -2365,24 +2365,24 @@ body {
     gap: 5px;
     padding: 6px;
     border-radius: 8px;
-    background: linear-gradient(180deg, #1a0a2a, #120020);
+    background: linear-gradient(180deg, var(--mini-side-top), var(--mini-side-bottom));
 }
 
 .inv-mini-logo {
     height: 34px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #6a0080, #c97eff);
+    background: linear-gradient(135deg, var(--mini-deep), var(--mini-light));
     margin-bottom: 4px;
 }
 
 .inv-mini-sidebar i {
     height: 9px;
     border-radius: 4px;
-    background: rgba(155, 0, 204, 0.35);
+    background: var(--mini-accent-soft);
 }
 
 .inv-mini-sidebar i:first-of-type {
-    background: #9b00cc;
+    background: var(--mini-accent);
 }
 
 .inv-mini-main {
@@ -2403,23 +2403,23 @@ body {
     flex: 1;
     height: 14px;
     border-radius: 7px;
-    background: #242424;
-    border: 1px solid rgba(155, 0, 204, 0.3);
+    background: var(--mini-field);
+    border: 1px solid var(--mini-accent-faint);
 }
 
 .inv-mini-tab {
     width: 26px;
     height: 10px;
     border-radius: 5px;
-    background: rgba(155, 0, 204, 0.4);
+    background: var(--mini-accent-tab);
 }
 
 .inv-mini-plate {
     width: 64px;
     height: 18px;
     border-radius: 9px;
-    background: linear-gradient(90deg, #6a0080, #c97eff);
-    border: 1px solid rgba(201, 126, 255, 0.6);
+    background: linear-gradient(90deg, var(--mini-deep), var(--mini-light));
+    border: 1px solid var(--mini-light-border);
 }
 
 .inv-mini-cats {
@@ -2431,11 +2431,11 @@ body {
     width: 34px;
     height: 10px;
     border-radius: 5px;
-    background: rgba(155, 0, 204, 0.3);
+    background: var(--mini-accent-faint);
 }
 
 .inv-mini-cats span:first-child {
-    background: #9b00cc;
+    background: var(--mini-accent);
 }
 
 .inv-mini-grid {
@@ -2451,14 +2451,14 @@ body {
     gap: 3px;
     padding: 4px;
     border-radius: 7px;
-    background: #1a1a1a;
-    border: 1px solid rgba(155, 0, 204, 0.3);
+    background: var(--mini-card);
+    border: 1px solid var(--mini-accent-faint);
 }
 
 .inv-mini-card span {
     flex: 1;
     border-radius: 5px;
-    background: linear-gradient(135deg, #3b0057, #9b00cc);
+    background: linear-gradient(135deg, var(--mini-card-image), var(--mini-accent));
 }
 
 .inv-mini-card i {
@@ -2472,7 +2472,7 @@ body {
     height: 7px;
     width: 45%;
     border-radius: 3px;
-    background: #c97eff;
+    background: var(--mini-light);
 }
 
 html.rwl-low-fx .inv-config-bar .inv-chest-action-btn {

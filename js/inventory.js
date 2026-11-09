@@ -228,7 +228,7 @@
             state.catalogRequests[catalogKey] = RWL.apiRequest('/api/cosmetics/catalog/' + catalogKey).then(function(data) {
                 var byId = {};
                 (data.items || []).forEach(function(item) { byId[item.item_id] = item; });
-                state.catalogs[catalogKey] = { items: data.items || [], byId: byId };
+                state.catalogs[catalogKey] = { items: data.items || [], byId: byId, base: data.base_theme || null };
                 return state.catalogs[catalogKey];
             }).catch(function(error) {
                 delete state.catalogRequests[catalogKey];
@@ -1363,6 +1363,31 @@
         box.style.width = width + 'px';
     }
 
+    var MINI_PREVIEW_PALETTE = { bg: '#0f0f0f', sideTop: '#1a0a2a', sideBottom: '#120020', deep: '#6a0080', light: '#c97eff', accent: '#9b00cc', accentSoft: 'rgba(155, 0, 204, 0.35)', accentFaint: 'rgba(155, 0, 204, 0.3)', accentTab: 'rgba(155, 0, 204, 0.4)', lightBorder: 'rgba(201, 126, 255, 0.6)', field: '#242424', card: '#1a1a1a', cardImage: '#3b0057' };
+    var BASE_THEME_FIELDS = ['base_hue', 'band_min', 'band_max', 'min_saturation', 'dark_lightness'];
+
+    function previewTheme(item) {
+        if (!item || item.is_default) return null;
+        var catalog = state.catalogs.launcher_themes;
+        var base = (catalog && catalog.base) || {};
+        var equipped = (state.inventory && state.inventory.equipped_cosmetics && state.inventory.equipped_cosmetics.launcher_theme_data) || {};
+        var theme = Object.assign({}, item);
+        BASE_THEME_FIELDS.forEach(function(field) {
+            if (base[field] !== undefined && base[field] !== null) theme[field] = base[field];
+            else if (equipped[field] !== undefined && equipped[field] !== null) theme[field] = equipped[field];
+        });
+        return theme;
+    }
+
+    function miniPreviewStyle(item) {
+        var theme = previewTheme(item);
+        return KEEP_STYLE + Object.keys(MINI_PREVIEW_PALETTE).map(function(key) {
+            var color = MINI_PREVIEW_PALETTE[key];
+            var themed = theme && window.RWLTheme && RWLTheme.previewValue ? RWLTheme.previewValue(color, theme) : color;
+            return '--mini-' + key.replace(/[A-Z]/g, function(letter) { return '-' + letter.toLowerCase(); }) + ':' + themed + ';';
+        }).join('');
+    }
+
     function postThemePreview(theme) {
         pendingPreviewTheme = theme;
         if (!themeFrame || !themeFrameReady || !themeFrame.contentWindow) return;
@@ -1406,7 +1431,7 @@
         box.querySelector('.inv-hover-caption').textContent = item.name;
         box.hidden = false;
         positionPreview(slot, width, height + 30);
-        postThemePreview(item.is_default ? null : item);
+        postThemePreview(previewTheme(item));
     }
 
     function showThemeMiniPreview(slot, item) {
@@ -1414,13 +1439,9 @@
         if (themeFrame && themeFrame.parentNode) themeFrame.parentNode.removeChild(themeFrame);
         themeFrameReady = false;
         themeFrame = null;
-        var shift = item.is_default ? 0 : ((parseInt(item.hue, 10) || 285) - 285);
-        var saturation = item.is_default ? 100 : Math.max(20, Math.min(200, parseInt(item.saturation, 10) || 100));
-        var lightness = item.is_default ? 100 : Math.max(70, Math.min(130, 100 + (parseInt(item.lightness, 10) || 0)));
-        var filter = 'hue-rotate(' + shift + 'deg) saturate(' + saturation + '%) brightness(' + lightness + '%)';
         var cards = '';
         for (var index = 0; index < 6; index++) cards += '<div class="inv-mini-card"><span></span><i></i><b></b></div>';
-        box.innerHTML = '<div class="inv-mini-home" style="' + KEEP_STYLE + 'filter:' + filter + ';">' +
+        box.innerHTML = '<div class="inv-mini-home" style="' + esc(miniPreviewStyle(item)) + '">' +
             '<div class="inv-mini-sidebar"><span class="inv-mini-logo"></span><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
             '<div class="inv-mini-main"><div class="inv-mini-top"><span class="inv-mini-search"></span><span class="inv-mini-tab"></span><span class="inv-mini-tab"></span><span class="inv-mini-plate"></span></div>' +
             '<div class="inv-mini-cats"><span></span><span></span><span></span><span></span></div>' +

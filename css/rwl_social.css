@@ -1626,3 +1626,290 @@ html.rwl-low-fx .rwl-social-bell {
         width: calc(100vw - 24px);
     }
 }
+.rwl-chat-head {
+    cursor: grab;
+    touch-action: none;
+}
+
+.rwl-chat.rwl-chat-moved {
+    right: auto;
+    bottom: auto;
+    height: min(640px, calc(100vh - 24px));
+}
+
+.rwl-chat.rwl-chat-dragging {
+    user-select: none;
+    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.7), 0 0 34px rgba(155, 0, 204, 0.38);
+}
+
+.rwl-chat.rwl-chat-dragging .rwl-chat-head {
+    cursor: grabbing;
+}
+
+.rwl-chat.rwl-chat-minimizing {
+    animation: rwlChatMinimize 0.26s cubic-bezier(0.55, 0, 0.75, 0.2) forwards;
+    pointer-events: none;
+}
+
+.rwl-chat.rwl-chat-restoring {
+    animation: rwlChatRestore 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+@keyframes rwlChatMinimize {
+    from { transform: translate(0, 0) scale(1); opacity: 1; }
+    to { transform: translate(-46vw, -40vh) scale(0.08); opacity: 0; }
+}
+
+@keyframes rwlChatRestore {
+    from { transform: translate(-46vw, -40vh) scale(0.08); opacity: 0; }
+    to { transform: translate(0, 0) scale(1); opacity: 1; }
+}
+
+.rwl-chat-bubble {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 2400;
+    width: 58px;
+    height: 58px;
+    padding: 0;
+    border: 2px solid rgba(224, 170, 255, 0.85);
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #2a0a44, #0e031a 70%);
+    box-shadow: 0 0 0 4px rgba(155, 0, 204, 0.18), 0 0 22px rgba(157, 78, 221, 0.65);
+    cursor: pointer;
+    animation: rwlBubbleGlow 2.6s ease-in-out infinite;
+}
+
+.rwl-chat-bubble[hidden] {
+    display: none;
+}
+
+.rwl-chat-bubble:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 5px rgba(155, 0, 204, 0.28), 0 0 30px rgba(224, 170, 255, 0.75);
+}
+
+.rwl-chat-bubble.rwl-chat-bubble-pop {
+    animation: rwlBubblePop 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.4), rwlBubbleGlow 2.6s ease-in-out 0.42s infinite;
+}
+
+.rwl-chat-bubble-avatar {
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+}
+
+.rwl-chat-bubble-avatar .rwl-center-img,
+.rwl-chat-bubble-avatar .rwl-plate-avatar-fallback {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.rwl-chat-bubble-avatar .rwl-plate-decoration {
+    width: 64px;
+    height: 64px;
+}
+
+.rwl-chat-bubble-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background: #ff4d6d;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(255, 77, 109, 0.6);
+}
+
+.rwl-chat-bubble-badge[hidden] {
+    display: none;
+}
+
+@keyframes rwlBubblePop {
+    0% { transform: scale(0.2); opacity: 0; }
+    70% { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+@keyframes rwlBubbleGlow {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(155, 0, 204, 0.18), 0 0 18px rgba(157, 78, 221, 0.55); }
+    50% { box-shadow: 0 0 0 6px rgba(155, 0, 204, 0.26), 0 0 30px rgba(224, 170, 255, 0.7); }
+}
+
+.rwl-chat-list {
+    position: absolute;
+    top: 58px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    overflow-y: auto;
+    padding: 8px;
+    background: rgba(14, 3, 26, 0.98);
+    animation: rwlSocialFadeIn 0.16s ease;
+}
+
+.rwl-chat-list[hidden] {
+    display: none;
+}
+
+.rwl-chat-list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 6px 6px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #c9a8ff;
+}
+
+.rwl-chat-list-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: rgba(155, 0, 204, 0.06);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.rwl-chat-list-row:hover,
+.rwl-chat-list-row.active {
+    background: rgba(155, 0, 204, 0.18);
+    border-color: rgba(155, 0, 204, 0.45);
+    transform: translateX(2px);
+}
+
+.rwl-chat-list-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-weight: 600;
+}
+
+.rwl-chat-list-meta {
+    font-size: 11px;
+    color: #a594c4;
+}
+
+.rwl-count-badge {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: #9d4edd;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+}
+
+.rwl-group-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #7b2cbf, #9d4edd);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 13px;
+    box-shadow: 0 0 12px rgba(157, 78, 221, 0.45);
+}
+
+.rwl-msg-avatar-wrap {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    grid-row: span 3;
+    cursor: pointer;
+}
+
+.rwl-msg-avatar-wrap .rwl-msg-avatar {
+    grid-row: auto;
+}
+
+.rwl-msg-avatar-wrap .rwl-plate-decoration {
+    width: 52px;
+    height: 52px;
+}
+
+.rwl-btn-gift {
+    background: linear-gradient(135deg, #b5179e, #7b2cbf);
+    box-shadow: 0 0 14px rgba(181, 23, 158, 0.45);
+    animation: rwlGiftGlow 2.8s ease-in-out infinite;
+}
+
+@keyframes rwlGiftGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(181, 23, 158, 0.35); }
+    50% { box-shadow: 0 0 20px rgba(224, 170, 255, 0.55); }
+}
+
+@media (max-width: 700px) {
+    .rwl-chat.rwl-chat-moved {
+        left: 8px !important;
+        right: 8px;
+        width: auto;
+        height: calc(100vh - 90px);
+    }
+
+    .rwl-chat-bubble {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rwl-chat.rwl-chat-minimizing,
+    .rwl-chat.rwl-chat-restoring,
+    .rwl-chat-bubble,
+    .rwl-chat-bubble.rwl-chat-bubble-pop,
+    .rwl-btn-gift {
+        animation: none;
+    }
+}
+
+.rwl-center-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.rwl-center-group-buttons {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.rwl-center-group-buttons .rwl-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+}
+
+[data-open-group] {
+    cursor: pointer;
+}

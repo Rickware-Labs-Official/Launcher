@@ -141,7 +141,8 @@ async function handleOAuthCallback() {
                 device_key: RWL.deviceKey(),
                 client: RWL.clientKind(),
                 user_agent: navigator.userAgent || null,
-                time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone || null
+                time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+                affiliate_token: mode === 'register' && window.RWLGrowth ? window.RWLGrowth.affiliateToken() : null
             })
         });
 

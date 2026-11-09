@@ -22,6 +22,8 @@
   "inventory_tab_required_permissions":"User",
   "bazaar_tab": true,
   "bazaar_tab_required_permissions":"User",
+  "lab_hub_tab": true,
+  "lab_hub_tab_required_permissions":"User",
   "reviews_tab": true,
   "reviews_tab_required_permissions":"User",
   "partner_tab": true,

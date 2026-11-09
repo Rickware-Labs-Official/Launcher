@@ -1313,9 +1313,10 @@ async function registerUser(username, email, phone, password) {
         var res = await fetch(apiUrl('/api/register'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username, password: password, email: email, phone: phone })
+            body: JSON.stringify({ username: username, password: password, email: email, phone: phone, affiliate_token: window.RWLGrowth ? window.RWLGrowth.affiliateToken() : null, device_key: RWL.deviceKey ? RWL.deviceKey() : null })
         });
         if (res.ok) {
+            if (window.RWLGrowth) window.RWLGrowth.clearAffiliateToken();
             return await loginUser(username, password);
         } else {
             var errData = null;
@@ -1552,6 +1553,10 @@ function setupNavigation() {
             }
             if (page === 'bazaar') {
                 window.location.href = './sites/bazaar.html';
+                return;
+            }
+            if (page === 'labhub') {
+                window.location.href = currentUser ? './sites/lab_hub.html' : './sites/login_register.html?tab=login';
                 return;
             }
             if (page === 'customer' && !currentUser) {
@@ -4584,6 +4589,7 @@ async function loadProducts() {
         return;
     }
     await loadGithubProductRegistry();
+    await refreshToolState(true);
     buildCategoryTabs();
     renderProducts('all');
     setupSortSelect();
@@ -5150,6 +5156,133 @@ function buildProductCard(p, showCategory, mode) {
 }
 
 var ownedSearchQuery = '';
+var ownedFilter = 'all';
+var toolState = null;
+
+function mergeChannelProducts(list) {
+    if (!productsData || !Array.isArray(productsData.products) || !Array.isArray(list)) return 0;
+    var known = {};
+    var added = 0;
+    productsData.products.forEach(function(p) { if (p && p.product_id) known[String(p.product_id)] = true; });
+    list.forEach(function(p) {
+        if (!p || !p.product_id || known[String(p.product_id)]) return;
+        var copy = Object.assign({}, p);
+        if (copy.channel === 'beta' && !copy.banner) copy.banner = 'Beta';
+        productsData.products.push(copy);
+        known[String(copy.product_id)] = true;
+        added++;
+    });
+    return added;
+}
+
+function toolIsFavorite(p) {
+    return !!(toolState && Array.isArray(toolState.favorites) && p && p.product_id && toolState.favorites.indexOf(String(p.product_id)) >= 0);
+}
+
+function toolLaunches(p) {
+    var entry = toolState && toolState.usage && p && p.product_id ? toolState.usage[String(p.product_id)] : null;
+    return entry ? (entry.launches || 0) : 0;
+}
+
+async function refreshToolState(skipRender) {
+    var added = 0;
+    try {
+        if (RWL.getToken()) {
+            toolState = await RWL.apiRequest('/api/growth/tools');
+            added = mergeChannelProducts(toolState.channel_products || []);
+        } else {
+            var publicData = await RWL.apiRequest('/api/growth/products/public');
+            toolState = { favorites: [], usage: {}, trials: {}, beta_access: false, channel_products: publicData.products || [], tool_of_the_day: publicData.tool_of_the_day ? Object.assign({ owned: false, trial_used: false }, publicData.tool_of_the_day) : null };
+            added = mergeChannelProducts(publicData.products || []);
+        }
+    } catch (error) {
+        return;
+    }
+    renderToolOfTheDay();
+    if (skipRender || !document.getElementById('productsGrid')) return;
+    if (added) buildCategoryTabs();
+    if (currentCategory === 'owned') renderOwnedProducts();
+    else if (added) renderProducts(currentCategory || 'all');
+}
+
+async function toggleToolFavorite(p, button) {
+    if (!RWL.getToken()) {
+        showBanner('Sign in to mark favourites.', 'info');
+        return;
+    }
+    if (button) button.disabled = true;
+    try {
+        var result = await RWL.apiRequest('/api/growth/tools/favorite', { method: 'POST', body: { product_id: String(p.product_id), favorite: !toolIsFavorite(p) } });
+        if (toolState) toolState.favorites = result.favorites || [];
+        if (currentCategory === 'owned') renderOwnedProducts();
+        else if (button) button.classList.toggle('active', toolIsFavorite(p));
+    } catch (error) {
+        showBanner(error.message || 'The favourite could not be saved.', 'error');
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
+function decorateToolCard(card, p) {
+    if (!card || !p || !p.product_id) return card;
+    var area = card.querySelector('.product-image-area') || card;
+    var favorite = document.createElement('button');
+    favorite.type = 'button';
+    favorite.className = 'tool-fav-btn' + (toolIsFavorite(p) ? ' active' : '');
+    favorite.title = toolIsFavorite(p) ? 'Remove from favourites' : 'Add to favourites';
+    favorite.setAttribute('aria-label', favorite.title);
+    favorite.textContent = '★';
+    favorite.addEventListener('click', function(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        toggleToolFavorite(p, favorite);
+    });
+    area.appendChild(favorite);
+    var badges = document.createElement('div');
+    badges.className = 'tool-badges';
+    var launches = toolLaunches(p);
+    if (launches) badges.innerHTML += '<span class="tool-badge tool-badge-usage" title="How often you started this tool">Started ' + launches + '×</span>';
+    if (p.channel === 'beta') badges.innerHTML += '<span class="tool-badge tool-badge-beta" title="Early access for Beta and higher accounts">BETA</span>';
+    if (toolState && toolState.tool_of_the_day && toolState.tool_of_the_day.product_id === String(p.product_id)) badges.innerHTML += '<span class="tool-badge tool-badge-day" title="Test this tool for free for 24 hours">Tool of the Day</span>';
+    if (badges.innerHTML) area.appendChild(badges);
+    return card;
+}
+
+function renderToolOfTheDay() {
+    var grid = document.getElementById('productsGrid');
+    if (!grid || !grid.parentNode) return;
+    var banner = document.getElementById('toolOfTheDayBanner');
+    var today = toolState && toolState.tool_of_the_day;
+    if (!today) {
+        if (banner) banner.remove();
+        return;
+    }
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'toolOfTheDayBanner';
+        banner.className = 'tool-day-banner';
+        grid.parentNode.insertBefore(banner, grid);
+    }
+    var action = '';
+    if (!currentUser) action = '<a class="tool-day-btn" href="./sites/login_register.html?tab=login" title="Sign in to start the free trial">Sign In To Test</a>';
+    else if (today.owned) action = '<span class="tool-day-note">You can already use this tool</span>';
+    else if (today.trial_used) action = '<span class="tool-day-note">You already tested this tool</span>';
+    else action = '<button type="button" class="tool-day-btn" id="toolDayTrialBtn" title="Unlock this tool for ' + escHtml(String(today.trial_hours || 24)) + ' hours for free">Start Free Trial</button>';
+    banner.innerHTML = '<span class="tool-day-icon">🧪</span><div class="tool-day-text"><strong>Tool of the Day</strong><span><b translate="no">' + escHtml(today.title) + '</b> · test it ' + escHtml(String(today.trial_hours || 24)) + ' hours for free</span></div>' + action;
+    var trialButton = document.getElementById('toolDayTrialBtn');
+    if (trialButton) trialButton.addEventListener('click', async function() {
+        trialButton.disabled = true;
+        try {
+            await RWL.apiRequest('/api/growth/tools/trial', { method: 'POST', body: { product_id: today.product_id } });
+            showBanner('Your free trial is active for ' + (today.trial_hours || 24) + ' hours. Start the tool in the launcher.', 'success');
+            await checkLoginStatus();
+            await refreshToolState();
+        } catch (error) {
+            trialButton.disabled = false;
+            showBanner(error.message || 'The trial could not be started.', 'error');
+        }
+    });
+}
 
 function isComingSoonProduct(p) {
     var banner = (p.banner || '').toLowerCase().trim();
@@ -5203,6 +5336,8 @@ function launchOwnedProduct(p, button) {
     if (button) button.disabled = true;
     RWLLauncher.runAction(p.product_id).then(function() {
         if (button) button.disabled = false;
+        try { window.dispatchEvent(new CustomEvent('rwl-tool-launched', { detail: { product_id: p.product_id } })); } catch (error) {}
+        if (typeof refreshToolState === 'function') setTimeout(refreshToolState, 2500);
     });
 }
 
@@ -5210,6 +5345,8 @@ function renderOwnedResults(grid) {
     var toolbar = grid.querySelector('.owned-toolbar');
     while (toolbar && toolbar.nextSibling) grid.removeChild(toolbar.nextSibling);
     var list = ownedProductList();
+    if (ownedFilter === 'favorites') list = list.filter(function(p) { return toolIsFavorite(p); });
+    else if (ownedFilter !== 'all') list = list.filter(function(p) { return (p.category || 'Other') === ownedFilter; });
     var query = ownedSearchQuery.trim().toLowerCase();
     if (query) {
         list = list.filter(function(p) {
@@ -5223,7 +5360,7 @@ function renderOwnedResults(grid) {
     if (!list.length) {
         var empty = document.createElement('div');
         empty.className = 'owned-empty';
-        empty.textContent = query ? 'No owned products match your search.' : 'You do not own any products yet. Licenses from purchases, the Lab-Pass and Mystery Chest vouchers appear here.';
+        empty.textContent = query ? 'No owned products match your search.' : (ownedFilter === 'favorites' ? 'You have no favourites yet. Click the star on a tool to add it.' : 'You do not own any products yet. Licenses from purchases, the Lab-Pass and Mystery Chest vouchers appear here.');
         grid.appendChild(empty);
         return;
     }
@@ -5243,6 +5380,7 @@ function renderOwnedResults(grid) {
     });
     keys.forEach(function(key) {
         var items = groups[key].slice();
+        items.sort(function(a, b) { return (toolIsFavorite(b) ? 1 : 0) - (toolIsFavorite(a) ? 1 : 0) || toolLaunches(b) - toolLaunches(a); });
         if (sortVal === 'price-low' || sortVal === 'price-high') {
             items.sort(function(a, b) {
                 var ai = getProductPriceInfo(a), bi = getProductPriceInfo(b);
@@ -5255,7 +5393,7 @@ function renderOwnedResults(grid) {
         title.className = 'owned-group-title';
         title.innerHTML = '<b translate="no">' + escHtml(key) + '</b><span>(' + items.length + ')</span>';
         grid.appendChild(title);
-        items.forEach(function(p) { grid.appendChild(buildProductCard(p, false, 'owned')); });
+        items.forEach(function(p) { grid.appendChild(decorateToolCard(buildProductCard(p, false, 'owned'), p)); });
     });
     applyShinyTextToEls();
     populateViewCounts(grid);
@@ -5270,6 +5408,23 @@ function renderOwnedProducts() {
     toolbar.className = 'owned-toolbar';
     toolbar.innerHTML = '<label class="owned-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><input type="text" id="ownedSearchInput" placeholder="Search your products" autocomplete="off"></label>' +
         '<div><span class="owned-count"></span>' + (hasAllProductsAccess(currentUser) ? '<span class="owned-access-badge" title="Your account can use every product">All Products Unlocked</span>' : '') + '</div>';
+    var ownedCategories = {};
+    ownedProductList().forEach(function(p) { ownedCategories[p.category || 'Other'] = true; });
+    var filterBar = document.createElement('div');
+    filterBar.className = 'owned-filters';
+    var chips = [['all', 'All'], ['favorites', '★ Favourites']].concat(Object.keys(ownedCategories).sort().map(function(name) { return [name, name]; }));
+    if (ownedFilter !== 'all' && ownedFilter !== 'favorites' && !ownedCategories[ownedFilter]) ownedFilter = 'all';
+    filterBar.innerHTML = chips.map(function(chip) {
+        return '<button type="button" class="owned-filter-chip' + (chip[0] === ownedFilter ? ' active' : '') + '" data-owned-filter="' + escHtml(chip[0]) + '"' + (chip[0] !== 'all' && chip[0] !== 'favorites' ? ' translate="no"' : '') + '>' + escHtml(chip[1]) + '</button>';
+    }).join('');
+    filterBar.addEventListener('click', function(event) {
+        var chip = event.target.closest('[data-owned-filter]');
+        if (!chip) return;
+        ownedFilter = chip.getAttribute('data-owned-filter');
+        filterBar.querySelectorAll('.owned-filter-chip').forEach(function(button) { button.classList.toggle('active', button === chip); });
+        renderOwnedResults(grid);
+    });
+    toolbar.appendChild(filterBar);
     grid.appendChild(toolbar);
     var input = toolbar.querySelector('#ownedSearchInput');
     input.value = ownedSearchQuery;
