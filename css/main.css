@@ -795,7 +795,7 @@ body {
 }
 
 .profile-nav-item:hover {
-    background-color: var(--bg-hover);
+    background-color: rgba(157, 78, 221, 0.16);
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
     transition: all 0.25s ease;
 }

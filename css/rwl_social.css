@@ -1913,3 +1913,20 @@ html.rwl-low-fx .rwl-social-bell {
 [data-open-group] {
     cursor: pointer;
 }
+
+.rwl-labcord-open {
+    width: calc(100% - 20px);
+    margin: 10px 10px 4px;
+    justify-content: center;
+}
+
+.rwl-group-channel {
+    max-width: 150px;
+    padding: 6px 28px 6px 10px;
+    font-size: 12px;
+}
+
+.rwl-group-channel-name {
+    color: #e0aaff;
+    font-weight: 700;
+}

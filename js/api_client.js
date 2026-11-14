@@ -336,6 +336,7 @@
         var headers = Object.assign({ 'Content-Type': 'application/json' }, extra || {});
         var token = getToken();
         if (token) headers['Authorization'] = 'Bearer ' + token;
+        if (global.RWL_SURFACE === 'labcord') headers['X-RWL-Surface'] = 'labcord';
         return headers;
     }
 
@@ -593,6 +594,7 @@
     loadCompanion('rwl_upgrade.js');
     loadCompanion('rwl_behavior.js');
     loadCompanion('rwl_social_notify.js');
+    loadCompanion('rwl_pets.js');
     loadCompanion('rwl_growth.js');
 
     global.RWL = {

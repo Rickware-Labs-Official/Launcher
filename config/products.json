@@ -2,8 +2,10 @@
     "categorys": [
     {
       "discord_tools": "Discord Tools",
-      "discord_bots": "Discord Bots",
       "advertising_tools": "Advertising Tools",
+      "automation_tools": "Automation Tools",
+      "general_tools": "General Tools",
+      "discord_bots": "Discord Bots",
       "websites": "Websites",
       "fraud": "Fraud"
     }

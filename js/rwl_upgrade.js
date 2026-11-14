@@ -376,6 +376,8 @@
         }, DOWNLOAD_POLL_MS);
     }
 
+    var bankExchangeMode = 'xp';
+
     function renderBankExchange(card, state) {
         if (!state) {
             card.innerHTML = '<div class="bank-exchange-note">' + esc(t('Sign in to exchange your Discord Server XP for Lab Coins.')) + '</div>';
@@ -392,7 +394,8 @@
         var rate = Math.ceil(Number(state.effective_xp_per_lab_coin) || Number(state.xp_per_lab_coin) || 1);
         card.innerHTML = '<div class="bank-exchange-head"><span>' + esc(t('Exchange XP To Lab Coins')) + '</span><span class="bank-exchange-rate">≈ ' + esc(rate.toLocaleString()) + ' XP = 1 LC</span></div>' +
             '<div class="bank-exchange-balances"><span>XP: <strong>' + esc(Number(state.xp_balance).toLocaleString()) + '</strong></span><span>LC: <strong>' + esc(Number(state.lab_coins).toLocaleString()) + '</strong></span><span>' + esc(t('Maximum now')) + ': <strong>' + esc(Number(state.max_lab_coins).toLocaleString()) + ' LC</strong></span></div>' +
-            '<div class="bank-exchange-row"><input class="bank-exchange-input" type="number" min="1" step="1" inputmode="numeric" placeholder="' + esc(t('Amount of XP')) + '"><button type="button" class="rwl-small-button" data-exchange-max title="' + esc(t('Use all your XP')) + '">' + esc(t('Max')) + '</button><button type="button" class="rwl-small-button" data-exchange-submit title="' + esc(t('Convert the XP into Lab Coins')) + '">' + esc(t('Exchange')) + '</button></div>' +
+            '<div class="bank-exchange-mode"><button type="button" class="bank-exchange-mode-btn' + (bankExchangeMode === 'xp' ? ' active' : '') + '" data-exchange-mode="xp" title="' + esc(t('Enter how much XP you want to spend')) + '">' + esc(t('Amount of XP')) + '</button><button type="button" class="bank-exchange-mode-btn' + (bankExchangeMode === 'lc' ? ' active' : '') + '" data-exchange-mode="lc" title="' + esc(t('Enter how many Lab Coins you want to receive')) + '">' + esc(t('Amount of Lab Coins')) + '</button></div>' +
+            '<div class="bank-exchange-row"><span class="bank-exchange-field"><input class="bank-exchange-input" type="number" min="1" step="1" inputmode="numeric" placeholder="' + esc(bankExchangeMode === 'lc' ? t('Amount of Lab Coins') : t('Amount of XP')) + '"><span class="bank-exchange-steps"><button type="button" data-exchange-step="1" title="' + esc(t('Increase')) + '" aria-label="' + esc(t('Increase')) + '"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"></polyline></svg></button><button type="button" data-exchange-step="-1" title="' + esc(t('Decrease')) + '" aria-label="' + esc(t('Decrease')) + '"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button></span></span><button type="button" class="rwl-small-button" data-exchange-half title="' + esc(t('Use half of your XP')) + '">' + esc(t('Half')) + '</button><button type="button" class="rwl-small-button" data-exchange-max title="' + esc(t('Use all your XP')) + '">' + esc(t('Max')) + '</button><button type="button" class="rwl-small-button" data-exchange-submit title="' + esc(t('Convert the XP into Lab Coins')) + '">' + esc(t('Exchange')) + '</button></div>' +
             '<div class="bank-exchange-quote"></div><div class="rwl-inline-error" hidden></div>';
         var input = card.querySelector('.bank-exchange-input');
         var quote = card.querySelector('.bank-exchange-quote');
@@ -401,17 +404,45 @@
             errorBox.textContent = text || '';
             errorBox.hidden = !text;
         }
+        var exchangeRate = Number(state.effective_xp_per_lab_coin) || 1;
+        function xpAmount() {
+            var entered = parseInt(input.value, 10);
+            if (!(entered > 0)) return 0;
+            return bankExchangeMode === 'lc' ? Math.ceil(entered * exchangeRate) : entered;
+        }
+        function setFromXp(xp) {
+            var usable = Math.max(0, Math.floor(xp));
+            input.value = String(bankExchangeMode === 'lc' ? Math.floor(usable / exchangeRate) : usable);
+            updateQuote();
+            showError('');
+        }
         function updateQuote() {
-            var amount = parseInt(input.value, 10);
+            var amount = xpAmount();
             var valid = !input.value || (amount > 0 && amount <= state.xp_balance);
             input.classList.toggle('rwl-invalid', !valid);
-            quote.textContent = amount > 0 ? '≈ ' + Math.floor(amount / (Number(state.effective_xp_per_lab_coin) || 1)).toLocaleString() + ' LC' : '';
+            if (!(amount > 0)) quote.textContent = '';
+            else if (bankExchangeMode === 'lc') quote.textContent = amount <= state.xp_balance ? '≈ ' + amount.toLocaleString() + ' XP' : t('Not enough XP') + ' · ' + amount.toLocaleString() + ' XP';
+            else quote.textContent = '≈ ' + Math.floor(amount / exchangeRate).toLocaleString() + ' LC';
             return valid && amount > 0;
         }
         input.addEventListener('input', function () { updateQuote(); showError(''); });
-        card.querySelector('[data-exchange-max]').addEventListener('click', function () {
-            input.value = String(state.xp_balance || 0);
-            updateQuote();
+        card.querySelector('[data-exchange-max]').addEventListener('click', function () { setFromXp(state.xp_balance || 0); });
+        card.querySelector('[data-exchange-half]').addEventListener('click', function () { setFromXp((state.xp_balance || 0) / 2); });
+        Array.prototype.forEach.call(card.querySelectorAll('[data-exchange-step]'), function (stepButton) {
+            stepButton.addEventListener('click', function () {
+                var limit = bankExchangeMode === 'lc' ? Math.floor((state.xp_balance || 0) / exchangeRate) : (state.xp_balance || 0);
+                var next = (parseInt(input.value, 10) || 0) + parseInt(stepButton.getAttribute('data-exchange-step'), 10);
+                input.value = String(Math.max(1, Math.min(next, Math.max(1, limit))));
+                updateQuote();
+                showError('');
+            });
+        });
+        Array.prototype.forEach.call(card.querySelectorAll('[data-exchange-mode]'), function (modeButton) {
+            modeButton.addEventListener('click', function () {
+                if (bankExchangeMode === modeButton.getAttribute('data-exchange-mode')) return;
+                bankExchangeMode = modeButton.getAttribute('data-exchange-mode');
+                renderBankExchange(card, state);
+            });
         });
         card.querySelector('[data-exchange-submit]').addEventListener('click', function (event) {
             if (!updateQuote()) {
@@ -419,8 +450,8 @@
                 return;
             }
             var button = event.currentTarget;
-            var amount = parseInt(input.value, 10);
-            var coins = Math.floor(amount / (Number(state.effective_xp_per_lab_coin) || 1));
+            var amount = xpAmount();
+            var coins = Math.floor(amount / exchangeRate);
             global.RWLDialog.confirm({
                 title: 'Exchange XP To Lab Coins',
                 message: 'Exchange ' + amount.toLocaleString() + ' XP for about ' + coins.toLocaleString() + ' LC? This cannot be undone.',
@@ -494,6 +525,7 @@
             revealRow('Language', account.preferred_language || 'en') +
             '</div>' +
             '<label class="rwl-toggle-row"><span>' + esc(t('Show when I was last online')) + '<small>' + esc(t('Other users can see this in the dashboard.')) + '</small></span><input type="checkbox" id="rwlShowLastOnline"' + (account.show_last_online !== false ? ' checked' : '') + '></label>' +
+            (account.can_display_always_online ? '<label class="rwl-toggle-row"><span>' + esc(t('Display Always Online (Admin Only)')) + '<small>' + esc(t('Other members always see you as online. Your real status and the statistics stay unchanged.')) + '</small></span><input type="checkbox" id="rwlAlwaysOnline"' + (account.display_always_online ? ' checked' : '') + '></label>' : '') +
             '<label class="rwl-toggle-row"><span>' + esc(t('Reduced effects')) + '<small>' + esc(t('Turns off animated theme scenes and slows effects. Recommended for weaker hardware.')) + '</small></span><input type="checkbox" id="rwlReducedEffects"' + (account.reduced_effects ? ' checked' : '') + '></label>';
         host.addEventListener('click', function (event) {
             var button = event.target.closest('.rwl-reveal-button');
@@ -516,6 +548,8 @@
         }
         host.querySelector('#rwlShowLastOnline').addEventListener('change', function (event) { savePreference('show_last_online', event.target); });
         host.querySelector('#rwlReducedEffects').addEventListener('change', function (event) { savePreference('reduced_effects', event.target); });
+        var alwaysOnline = host.querySelector('#rwlAlwaysOnline');
+        if (alwaysOnline) alwaysOnline.addEventListener('change', function (event) { savePreference('display_always_online', event.target); });
     }
 
     function setupAccountPage() {

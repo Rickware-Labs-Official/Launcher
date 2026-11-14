@@ -1116,3 +1116,88 @@ body {
         width: 100%;
     }
 }
+
+.bank-exchange-mode {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    background: rgba(13, 9, 20, 0.6);
+    border: 1px solid rgba(157, 78, 221, 0.3);
+}
+
+.bank-exchange-mode-btn {
+    padding: 7px 14px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: rgba(224, 170, 255, 0.8);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bank-exchange-mode-btn:hover {
+    background: rgba(157, 78, 221, 0.18);
+    color: #ffffff;
+}
+
+.bank-exchange-mode-btn.active {
+    background: rgba(123, 44, 191, 0.55);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(157, 78, 221, 0.5);
+}
+
+.bank-exchange-field {
+    position: relative;
+    flex: 1;
+    min-width: 140px;
+    display: flex;
+}
+
+.bank-exchange-field .bank-exchange-input {
+    flex: 1;
+    width: 100%;
+    padding-right: 34px;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.bank-exchange-field .bank-exchange-input::-webkit-outer-spin-button,
+.bank-exchange-field .bank-exchange-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.bank-exchange-steps {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    bottom: 4px;
+    width: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.bank-exchange-steps button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid rgba(157, 78, 221, 0.45);
+    border-radius: 6px;
+    background: rgba(123, 44, 191, 0.35);
+    color: #e0aaff;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bank-exchange-steps button:hover {
+    background: rgba(157, 78, 221, 0.7);
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(157, 78, 221, 0.6);
+}

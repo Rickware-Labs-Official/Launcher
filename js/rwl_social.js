@@ -1181,6 +1181,7 @@
     function renderChatShell() {
         var chat = state.chat;
         var element = chatElement();
+        element.setAttribute('data-chat-kind', 'dm');
         var partner = chat.partner;
         var detail = chat.detail;
         var canAttach = detail.can_send.image || detail.can_send.video || detail.can_send.file;
@@ -1204,6 +1205,7 @@
                 '<button type="button" class="rwl-icon-btn" data-chat-action="list" title="' + esc(t('All chats')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>' +
                 '<div class="rwl-center-avatar">' + avatarHtml(partner, 'rwl-center-img', true, true) + '</div>' +
                 '<div class="rwl-chat-title" data-chat-action="profile" title="' + esc(t('Open the profile')) + '" translate="no"><strong style="' + esc(nameStyle(partner)) + '">' + esc(partner.username) + '</strong><span class="rwl-chat-lock"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' + esc(t('End to end encrypted')) + '</span></div>' +
+                '<button type="button" class="rwl-icon-btn rwl-labcord-btn" data-chat-action="labcord" title="' + esc(t('Open Labcord in a new tab')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>' +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="pins" title="' + esc(t('Pinned messages')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5"/><path d="M5 17h14l-2-5V5h1V3H6v2h1v7z"/></svg></button>' +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="clear" title="' + esc(t('Clear the chat history')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>' +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="minimize" title="' + esc(t('Minimize the chat')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
@@ -1377,7 +1379,8 @@
         }
         var channels = (state.notifications && state.notifications.channels) || [];
         var currentGroup = global.RWLGroups && global.RWLGroups.current ? global.RWLGroups.current() : null;
-        var html = '<div class="rwl-chat-list-head"><strong>' + esc(t('Direct Messages')) + '</strong>' + (global.RWLGroups ? '<button type="button" class="rwl-btn rwl-btn-secondary" data-chat-action="group_new">' + esc(t('New Group')) + '</button>' : '') + '</div>';
+        var html = (global.RWLGroups && global.RWLGroups.openLabcord ? '<button type="button" class="rwl-btn rwl-labcord-open" data-chat-action="labcord" title="' + esc(t('Open Labcord in a new tab')) + '">' + esc(t('Open Labcord')) + '</button>' : '') +
+            '<div class="rwl-chat-list-head"><strong>' + esc(t('Direct Messages')) + '</strong>' + (global.RWLGroups ? '<button type="button" class="rwl-btn rwl-btn-secondary" data-chat-action="group_new">' + esc(t('New Group')) + '</button>' : '') + '</div>';
         html += channels.length ? channels.map(function (row) {
             var active = state.chat && state.chat.id === row.channel_id;
             return '<button type="button" class="rwl-chat-list-row' + (active ? ' active' : '') + '" data-chat-action="switch_dm" data-channel="' + esc(row.channel_id) + '"><span class="rwl-center-avatar">' + avatarHtml(row.partner, 'rwl-center-img', true, true) + '</span><span class="rwl-chat-list-name" translate="no" style="' + esc(nameStyle(row.partner)) + '">' + esc(row.partner.username) + '</span>' + (row.unread ? '<span class="rwl-count-badge">' + (row.unread > 99 ? '99+' : row.unread) + '</span>' : '') + '</button>';
@@ -1980,6 +1983,7 @@
         if (action === 'close') closeChat();
         else if (action === 'minimize') minimizeChat();
         else if (action === 'list') renderChatList();
+        else if (action === 'labcord' && global.RWLGroups && global.RWLGroups.openLabcord) global.RWLGroups.openLabcord();
         else if (action === 'clear' || action === 'clear_confirm') requestClear();
         else if (action === 'clear_cancel') declineClear();
         else if (action === 'switch_dm') openChat(actionButton.getAttribute('data-channel'));

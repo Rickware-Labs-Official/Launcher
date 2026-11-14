@@ -18,6 +18,7 @@
     var baseUrl = bootScript && bootScript.src ? bootScript.src.replace(/js\/rwl_boot\.js(?:[?#].*)?$/, '') : './';
     var extraPacks = ((bootScript && bootScript.getAttribute('data-i18n-extra')) || '').split(/\s+/).filter(function (entry) { return /^[a-z_]+$/.test(entry); });
     if (extraPacks.indexOf('growth') < 0) extraPacks.push('growth');
+    if (extraPacks.indexOf('nova') < 0) extraPacks.push('nova');
 
     function readStorage(key) {
         try { return global.localStorage.getItem(key); } catch (error) { return null; }

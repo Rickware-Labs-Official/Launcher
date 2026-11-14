@@ -58,6 +58,7 @@
     }
 
     function companionSvg(companion, size) {
+        if (global.RWLPets && global.RWLPets.svg) return global.RWLPets.svg(companion, size, decoration);
         var back = ['cape', 'plasma_aura', 'pixel_wings'];
         var equipped = (companion && companion.equipped) || [];
         var hue = Math.max(0, Math.min(360, parseInt(companion && companion.hue, 10) || 270));
@@ -123,7 +124,7 @@
             '<div class="rwl-companion-bar"><span style="width:' + progress + '%"></span></div>' +
             '<div class="rwl-companion-actions">' + data.catalog.care_actions.map(function (action) {
                 var label = { feed: t('Feed'), pet: t('Pet'), play: t('Play') }[action] || action;
-                return '<button type="button" class="rwl-btn rwl-btn-secondary" data-companion-care="' + action + '"' + (cooling ? ' disabled' : '') + ' title="' + esc(cooling ? t('Your companion needs a short break') : label) + '">' + esc(label) + '</button>';
+                return '<button type="button" class="rwl-btn rwl-btn-secondary" data-companion-care="' + action + '"' + (cooling ? ' disabled' : '') + ' title="' + esc(cooling ? t('Your pet needs a short break') : label) + '">' + esc(label) + '</button>';
             }).join('') + '</div>' +
             '<a class="rwl-companion-link" href="' + esc(pageUrl('lab_hub.html')) + '">' + esc(t('Open the Lab Hub')) + '</a>';
     }

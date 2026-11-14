@@ -452,7 +452,7 @@
             if (draft.kind === 'fixed') form += '<label class="rwl-field">' + esc(t('Price')) + '<input type="number" class="rwl-input" data-field="price" min="1" max="' + data.limits.max_price + '" step="1" value="' + esc(draft.price || '') + '" placeholder="100"></label>';
             else form += '<label class="rwl-field">' + esc(t('Start price')) + '<input type="number" class="rwl-input" data-field="start_price" min="1" max="' + data.limits.max_price + '" step="1" value="' + esc(draft.start_price || '') + '" placeholder="50"></label>' +
                 '<label class="rwl-field">' + esc(t('Minimum price')) + '<input type="number" class="rwl-input" data-field="min_price" min="1" max="' + data.limits.max_price + '" step="1" value="' + esc(draft.min_price || '') + '" placeholder="100"></label>' +
-                '<label class="rwl-field">' + esc(t('Duration in hours')) + '<input type="number" class="rwl-input" data-field="duration_hours" min="' + data.limits.min_hours + '" max="' + data.limits.max_hours + '" step="1" value="' + esc(draft.duration_hours || 24) + '"></label>';
+                '<label class="rwl-field">' + esc(t('Duration')) + '<span class="bz-duration"><input type="number" class="rwl-input" data-field="duration_hours" min="1" max="' + (draft.duration_unit === 'days' ? (data.limits.max_days || 62) : data.limits.max_hours) + '" step="1" value="' + esc(draft.duration_hours || 24) + '"><select class="rwl-select" data-field="duration_unit" title="' + esc(t('Choose hours or days')) + '"><option value="hours"' + (draft.duration_unit === 'days' ? '' : ' selected') + '>' + esc(t('Hours')) + '</option><option value="days"' + (draft.duration_unit === 'days' ? ' selected' : '') + '>' + esc(t('Days')) + '</option></select></span><small class="bz-duration-hint">' + esc(data.limits.unlimited_duration ? t('No day limit for your account') : t('Maximum') + ': ' + (data.limits.max_days || 62) + ' ' + t('Days')) + '</small></label>';
             form += '</div>';
             if (draft.kind === 'auction') form += '<p class="bz-note">' + esc(t('The item only sells when the highest bid reaches your minimum price. Bids in the last 2 minutes extend the auction.')) + '</p>';
         } else {
@@ -584,10 +584,13 @@
             payload.currency = draft.currency;
             payload.start_price = number(draft.start_price);
             payload.min_price = number(draft.min_price);
-            payload.duration_hours = number(draft.duration_hours);
+            var durationValue = number(draft.duration_hours);
+            var durationLimit = draft.duration_unit === 'days' ? (limits.max_days || 62) : limits.max_hours;
+            if (draft.duration_unit === 'days') payload.duration_days = durationValue;
+            else payload.duration_hours = durationValue;
             valid = markInvalid(modal, 'start_price', payload.start_price < 1) && valid;
             valid = markInvalid(modal, 'min_price', payload.min_price < payload.start_price) && valid;
-            valid = markInvalid(modal, 'duration_hours', payload.duration_hours < limits.min_hours || payload.duration_hours > limits.max_hours) && valid;
+            valid = markInvalid(modal, 'duration_hours', durationValue < 1 || durationValue > durationLimit) && valid;
         } else {
             var slots = draft.slots.filter(function (slot) { return slot.length; });
             if (!slots.length) {

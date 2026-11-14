@@ -530,3 +530,112 @@ html.rwl-low-fx .rwl-companion-orb,
 html.rwl-low-fx .rwl-event-banner {
     animation: none;
 }
+.rwl-pet.pv .cp-body { fill: var(--pa); stroke: var(--pb); }
+.rwl-pet.pv .cp-accent { fill: var(--pb); }
+.rwl-pet.pv .cp-orbit { stroke: var(--pb); }
+.rwl-pet .cp-outline { fill: none; stroke: #e0aaff; stroke-width: 2.5; }
+.rwl-pet.pv .cp-outline { stroke: var(--pb); }
+.rwl-pet .cp-body, .rwl-pet .cp-outline { stroke-linejoin: round; }
+.rwl-pet .cp-tail { fill: none; stroke: #9d4edd; stroke-width: 7; stroke-linecap: round; }
+.rwl-pet.pv .cp-tail { stroke: var(--pa); }
+.rwl-pet .cp-arm { fill: none; stroke: #9d4edd; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+.rwl-pet.pv .cp-arm { stroke: var(--pa); }
+.rwl-pet .cp-whisker { fill: none; stroke: #1a0b2e; stroke-width: 1.4; stroke-linecap: round; opacity: 0.7; }
+.rwl-pet .cp-belly { fill: #f5e6ff; }
+.rwl-pet .cp-beak { fill: #ffb703; stroke: #b8860b; stroke-width: 0.8; }
+.rwl-pet .cp-facet { fill: none; stroke: #f5e6ff; stroke-width: 1.4; opacity: 0.6; }
+.rwl-pet .cp-pot { fill: #b5651d; stroke: #7a3e0c; stroke-width: 1.2; }
+.rwl-pet .cp-shell { fill: #3c096c; stroke: #e0aaff; stroke-width: 2; }
+.rwl-pet.pv .cp-shell { fill: var(--pb); stroke: var(--pa); }
+.rwl-pet .pv-star-gold { fill: #ffd700; }
+
+.rwl-pet .pd-a { fill: var(--da); stroke: rgba(255, 255, 255, 0.3); stroke-width: 0.6; stroke-linejoin: round; }
+.rwl-pet .pd-b { fill: var(--db); }
+.rwl-pet.pv-dark .cp-eye, .rwl-pet.pv-dark .cp-mouth { fill: #ffffff; }
+.rwl-pet.pv-dark .cp-glint { fill: #1a0b2e; }
+.rwl-pet.pv-dark .cp-line, .rwl-pet.pv-dark .cp-whisker { stroke: #ffffff; }
+.rwl-pet .pd-l { fill: none; stroke: var(--db); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.rwl-pet .pd-s { fill: none; stroke: var(--da); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.rwl-pet .pd-s2 { fill: none; stroke: var(--da); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.rwl-pet .pd-lens { fill: var(--db); fill-opacity: 0.3; stroke: var(--da); stroke-width: 2.2; }
+.rwl-pet .pd-ring { fill: none; stroke: var(--da); stroke-width: 3.5; }
+.rwl-pet .pd-dash { fill: none; stroke: var(--da); stroke-width: 3; stroke-dasharray: 7 6; stroke-linecap: round; opacity: 0.8; }
+.rwl-pet .pd-dash2 { fill: none; stroke: var(--db); stroke-width: 2; stroke-dasharray: 3 7; stroke-linecap: round; opacity: 0.8; }
+.rwl-pet .pd-thin { fill: none; stroke: var(--da); stroke-width: 1; opacity: 0.55; }
+.rwl-pet .pd-hex { fill: var(--da); fill-opacity: 0.1; stroke: var(--da); stroke-width: 2; }
+.rwl-pet .pd-bubble { fill: var(--db); fill-opacity: 0.35; stroke: var(--da); stroke-width: 1.2; }
+.rwl-pet .pd-void { fill: var(--da); fill-opacity: 0.16; stroke: none; }
+.rwl-pet .pd-spark { fill: #ffffff; }
+.rwl-pet .pd-t-u .pd-a { stroke: #ffffff; stroke-width: 0.9; stroke-linejoin: round; }
+.rwl-pet .pd-t-u .pd-b { stroke: #ffffff; stroke-width: 0.5; }
+.rwl-pet .pd-move, .rwl-pet .pd-rot, .rwl-pet .pd-flap-l, .rwl-pet .pd-flap-r, .rwl-pet .pd-spin, .rwl-pet .pd-sway, .rwl-pet .pd-wave, .rwl-pet .pv-rays, .rwl-pet .pv-orbit, .rwl-pet .pv-sweep, .rwl-pet .pv-jitter, .rwl-pet .pv-flame, .rwl-pet .pd-float, .rwl-pet .pd-fall, .rwl-pet .pd-twinkle, .rwl-pet .pd-pulse, .rwl-pet .pv-twinkle, .rwl-pet .pv-rise { transform-box: view-box; }
+.rwl-pet .pd-rot, .rwl-pet .pv-rays, .rwl-pet .pv-orbit { transform-origin: 50px 54px; }
+.rwl-pet .pd-rot { animation: rwlPetSpin 14s linear infinite; }
+.rwl-pet .pd-rot.pd-rev { animation-direction: reverse; animation-duration: 10s; }
+.rwl-pet .pd-spin { animation: rwlPetSpinFlat 0.5s linear infinite; }
+.rwl-pet .pd-flap-l { transform-origin: 26px 54px; }
+.rwl-pet .pd-flap-r { transform-origin: 74px 54px; }
+.rwl-pet .pd-sway { animation: rwlPetSway 3.2s ease-in-out infinite; }
+.rwl-pet .pd-wave { animation: rwlPetWave 2.4s ease-in-out infinite; }
+.rwl-pet .pd-float { animation: rwlPetFloat 3s ease-in-out infinite; }
+.rwl-pet .pd-fall { animation: rwlPetFall 3.4s linear infinite; }
+.rwl-pet .pd-twinkle, .rwl-pet .pv-twinkle { animation: rwlPetTwinkle 2.2s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+.rwl-pet .pd-flicker { animation: rwlPetFlicker 0.9s ease-in-out infinite; transform-origin: center bottom; transform-box: fill-box; }
+.rwl-pet .pd-flash { animation: rwlPetFlash 2.6s steps(1, end) infinite; }
+.rwl-pet .pd-pulse, .rwl-pet .pv-pulse { animation: rwlPetPulse 2s ease-in-out infinite; }
+.rwl-pet .pd-blink { animation: rwlPetPulse 1.4s ease-in-out infinite; }
+.rwl-pet .pd-late, .rwl-pet .pv-late { animation-delay: -0.8s; }
+.rwl-pet .pd-later, .rwl-pet .pv-later { animation-delay: -1.6s; }
+.rwl-pet .pd-t-r .pd-move { animation: rwlPetShimmer 2.6s ease-in-out infinite; }
+.rwl-pet .pd-t-e .pd-move, .rwl-pet .pd-t-m .pd-move { filter: drop-shadow(0 0 2.5px var(--da)); }
+.rwl-pet .pd-t-e.pd-slot-head .pd-move, .rwl-pet .pd-t-m.pd-slot-head .pd-move, .rwl-pet .pd-t-e.pd-slot-eyes .pd-move, .rwl-pet .pd-t-m.pd-slot-eyes .pd-move { animation: rwlPetBob 2.4s ease-in-out infinite; }
+.rwl-pet .pd-t-e.pd-slot-neck .pd-move, .rwl-pet .pd-t-m.pd-slot-neck .pd-move { animation: rwlPetSwing 2.6s ease-in-out infinite; transform-origin: 50px 76px; }
+.rwl-pet .pd-t-e.pd-slot-held .pd-move, .rwl-pet .pd-t-m.pd-slot-held .pd-move { animation: rwlPetSway 2.8s ease-in-out infinite; transform-origin: 84px 84px; }
+.rwl-pet .pd-t-e.pd-slot-ground .pd-move, .rwl-pet .pd-t-m.pd-slot-ground .pd-move, .rwl-pet .pd-t-e.pd-slot-aura .pd-move, .rwl-pet .pd-t-m.pd-slot-aura .pd-move { animation: rwlPetBreathe 3s ease-in-out infinite; transform-origin: 50px 54px; }
+.rwl-pet .pd-t-e .pd-flap-l, .rwl-pet .pd-t-m .pd-flap-l { animation: rwlPetFlapLeft 1.3s ease-in-out infinite; }
+.rwl-pet .pd-t-e .pd-flap-r, .rwl-pet .pd-t-m .pd-flap-r { animation: rwlPetFlapRight 1.3s ease-in-out infinite; }
+.rwl-pet .pd-t-m { animation: rwlPetRainbow 6s linear infinite; }
+.rwl-pet.pv-neon .cp-body, .rwl-pet.pv-neon .cp-outline { animation: rwlPetNeon 1.8s ease-in-out infinite; }
+.rwl-pet .pv-rise { animation: rwlPetRise 2.8s ease-in infinite; }
+.rwl-pet .pv-sweep { animation: rwlPetSweep 2.8s ease-in-out infinite; }
+.rwl-pet .pv-flame { animation: rwlPetFlicker 0.8s ease-in-out infinite; transform-origin: 50px 100px; }
+.rwl-pet .pv-jitter { animation: rwlPetJitter 1.1s steps(2, end) infinite; }
+.rwl-pet.pv-glitch .cp-figure { animation: rwlPetGlitch 2.4s steps(1, end) infinite; }
+.rwl-pet.pv-prism .cp-overlay { animation: rwlPetRainbow 5s linear infinite; }
+.rwl-pet.pv-inferno .cp-body { animation: rwlPetHeat 1.6s ease-in-out infinite; }
+.rwl-pet.pv-galaxy .cp-overlay > circle { animation: rwlPetPulse 4s ease-in-out infinite; }
+.rwl-pet.pv-shadow .cp-body { animation: rwlPetPulse 3s ease-in-out infinite; }
+.rwl-pet .pv-rays { animation: rwlPetSpin 18s linear infinite; }
+.rwl-pet .pv-orbit { animation: rwlPetSpin 9s linear infinite reverse; }
+.rwl-pet.pv-celestial .cp-figure { animation: rwlPetBob 3s ease-in-out infinite; }
+.rwl-pet.rwl-pet-still *, .rwl-pet.rwl-pet-still { animation: none !important; }
+
+@keyframes rwlPetSpin { to { transform: rotate(360deg); } }
+@keyframes rwlPetSpinFlat { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.15); } }
+@keyframes rwlPetSway { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+@keyframes rwlPetSwing { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes rwlPetWave { 0%, 100% { transform: skewY(-6deg); } 50% { transform: skewY(6deg); } }
+@keyframes rwlPetFloat { 0%, 100% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(-4px); opacity: 0.75; } }
+@keyframes rwlPetFall { 0% { transform: translateY(-10px); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(16px); opacity: 0; } }
+@keyframes rwlPetTwinkle { 0%, 100% { opacity: 0.25; transform: scale(0.6); } 50% { opacity: 1; transform: scale(1.15); } }
+@keyframes rwlPetFlicker { 0%, 100% { transform: scaleY(1); opacity: 0.95; } 50% { transform: scaleY(1.18); opacity: 0.7; } }
+@keyframes rwlPetFlash { 0%, 100% { opacity: 0.15; } 8% { opacity: 1; } 14% { opacity: 0.3; } 20% { opacity: 1; } 34% { opacity: 0.15; } }
+@keyframes rwlPetPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes rwlPetShimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.5) drop-shadow(0 0 2px #ffffff); } }
+@keyframes rwlPetBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+@keyframes rwlPetBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes rwlPetFlapLeft { 0%, 100% { transform: rotate(0deg) scaleX(1); } 50% { transform: rotate(-14deg) scaleX(0.82); } }
+@keyframes rwlPetFlapRight { 0%, 100% { transform: rotate(0deg) scaleX(1); } 50% { transform: rotate(14deg) scaleX(0.82); } }
+@keyframes rwlPetRainbow { to { filter: hue-rotate(360deg); } }
+@keyframes rwlPetNeon { 0%, 100% { filter: drop-shadow(0 0 1px #39ff14); } 50% { filter: drop-shadow(0 0 6px #39ff14); } }
+@keyframes rwlPetRise { 0% { transform: translateY(8px); opacity: 0; } 30% { opacity: 0.9; } 100% { transform: translateY(-46px); opacity: 0; } }
+@keyframes rwlPetSweep { 0%, 20% { transform: translateX(-10px); } 80%, 100% { transform: translateX(150px); } }
+@keyframes rwlPetJitter { 0% { transform: translate(-4px, 0); } 50% { transform: translate(5px, 3px); } 100% { transform: translate(-2px, -3px); } }
+@keyframes rwlPetGlitch { 0%, 86%, 100% { transform: translate(0, 0); filter: none; } 88% { transform: translate(-3px, 1px); filter: hue-rotate(80deg); } 92% { transform: translate(3px, -1px); filter: hue-rotate(-60deg); } 96% { transform: translate(-1px, 0); } }
+@keyframes rwlPetHeat { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25) saturate(1.3); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .rwl-pet, .rwl-pet * { animation: none !important; }
+}
+
+html.rwl-low-fx .rwl-pet, html.rwl-low-fx .rwl-pet * { animation: none !important; }

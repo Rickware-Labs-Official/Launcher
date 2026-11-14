@@ -151,3 +151,20 @@ Texts of the growth round (Lab Hub, affiliate program, group chats, gifts, tool 
 ## Tool List
 
 The *Owned* view has favourites, category filters and search, launch counters, beta badges and the tool of the day banner with the 24 hour free trial (`/api/growth/tools`, `/api/growth/products/public`).
+
+## Personal Pet
+The Lab Hub tab is called Personal Pet. `js/rwl_pets.js` draws every body, variant and decoration from its key, names, rarities and unlock levels come from `/api/growth/companion/catalog`. The pickers filter by rarity, slot and name and show 30 entries per page.
+
+## Profile Card Editor
+The Profile Card tab of the Lab Hub is an editor for layout, colours, font, background, tagline, social links, name colour, card border, avatar decoration and nameplate. The preview is rendered by the backend, animated cards are downloaded as GIF.
+
+## Labcord
+`sites/labcord.html`, `js/labcord.js` and `css/labcord.css`. The page needs a login, sets `window.RWL_SURFACE = 'labcord'` and docks the encrypted chat component of `rwl_social.js` and `rwl_groups.js` into the main area. Server rail, channel list with categories, friends view, member list by role, server settings and the decoration switcher are part of `labcord.js`. The chat popup has an Open Labcord button and a channel picker.
+
+## Other Changes
+- The Customer Panel moved from the left sidebar into the profile menu.
+- Category tabs follow a fixed order, Beta has its own tab.
+- Owned Discord Bots, Websites and source only products show Download instead of Launch.
+- The XP exchange has a Half button, a switch between XP and Lab Coins and themed step buttons.
+- Auctions can be created in hours or days.
+- New texts are in `js/i18n/<lang>_nova.js`, loaded automatically by `rwl_boot.js`.

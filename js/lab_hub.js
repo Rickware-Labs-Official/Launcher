@@ -2,15 +2,15 @@
     if (!global.RWL) return;
 
     var esc = RWL.escapeHtml;
-    var TABS = ['overview', 'leaderboard', 'crates', 'companion', 'lab', 'card', 'codes', 'invites', 'bugs'];
+    var TABS = ['overview', 'companion', 'leaderboard', 'card', 'crates', 'lab', 'codes', 'invites', 'bugs'];
     var BOARDS = [['week', 'This Week'], ['month', 'This Month'], ['all', 'All Time'], ['pass', 'Lab Pass Level']];
     var REWARD_LABELS = { lab_coins: 'Lab Coins', xp: 'XP', research: 'Research', chest: 'Mystery Chests', cosmetic: 'Random Cosmetic' };
     var REWARD_ICONS = { lab_coins: '💰', xp: '⭐', research: '🧪', chest: '🎁', cosmetic: '✨' };
-    var TARGET_LABELS = { lab_pass: 'Lab Pass XP', discord_xp: 'Discord XP', activity: 'Activity Points', idle_lab: 'Idle Lab Research', companion: 'Companion XP' };
-    var METRIC_LABELS = { any: 'Any activity', use_tool: 'Using tools', launch_tools: 'Starting tools', login: 'Daily logins', customize_profile: 'Profile changes', apply_theme: 'Applying themes', add_friend: 'New friendships', bazaar_purchase: 'Bazaar purchases', bazaar_sale: 'Bazaar sales', bazaar_trade: 'Bazaar trades', forum_post: 'Forum posts', review: 'Reviews', idle_collect: 'Idle Lab collections', companion_care: 'Companion care' };
+    var TARGET_LABELS = { lab_pass: 'Lab Pass XP', discord_xp: 'Discord XP', activity: 'Activity Points', idle_lab: 'Idle Lab Research', companion: 'Pet XP' };
+    var METRIC_LABELS = { any: 'Any activity', use_tool: 'Using tools', launch_tools: 'Starting tools', login: 'Daily logins', customize_profile: 'Profile changes', apply_theme: 'Applying themes', add_friend: 'New friendships', bazaar_purchase: 'Bazaar purchases', bazaar_sale: 'Bazaar sales', bazaar_trade: 'Bazaar trades', forum_post: 'Forum posts', review: 'Reviews', idle_collect: 'Idle Lab collections', companion_care: 'Pet care' };
     var MOOD_LABELS = { curious: 'Curious', ecstatic: 'Ecstatic', happy: 'Happy', bored: 'Bored', sleepy: 'Sleepy' };
     var CARE_LABELS = { feed: 'Feed', pet: 'Pet', play: 'Play' };
-    var CARE_TITLES = { feed: 'Feed your companion', pet: 'Pet your companion', play: 'Play with your companion' };
+    var CARE_TITLES = { feed: 'Feed your pet', pet: 'Pet your pet', play: 'Play with your pet' };
     var CARE_ICONS = { feed: '🍪', pet: '🤚', play: '🎾' };
     var BUG_STATUS = { open: 'Submitted', confirmed: 'Confirmed', resolved: 'Resolved', rejected: 'Rejected', duplicate: 'Duplicate' };
     var REFERRAL_STATUS = { active: 'Waiting', kept: 'Yours forever', left_early: 'Removed', revoked: 'Revoked' };
@@ -213,7 +213,7 @@
                 (activity.pending_points ? '<div class="lh-note">' + formatNumber(activity.pending_points) + ' points are still being counted</div>' : '') +
             '</div>';
         content.innerHTML =
-            section('Your Activity', activityHtml, '', 'Starting tools, chatting, trading and caring for your companion earns activity points. Activity points fill up Experiment Crates.') +
+            section('Your Activity', activityHtml, '', 'Starting tools, chatting, trading and caring for your pet earns activity points. Activity points fill up Experiment Crates.') +
             section('Events', events.length ? '<div class="lh-event-list">' + events.map(eventCard).join('') + '</div>' : empty('No events are planned right now. Keep an eye on our Discord server!')) +
             section('Community Goals', goals.length ? '<div class="lh-goal-list">' + goals.map(goalCard).join('') + '</div>' : empty('There is no community goal running right now.'), '', 'Everyone works together. When the goal is reached, every contributor gets the reward.');
     }
@@ -336,31 +336,157 @@
         }
     }
 
-    function speciesPicker(selected, hue, mood) {
-        var species = ((state.hub.companion || {}).catalog || {}).species || [];
-        return '<div class="lh-species" id="lhSpecies">' + species.map(function (entry) {
-            return '<button type="button" class="lh-species-card' + (entry.key === selected ? ' active' : '') + '" data-species="' + esc(entry.key) + '" title="' + esc(entry.name) + '">' + companionSvg({ species: entry.key, hue: hue, mood: mood || 'happy', equipped: [] }, 64) + '<span translate="no">' + esc(entry.name) + '</span></button>';
-        }).join('') + '</div>';
+    var PET_PAGE_SIZE = 30;
+    var SLOT_LABELS = { head: 'Head', eyes: 'Eyes', neck: 'Neck', back: 'Back', aura: 'Aura', held: 'Held Item', ground: 'Ground' };
+    var petState = { catalog: null, loading: null, failed: false, species: { rarity: 'all', query: '', page: 0, owned: false }, decorations: { rarity: 'all', slot: 'all', query: '', page: 0, owned: false } };
+
+    function decodeCatalog(raw) {
+        var rarities = raw.rarities || [];
+        var slots = raw.slots || [];
+        return {
+            rarities: rarities,
+            slots: slots,
+            max_equipped: raw.max_equipped || 6,
+            species: (raw.species || []).map(function (row) { return { key: row[0], name: row[1], rarity: rarities[row[2]] || 'Common', level: row[3], animated: !!row[4] }; }),
+            decorations: (raw.decorations || []).map(function (row) { return { key: row[0], name: row[1], rarity: rarities[row[2]] || 'Common', level: row[3], animated: !!row[4], slot: slots[row[5]] || 'head' }; })
+        };
     }
 
-    function bindSpecies(onPick) {
-        var picker = byId('lhSpecies');
-        if (!picker) return;
-        picker.addEventListener('click', function (event) {
-            var card = event.target.closest('[data-species]');
-            if (card) onPick(card.getAttribute('data-species'));
+    function loadPetCatalog() {
+        if (petState.catalog) return Promise.resolve(petState.catalog);
+        if (petState.loading) return petState.loading;
+        petState.failed = false;
+        petState.loading = api('/companion/catalog').then(function (raw) {
+            petState.catalog = decodeCatalog(raw || {});
+            petState.loading = null;
+            return petState.catalog;
+        }).catch(function (error) {
+            petState.loading = null;
+            petState.failed = true;
+            if (error && error.status === 401) requireLogin();
+            return null;
         });
+        return petState.loading;
+    }
+
+    function petUnlocked(entry, level, everything) {
+        return !!everything || entry.level <= level;
+    }
+
+    function filteredEntries(kind, level, everything) {
+        var filter = petState[kind];
+        var entries = (petState.catalog && petState.catalog[kind]) || [];
+        var query = filter.query.trim().toLowerCase();
+        return entries.filter(function (entry) {
+            if (filter.rarity !== 'all' && entry.rarity !== filter.rarity) return false;
+            if (kind === 'decorations' && filter.slot !== 'all' && entry.slot !== filter.slot) return false;
+            if (filter.owned && !petUnlocked(entry, level, everything)) return false;
+            return !query || entry.name.toLowerCase().indexOf(query) >= 0;
+        });
+    }
+
+    function rarityStyle(rarity) {
+        return '--rwl-keep:1;--lh-rarity:' + RWL.sanitizeHex(RWL.rarityColor ? RWL.rarityColor(rarity) : '#e0aaff', '#e0aaff');
+    }
+
+    function pickerHtml(kind, draft, level, everything) {
+        var filter = petState[kind];
+        var catalog = petState.catalog;
+        if (!catalog) return empty(petState.failed ? 'The catalog could not be loaded. Please try again later.' : 'Loading...');
+        var entries = filteredEntries(kind, level, everything);
+        var pages = Math.max(1, Math.ceil(entries.length / PET_PAGE_SIZE));
+        filter.page = Math.max(0, Math.min(filter.page, pages - 1));
+        var visible = entries.slice(filter.page * PET_PAGE_SIZE, (filter.page + 1) * PET_PAGE_SIZE);
+        var chips = ['all'].concat(catalog.rarities).map(function (rarity) {
+            return '<button type="button" class="lh-chip-btn' + (filter.rarity === rarity ? ' active' : '') + '" data-pick-rarity="' + esc(rarity) + '" style="' + (rarity === 'all' ? '' : rarityStyle(rarity)) + '" title="' + esc(rarity === 'all' ? 'Show every rarity' : 'Show only ' + rarity + ' items') + '">' + esc(rarity === 'all' ? 'All' : rarity) + '</button>';
+        }).join('');
+        var slotSelect = kind === 'decorations' ? '<select class="lh-select" data-pick-slot title="Filter by slot"><option value="all">All Slots</option>' + catalog.slots.map(function (slot) { return '<option value="' + esc(slot) + '"' + (filter.slot === slot ? ' selected' : '') + '>' + esc(SLOT_LABELS[slot] || slot) + '</option>'; }).join('') + '</select>' : '';
+        var cards = visible.map(function (entry) {
+            var open = petUnlocked(entry, level, everything);
+            var active = kind === 'species' ? draft.species === entry.key : draft.equipped.indexOf(entry.key) >= 0;
+            var preview = kind === 'species' ? { species: entry.key, hue: draft.hue, mood: 'happy', equipped: [] } : { species: draft.species, hue: draft.hue, mood: 'happy', equipped: [entry.key] };
+            return '<button type="button" class="lh-pick-card' + (active ? ' active' : '') + (open ? '' : ' locked') + '" data-pick="' + esc(entry.key) + '" style="' + rarityStyle(entry.rarity) + '" title="' + esc(open ? entry.name + ' · ' + entry.rarity : 'Unlocks at level ' + entry.level) + '">' +
+                (entry.animated ? '<i class="lh-pick-anim" title="Animated">✦</i>' : '') + companionSvg(preview, 62) +
+                '<span class="lh-pick-name" translate="no">' + esc(entry.name) + '</span>' +
+                '<small class="lh-pick-meta">' + (open ? esc(entry.rarity) : '🔒 Level ' + formatNumber(entry.level)) + '</small></button>';
+        }).join('');
+        return '<div class="lh-pick-bar"><div class="lh-chip-row">' + chips + '</div><div class="lh-pick-tools">' + slotSelect +
+            '<input type="search" class="lh-input lh-pick-search" data-pick-search maxlength="40" placeholder="Search by name" value="' + esc(filter.query) + '">' +
+            '<label class="lh-check lh-pick-owned"><input type="checkbox" data-pick-owned' + (filter.owned ? ' checked' : '') + '><span>Unlocked only</span></label></div></div>' +
+            (visible.length ? '<div class="lh-pick-grid">' + cards + '</div>' : empty('Nothing matches these filters.')) +
+            '<div class="lh-pick-pager"><button type="button" class="lh-btn lh-btn-small" data-pick-page="-1"' + (filter.page <= 0 ? ' disabled' : '') + ' title="Previous page">‹</button><span>' + formatNumber(entries.length) + ' items · Page ' + (filter.page + 1) + ' / ' + pages + '</span><button type="button" class="lh-btn lh-btn-small" data-pick-page="1"' + (filter.page >= pages - 1 ? ' disabled' : '') + ' title="Next page">›</button></div>';
+    }
+
+    function bindPicker(container, kind, refresh, onPick) {
+        if (!container) return;
+        var filter = petState[kind];
+        container.addEventListener('click', function (event) {
+            var rarity = event.target.closest('[data-pick-rarity]');
+            if (rarity) {
+                filter.rarity = rarity.getAttribute('data-pick-rarity');
+                filter.page = 0;
+                refresh();
+                return;
+            }
+            var pager = event.target.closest('[data-pick-page]');
+            if (pager && !pager.disabled) {
+                filter.page += parseInt(pager.getAttribute('data-pick-page'), 10);
+                refresh();
+                return;
+            }
+            var card = event.target.closest('[data-pick]');
+            if (card) onPick(card.getAttribute('data-pick'), card.classList.contains('locked'));
+        });
+        container.addEventListener('input', function (event) {
+            if (!event.target.matches('[data-pick-search]')) return;
+            filter.query = event.target.value.slice(0, 40);
+            filter.page = 0;
+            var caret = event.target.selectionStart;
+            refresh();
+            var input = container.querySelector('[data-pick-search]');
+            if (input) {
+                input.focus();
+                try { input.setSelectionRange(caret, caret); } catch (error) {}
+            }
+        });
+        container.addEventListener('change', function (event) {
+            if (event.target.matches('[data-pick-slot]')) {
+                filter.slot = event.target.value;
+                filter.page = 0;
+                refresh();
+            } else if (event.target.matches('[data-pick-owned]')) {
+                filter.owned = event.target.checked;
+                filter.page = 0;
+                refresh();
+            }
+        });
+    }
+
+    function findEntry(kind, key) {
+        var entries = (petState.catalog && petState.catalog[kind]) || [];
+        for (var index = 0; index < entries.length; index++) if (entries[index].key === key) return entries[index];
+        return null;
+    }
+
+    function starterPicker(selected) {
+        var species = ((state.hub.companion || {}).catalog || {}).species || [];
+        return '<div class="lh-pick-grid" id="lhSpecies">' + species.map(function (entry) {
+            return '<button type="button" class="lh-pick-card' + (entry.key === selected ? ' active' : '') + '" data-species="' + esc(entry.key) + '" style="' + rarityStyle(entry.rarity || 'Common') + '" title="' + esc(entry.name) + '">' + companionSvg({ species: entry.key, hue: 270, mood: 'happy', equipped: [] }, 62) + '<span class="lh-pick-name" translate="no">' + esc(entry.name) + '</span></button>';
+        }).join('') + '</div>';
     }
 
     function renderCompanion(content) {
         var data = state.hub.companion || {};
         var catalog = data.catalog || {};
         if (!catalog.enabled) {
-            content.innerHTML = '<section class="lh-card lh-section">' + empty('Your companion is resting right now. Please come back later.') + '</section>';
+            content.innerHTML = '<section class="lh-card lh-section">' + empty('Your personal pet is resting right now. Please come back later.') + '</section>';
             return;
         }
         if (!data.adopted) renderAdoption(content, catalog);
-        else renderCompanionView(content, data);
+        else {
+            renderCompanionView(content, data);
+            if (!petState.catalog) loadPetCatalog().then(function () { if (state.tab === 'companion' && state.hub && state.hub.companion && state.hub.companion.adopted) renderCompanionView(byId('lhContent'), state.hub.companion); });
+        }
     }
 
     function renderAdoption(content, catalog) {
@@ -368,14 +494,16 @@
         content.innerHTML = '<section class="lh-card lh-section lh-companion">' +
             '<div class="lh-companion-stage">' + companionSvg({ species: draft.species, hue: 270, mood: 'happy', equipped: [] }, 160) + '</div>' +
             '<div class="lh-companion-info">' +
-                '<h2 class="lh-section-title">Adopt A Lab Companion</h2>' +
-                '<p class="lh-section-hint">Your companion lives in the launcher, reacts when you start tools, levels up with you and unlocks decorations along the way.</p>' +
-                speciesPicker(draft.species, 270, 'happy') +
-                '<label class="lh-field"><span>Name</span><input type="text" class="lh-input" id="lhAdoptName" maxlength="24" placeholder="Give your companion a name" value="' + esc(draft.name) + '"></label>' +
-                '<button type="button" class="lh-btn lh-btn-primary" id="lhAdoptBtn" title="Adopt this companion">Adopt Companion</button>' +
+                '<h2 class="lh-section-title">Adopt Your Personal Pet</h2>' +
+                '<p class="lh-section-hint">Your pet lives in the launcher, reacts when you start tools and grows with you up to level ' + formatNumber(catalog.max_level || 1000) + '. Along the way it unlocks ' + formatNumber(catalog.species_total || 400) + ' species and ' + formatNumber(catalog.decorations_total || 500) + ' decorations from Common to Mythical.</p>' +
+                starterPicker(draft.species) +
+                '<label class="lh-field"><span>Name</span><input type="text" class="lh-input" id="lhAdoptName" maxlength="24" placeholder="Give your pet a name" value="' + esc(draft.name) + '"></label>' +
+                '<button type="button" class="lh-btn lh-btn-primary" id="lhAdoptBtn" title="Adopt this pet">Adopt Pet</button>' +
             '</div></section>';
-        bindSpecies(function (key) {
-            draft.species = key;
+        byId('lhSpecies').addEventListener('click', function (event) {
+            var card = event.target.closest('[data-species]');
+            if (!card) return;
+            draft.species = card.getAttribute('data-species');
             draft.name = byId('lhAdoptName').value;
             renderAdoption(content, catalog);
         });
@@ -399,7 +527,7 @@
                 toast(t('Welcome to the lab, little one!'));
             } catch (error) {
                 button.disabled = false;
-                failure(error, t('The companion could not be adopted.'));
+                failure(error, t('The pet could not be adopted.'));
             }
         });
     }
@@ -409,24 +537,37 @@
         return state.companionDraft;
     }
 
+    function unlockedCount(kind, level, everything) {
+        var entries = (petState.catalog && petState.catalog[kind]) || [];
+        return entries.filter(function (entry) { return petUnlocked(entry, level, everything); }).length;
+    }
+
     function renderCompanionView(content, data) {
         var companion = data.companion;
         var catalog = data.catalog;
         var draft = companionDraft(companion);
         var perLevel = Math.max(1, catalog.xp_per_level || 1);
         var maxed = companion.level >= catalog.max_level;
-        var unlocked = companion.unlocked || [];
-        var decorations = (catalog.decorations || []).map(function (entry) {
-            var open = unlocked.indexOf(entry.key) >= 0;
-            var active = draft.equipped.indexOf(entry.key) >= 0;
-            return '<button type="button" class="lh-deco' + (active ? ' active' : '') + (open ? '' : ' locked') + '" data-deco="' + esc(entry.key) + '"' + (open ? '' : ' disabled') + ' title="' + esc(open ? entry.name : 'Unlocks at level ' + entry.level) + '">' + companionSvg({ species: draft.species, hue: draft.hue, mood: 'happy', equipped: [entry.key] }, 54) + '<span>' + esc(entry.name) + '</span>' + (open ? '' : '<small>Level ' + entry.level + '</small>') + '</button>';
-        }).join('');
+        var everything = !!catalog.all_unlocked;
+        var maxEquipped = catalog.max_equipped || 6;
+        var rarity = companion.rarity || 'Common';
+        function stageSvg() {
+            return companionSvg({ species: draft.species, hue: draft.hue, mood: companion.mood, equipped: draft.equipped }, 180);
+        }
+        function equippedChips() {
+            if (!draft.equipped.length) return '<span class="lh-muted">No decorations equipped</span>';
+            return draft.equipped.map(function (key) {
+                var entry = findEntry('decorations', key);
+                return '<button type="button" class="lh-equipped-chip" data-unequip="' + esc(key) + '" style="' + rarityStyle(entry ? entry.rarity : 'Common') + '" title="Remove this decoration"><span translate="no">' + esc(entry ? entry.name : key) + '</span> ✕</button>';
+            }).join('');
+        }
         content.innerHTML =
             '<section class="lh-card lh-section lh-companion">' +
-                '<div class="lh-companion-stage" id="lhCompanionStage">' + companionSvg({ species: draft.species, hue: draft.hue, mood: companion.mood, equipped: draft.equipped }, 170) + '</div>' +
+                '<div class="lh-companion-stage" id="lhCompanionStage">' + stageSvg() + '</div>' +
                 '<div class="lh-companion-info">' +
-                    '<div class="lh-row-between lh-wrap"><h2 class="lh-section-title" translate="no">' + esc(companion.name) + '</h2><span class="lh-badge lh-badge-live">' + esc(MOOD_LABELS[companion.mood] || companion.mood) + '</span></div>' +
-                    '<div class="lh-metrics">' + metric('Level', formatNumber(companion.level)) + metric('Total XP', formatNumber(companion.xp)) + metric('Tool XP Today', formatNumber(companion.launch_xp_today) + ' / ' + formatNumber(companion.daily_launch_xp_cap), 'Your companion gains XP when you start tools') + '</div>' +
+                    '<div class="lh-row-between lh-wrap"><h2 class="lh-section-title" translate="no">' + esc(companion.name) + '</h2><span class="lh-pet-tags"><span class="lh-badge lh-rarity-badge" style="' + rarityStyle(rarity) + '">' + esc(rarity) + '</span><span class="lh-badge lh-badge-live">' + esc(MOOD_LABELS[companion.mood] || companion.mood) + '</span></span></div>' +
+                    '<div class="lh-metrics">' + metric('Level', formatNumber(companion.level) + ' / ' + formatNumber(catalog.max_level)) + metric('Total XP', formatNumber(companion.xp)) + metric('Tool XP Today', formatNumber(companion.launch_xp_today) + ' / ' + formatNumber(companion.daily_launch_xp_cap), 'Your pet gains XP when you start tools') +
+                        (petState.catalog ? metric('Species', formatNumber(unlockedCount('species', companion.level, everything)) + ' / ' + formatNumber(petState.catalog.species.length), 'Species you unlocked') + metric('Decorations', formatNumber(unlockedCount('decorations', companion.level, everything)) + ' / ' + formatNumber(petState.catalog.decorations.length), 'Decorations you unlocked') : '') + '</div>' +
                     '<div class="lh-row-between"><span>Next Level</span><span>' + (maxed ? 'Max Level' : formatNumber(companion.level_progress) + ' / ' + formatNumber(perLevel)) + '</span></div>' +
                     progressBar(maxed ? perLevel : companion.level_progress, perLevel) +
                     '<div class="lh-care" id="lhCare">' + (catalog.care_actions || []).map(function (action) {
@@ -437,40 +578,74 @@
             '</section>' +
             '<section class="lh-card lh-section">' +
                 '<h2 class="lh-section-title">Customise</h2>' +
-                '<label class="lh-field"><span>Name</span><input type="text" class="lh-input" id="lhCompanionName" maxlength="24" value="' + esc(draft.name) + '"></label>' +
-                '<div class="lh-field"><span>Species</span>' + speciesPicker(draft.species, draft.hue, companion.mood) + '</div>' +
-                '<label class="lh-field"><span>Colour</span><input type="range" class="lh-range" id="lhHue" min="0" max="360" step="1" value="' + esc(String(draft.hue)) + '"></label>' +
-                '<div class="lh-field"><span>Decorations</span><small>Choose up to 3 decorations. New ones unlock as your companion levels up.</small><div class="lh-decos" id="lhDecos">' + decorations + '</div></div>' +
-                '<div class="lh-actions"><button type="button" class="lh-btn lh-btn-primary" id="lhCompanionSave" title="Save your companion">Save Changes</button><button type="button" class="lh-btn" id="lhCompanionReset" title="Discard your unsaved changes">Reset</button></div>' +
-            '</section>';
+                '<div class="lh-pet-basics"><label class="lh-field"><span>Name</span><input type="text" class="lh-input" id="lhCompanionName" maxlength="24" value="' + esc(draft.name) + '"></label>' +
+                '<label class="lh-field"><span>Colour Shift</span><input type="range" class="lh-range" id="lhHue" min="0" max="360" step="1" value="' + esc(String(draft.hue)) + '"></label></div>' +
+                '<div class="lh-field"><span>Equipped Decorations (' + draft.equipped.length + ' / ' + maxEquipped + ')</span><div class="lh-equipped" id="lhEquipped">' + equippedChips() + '</div></div>' +
+                '<div class="lh-actions"><button type="button" class="lh-btn lh-btn-primary" id="lhCompanionSave" title="Save your pet">Save Changes</button><button type="button" class="lh-btn" id="lhCompanionReset" title="Discard your unsaved changes">Reset</button></div>' +
+            '</section>' +
+            '<section class="lh-card lh-section"><h2 class="lh-section-title">Species</h2><p class="lh-section-hint">New species unlock as your pet levels up. Rare and higher species are animated.</p><div id="lhSpeciesPick">' + pickerHtml('species', draft, companion.level, everything) + '</div></section>' +
+            '<section class="lh-card lh-section"><h2 class="lh-section-title">Decorations</h2><p class="lh-section-hint">Choose up to ' + maxEquipped + ' decorations. Gleaming, Radiant and Mythic decorations are animated.</p><div id="lhDecoPick">' + pickerHtml('decorations', draft, companion.level, everything) + '</div></section>';
         startCooldown(companion.care_cooldown_seconds);
+        function refreshStage() {
+            byId('lhCompanionStage').innerHTML = stageSvg();
+        }
+        function refreshSpecies() {
+            byId('lhSpeciesPick').innerHTML = pickerHtml('species', draft, companion.level, everything);
+        }
+        function refreshDecorations() {
+            byId('lhDecoPick').innerHTML = pickerHtml('decorations', draft, companion.level, everything);
+            byId('lhEquipped').innerHTML = equippedChips();
+            var label = byId('lhEquipped').previousElementSibling;
+            if (label) label.textContent = 'Equipped Decorations (' + draft.equipped.length + ' / ' + maxEquipped + ')';
+        }
         byId('lhCompanionName').addEventListener('input', function () { draft.name = this.value; });
         byId('lhHue').addEventListener('input', function () {
             draft.hue = Math.max(0, Math.min(360, parseInt(this.value, 10) || 0));
-            byId('lhCompanionStage').innerHTML = companionSvg({ species: draft.species, hue: draft.hue, mood: companion.mood, equipped: draft.equipped }, 170);
+            refreshStage();
         });
-        byId('lhHue').addEventListener('change', function () { renderCompanionView(content, data); });
-        bindSpecies(function (key) {
+        byId('lhHue').addEventListener('change', function () {
+            refreshSpecies();
+            refreshDecorations();
+        });
+        bindPicker(byId('lhSpeciesPick'), 'species', refreshSpecies, function (key, locked) {
+            var entry = findEntry('species', key);
+            if (locked) {
+                toast('This species unlocks at level ' + formatNumber(entry ? entry.level : 0) + '.', 'error');
+                return;
+            }
             draft.species = key;
-            renderCompanionView(content, data);
+            refreshStage();
+            refreshSpecies();
+            refreshDecorations();
         });
-        byId('lhDecos').addEventListener('click', function (event) {
-            var button = event.target.closest('[data-deco]');
-            if (!button || button.disabled) return;
-            var key = button.getAttribute('data-deco');
+        bindPicker(byId('lhDecoPick'), 'decorations', refreshDecorations, function (key, locked) {
+            var entry = findEntry('decorations', key);
+            if (locked) {
+                toast('This decoration unlocks at level ' + formatNumber(entry ? entry.level : 0) + '.', 'error');
+                return;
+            }
             var index = draft.equipped.indexOf(key);
             if (index >= 0) draft.equipped.splice(index, 1);
-            else if (draft.equipped.length >= (catalog.max_equipped || 3)) {
-                toast(t('You can wear up to 3 decorations at once.'), 'error');
+            else if (draft.equipped.length >= maxEquipped) {
+                toast('You can wear up to ' + maxEquipped + ' decorations at once.', 'error');
                 return;
             } else draft.equipped.push(key);
-            renderCompanionView(content, data);
+            refreshStage();
+            refreshDecorations();
+        });
+        byId('lhEquipped').addEventListener('click', function (event) {
+            var chip = event.target.closest('[data-unequip]');
+            if (!chip) return;
+            var index = draft.equipped.indexOf(chip.getAttribute('data-unequip'));
+            if (index >= 0) draft.equipped.splice(index, 1);
+            refreshStage();
+            refreshDecorations();
         });
         byId('lhCare').addEventListener('click', function (event) {
             var button = event.target.closest('[data-care]');
             if (button && !button.disabled) careFor(button.getAttribute('data-care'));
         });
-        byId('lhCompanionSave').addEventListener('click', function () { saveCompanion(this); });
+        byId('lhCompanionSave').addEventListener('click', function () { saveCompanion(this, maxEquipped); });
         byId('lhCompanionReset').addEventListener('click', function () {
             state.companionDraft = null;
             renderCompanionView(content, data);
@@ -491,7 +666,7 @@
                 return;
             }
             note.hidden = false;
-            note.textContent = 'You can care for your companion again in ' + formatDuration(left);
+            note.textContent = 'You can care for your pet again in ' + formatDuration(left);
         }
         if (seconds > 0) {
             update();
@@ -507,14 +682,14 @@
             if (global.RWLGrowth && global.RWLGrowth.setCompanion) global.RWLGrowth.setCompanion(result);
             if (global.RWLGrowth && global.RWLGrowth.react) global.RWLGrowth.react(result.level_up ? 'level' : 'love', result.level_up ? t('Level up! Thank you!') : t('That felt great!'));
             if (state.tab === 'companion') renderTab();
-            if (result.level_up) toast(t('Your companion reached a new level!'));
+            if (result.level_up) toast(t('Your pet reached a new level!'));
         } catch (error) {
-            failure(error, t('Your companion did not react.'));
+            failure(error, t('Your pet did not react.'));
             loadHub(true).then(function () { if (state.tab === 'companion') renderTab(); });
         }
     }
 
-    async function saveCompanion(button) {
+    async function saveCompanion(button, maxEquipped) {
         var draft = state.companionDraft;
         var input = byId('lhCompanionName');
         var name = input.value.trim();
@@ -524,15 +699,15 @@
         }
         button.disabled = true;
         try {
-            var result = await api('/companion/update', { method: 'POST', body: { name: name, species: draft.species, hue: draft.hue, equipped: draft.equipped.slice(0, 3) } });
+            var result = await api('/companion/update', { method: 'POST', body: { name: name, species: draft.species, hue: draft.hue, equipped: draft.equipped.slice(0, maxEquipped || 6) } });
             state.hub.companion = result;
             state.companionDraft = null;
             if (global.RWLGrowth && global.RWLGrowth.setCompanion) global.RWLGrowth.setCompanion(result);
             if (state.tab === 'companion') renderTab();
-            toast(t('Your companion was updated.'));
+            toast(t('Your pet was updated.'));
         } catch (error) {
             button.disabled = false;
-            failure(error, t('Your companion could not be updated.'));
+            failure(error, t('Your pet could not be updated.'));
         }
     }
 
@@ -755,24 +930,404 @@
         }
     }
 
+    var CARD_PREVIEW_DELAY_MS = 800;
+    var CARD_PICK_PAGE = 24;
+    var HEX_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+    var COLOR_LABELS = { background_a: 'Background 1', background_b: 'Background 2', accent: 'Accent', text: 'Text', panel: 'Panels' };
+    var SHOW_LABELS = { level: 'Lab Pass level', activity: 'Activity points', member_since: 'Member since', account_type: 'Account type', badges: 'Badges', tools: 'Favourite tools', socials: 'Social links', pet: 'Personal pet' };
+    var PART_LABELS = { name_color: 'Name Colour', border: 'Card Border', avatar_decoration: 'Avatar Decoration', nameplate: 'Nameplate' };
+    var MODE_LABELS = { profile: 'Same as my profile', none: 'None', item: 'Choose for this card' };
+    var cardState = { editor: null, draft: null, dirty: false, previewTimer: null, previewToken: 0, animated: false, kind: 'image/png', pick: {} };
+
+    function cloneValue(value) {
+        return JSON.parse(JSON.stringify(value));
+    }
+
+    function cardOptions() {
+        return (cardState.editor && cardState.editor.options) || {};
+    }
+
+    function optionList(entries, selected) {
+        return (entries || []).map(function (entry) {
+            var key = typeof entry === 'string' ? entry : entry.key;
+            var name = typeof entry === 'string' ? entry.charAt(0).toUpperCase() + entry.slice(1) : entry.name;
+            return '<option value="' + esc(key) + '"' + (key === selected ? ' selected' : '') + '>' + esc(name) + '</option>';
+        }).join('');
+    }
+
+    function rangeField(label, path, value, bounds, step, suffix) {
+        return '<label class="lh-field lh-card-range"><span>' + esc(label) + ' <b data-range-value="' + esc(path) + '">' + esc(String(value)) + esc(suffix || '') + '</b></span><input type="range" class="lh-range" data-card-range="' + esc(path) + '" data-suffix="' + esc(suffix || '') + '" min="' + bounds[0] + '" max="' + bounds[1] + '" step="' + step + '" value="' + esc(String(value)) + '"></label>';
+    }
+
+    function setPath(target, path, value) {
+        var parts = path.split('.');
+        var node = target;
+        for (var index = 0; index < parts.length - 1; index++) node = node[parts[index]];
+        node[parts[parts.length - 1]] = value;
+    }
+
+    function ownedOf(part) {
+        return ((cardState.editor && cardState.editor.owned) || {})[part] || [];
+    }
+
+    function findOwned(part, itemId) {
+        var items = ownedOf(part);
+        for (var index = 0; index < items.length; index++) if (items[index].item_id === itemId) return items[index];
+        return null;
+    }
+
+    function itemLabel(item) {
+        return item.name || item.item_id;
+    }
+
+    function itemSwatch(part, item) {
+        if (part === 'name_color') return '<i class="lh-item-swatch" style="--rwl-keep:1;background:' + (item.gradient ? 'linear-gradient(90deg,' + item.gradient.map(function (color) { return RWL.sanitizeHex(color, '#e0aaff'); }).join(',') + ')' : RWL.sanitizeHex(item.hex, '#e0aaff')) + '"></i>';
+        if (part === 'border') return '<i class="lh-item-swatch" style="--rwl-keep:1;background:linear-gradient(90deg,' + (item.colors || ['#e0aaff']).concat((item.colors || ['#e0aaff'])[0]).map(function (color) { return RWL.sanitizeHex(color, '#e0aaff'); }).join(',') + ')"></i>';
+        if (part === 'avatar_decoration' && (item.thumb_url || item.asset_url)) return '<img class="lh-item-thumb" src="' + esc(pictureUrl(item.thumb_url || item.asset_url)) + '" alt="" loading="lazy" decoding="async">';
+        return '<i class="lh-item-swatch lh-item-plate"></i>';
+    }
+
+    function itemPickerHtml(part) {
+        var pick = cardState.pick[part] || (cardState.pick[part] = { query: '', page: 0 });
+        var selected = cardState.draft[part].item_id;
+        var query = pick.query.trim().toLowerCase();
+        var items = ownedOf(part).filter(function (item) { return !query || itemLabel(item).toLowerCase().indexOf(query) >= 0; });
+        var pages = Math.max(1, Math.ceil(items.length / CARD_PICK_PAGE));
+        pick.page = Math.max(0, Math.min(pick.page, pages - 1));
+        var visible = items.slice(pick.page * CARD_PICK_PAGE, (pick.page + 1) * CARD_PICK_PAGE);
+        return '<div class="lh-item-tools"><input type="search" class="lh-input" data-item-search="' + part + '" maxlength="60" placeholder="Search your items" value="' + esc(pick.query) + '"><span class="lh-muted">' + formatNumber(items.length) + ' items</span></div>' +
+            (visible.length ? '<div class="lh-item-grid">' + visible.map(function (item) {
+                return '<button type="button" class="lh-item' + (item.item_id === selected ? ' active' : '') + '" data-item-part="' + part + '" data-item-id="' + esc(item.item_id) + '" style="' + rarityStyle(item.rarity || 'Common') + '" title="' + esc(itemLabel(item) + ' · ' + (item.rarity || '')) + '">' + itemSwatch(part, item) + '<span translate="no">' + esc(itemLabel(item)) + '</span></button>';
+            }).join('') + '</div>' : empty(ownedOf(part).length ? 'Nothing matches your search.' : 'You have not unlocked any items of this kind yet.')) +
+            (pages > 1 ? '<div class="lh-pick-pager"><button type="button" class="lh-btn lh-btn-small" data-item-page="' + part + '" data-step="-1"' + (pick.page <= 0 ? ' disabled' : '') + ' title="Previous page">‹</button><span>Page ' + (pick.page + 1) + ' / ' + pages + '</span><button type="button" class="lh-btn lh-btn-small" data-item-page="' + part + '" data-step="1"' + (pick.page >= pages - 1 ? ' disabled' : '') + ' title="Next page">›</button></div>' : '');
+    }
+
+    function partHtml(part) {
+        var value = cardState.draft[part];
+        var filters = cardOptions().filters || {};
+        var modes = part === 'border' ? ['none', 'item'] : ['profile', 'none', 'item'];
+        var html = '<div class="lh-segment lh-card-modes">' + modes.map(function (mode) {
+            return '<button type="button" class="lh-segment-btn' + (value.mode === mode ? ' active' : '') + '" data-part-mode="' + part + '" data-mode="' + mode + '" title="' + esc(MODE_LABELS[mode]) + '">' + esc(part === 'border' && mode === 'item' ? 'Use a border' : MODE_LABELS[mode]) + '</button>';
+        }).join('') + '</div>';
+        if (value.mode !== 'item') return html + (value.mode === 'profile' ? '<p class="lh-note">The card shows whatever you have equipped on your profile, including your inventory settings.</p>' : '');
+        html += '<div data-item-picker="' + part + '">' + itemPickerHtml(part) + '</div>';
+        if (!value.item_id) return html + '<p class="lh-note">Pick an item to customise it for this card. Your inventory stays untouched.</p>';
+        html += '<div class="lh-card-custom"><p class="lh-note">These settings only apply to your profile card.</p>';
+        if (part === 'border') {
+            var item = findOwned('border', value.item_id) || {};
+            var colors = value.colors && value.colors.length ? value.colors : (item.colors || []);
+            html += '<div class="lh-color-row">' + colors.map(function (color, index) {
+                return '<label class="lh-color" title="Border colour ' + (index + 1) + '"><input type="color" data-border-color="' + index + '" value="' + esc(RWL.sanitizeHex(color, '#9d4edd')) + '"><span>Colour ' + (index + 1) + '</span></label>';
+            }).join('') + '<button type="button" class="lh-btn lh-btn-small" data-border-reset title="Use the original colours of this border">Original Colours</button></div>' +
+                rangeField('Thickness', 'border.thickness', value.thickness, [1, 6], 1, '');
+        } else if (part !== 'name_color') {
+            html += rangeField('Hue', part + '.hue', value.hue, filters.hue || [-180, 180], 1, '°') + rangeField('Saturation', part + '.saturation', value.saturation, filters.saturation || [0, 300], 1, '%') + rangeField('Brightness', part + '.brightness', value.brightness, filters.brightness || [50, 150], 1, '%');
+        }
+        return html + rangeField('Speed', part + '.speed', value.speed, filters.speed || [0.5, 2], 0.25, 'x') + '</div>';
+    }
+
+    function socialsHtml() {
+        var options = cardOptions();
+        var used = cardState.draft.socials.map(function (entry) { return entry.platform; });
+        var free = (options.platforms || []).filter(function (platform) { return used.indexOf(platform.key) < 0; });
+        var rows = cardState.draft.socials.map(function (entry, index) {
+            var platform = (options.platforms || []).filter(function (candidate) { return candidate.key === entry.platform; })[0] || { name: entry.platform, color: '#e0aaff', prefix: '' };
+            return '<li class="lh-social-row"><i class="lh-social-dot" style="--rwl-keep:1;background:' + RWL.sanitizeHex(platform.color, '#e0aaff') + '"></i><b>' + esc(platform.name) + '</b><span translate="no">' + esc(platform.prefix + entry.handle) + '</span><button type="button" class="lh-btn lh-btn-small" data-social-remove="' + index + '" title="Remove this link">✕</button></li>';
+        }).join('');
+        var full = cardState.draft.socials.length >= (options.max_socials || 6);
+        return (rows ? '<ul class="lh-social-list">' + rows + '</ul>' : '<p class="lh-note">No social links yet.</p>') +
+            (full || !free.length ? '<p class="lh-note">You reached the maximum number of links.</p>' : '<div class="lh-social-add"><select class="lh-select" id="lhSocialPlatform" title="Choose a platform">' + optionList(free, free[0].key) + '</select><input type="text" class="lh-input" id="lhSocialHandle" maxlength="40" placeholder="Your username" autocomplete="off" spellcheck="false"><button type="button" class="lh-btn" id="lhSocialAdd" title="Add this link to your card">Add Link</button></div>') +
+            '<p class="lh-note">Only usernames on the listed platforms are allowed. Links to other websites cannot be added.</p>';
+    }
+
+    function group(key, title, inner, open) {
+        return '<details class="lh-card-group" data-card-group="' + key + '"' + (open ? ' open' : '') + '><summary title="Show or hide ' + esc(title) + '">' + esc(title) + '</summary><div class="lh-card-group-body" data-group-body="' + key + '">' + inner + '</div></details>';
+    }
+
+    function editorHtml() {
+        var draft = cardState.draft;
+        var options = cardOptions();
+        var layouts = '<div class="lh-layout-grid">' + (options.layouts || []).map(function (layout) {
+            return '<button type="button" class="lh-layout' + (layout.key === draft.layout ? ' active' : '') + '" data-layout="' + esc(layout.key) + '" title="' + esc(layout.name) + '"><i class="lh-layout-icon lh-layout-' + esc(layout.archetype) + (layout.mirror ? ' mirror' : '') + '"><b></b><u></u></i><span>' + esc(layout.name) + '</span></button>';
+        }).join('') + '</div>';
+        var presets = '<div class="lh-preset-row">' + (options.color_presets || []).map(function (preset, index) {
+            return '<button type="button" class="lh-preset" data-preset="' + index + '" title="' + esc(preset.name) + '" style="--rwl-keep:1;background:linear-gradient(135deg,' + RWL.sanitizeHex(preset.background_a, '#160f24') + ' 0 45%,' + RWL.sanitizeHex(preset.accent, '#9d4edd') + ' 45% 70%,' + RWL.sanitizeHex(preset.panel, '#7b2cbf') + ' 70%)"></button>';
+        }).join('') + '</div>';
+        var colors = '<div class="lh-color-row">' + Object.keys(COLOR_LABELS).map(function (key) {
+            return '<label class="lh-color" title="' + esc(COLOR_LABELS[key]) + '"><input type="color" data-card-color="' + key + '" value="' + esc(RWL.sanitizeHex(draft.colors[key], '#9d4edd')) + '"><span>' + esc(COLOR_LABELS[key]) + '</span></label>';
+        }).join('') + '</div>';
+        var style = '<div class="lh-card-two"><label class="lh-field"><span>Font</span><select class="lh-select" data-card-select="font">' + optionList(options.fonts, draft.font) + '</select></label>' +
+            '<label class="lh-field"><span>Background</span><select class="lh-select" data-card-select="background">' + optionList(options.backgrounds, draft.background) + '</select></label>' +
+            '<label class="lh-field"><span>Avatar Shape</span><select class="lh-select" data-card-select="avatar_shape">' + optionList(options.avatar_shapes, draft.avatar_shape) + '</select></label>' +
+            '<label class="lh-field"><span>Tag Style</span><select class="lh-select" data-card-select="pill_style">' + optionList(options.pill_styles, draft.pill_style) + '</select></label></div>' +
+            rangeField('Panel Opacity', 'panel_opacity', draft.panel_opacity, [0, 100], 1, '%') + rangeField('Corner Radius', 'corner_radius', draft.corner_radius, [0, 60], 1, '') +
+            '<label class="lh-check"><input type="checkbox" data-card-flag="glow"' + (draft.glow ? ' checked' : '') + '><span>Background glow</span></label>' +
+            '<label class="lh-check"><input type="checkbox" data-card-flag="avatar_ring"' + (draft.avatar_ring ? ' checked' : '') + '><span>Ring around the avatar</span></label>';
+        var content = '<label class="lh-field"><span>Tagline</span><input type="text" class="lh-input" id="lhCardTagline" maxlength="' + (options.tagline_max || 60) + '" placeholder="A short line below your name" value="' + esc(draft.tagline) + '"></label><div class="lh-card-two">' + Object.keys(SHOW_LABELS).map(function (key) {
+            return '<label class="lh-check"><input type="checkbox" data-card-show="' + key + '"' + (draft.show[key] ? ' checked' : '') + '><span>' + esc(SHOW_LABELS[key]) + '</span></label>';
+        }).join('') + '</div>';
+        return group('layout', 'Layout', layouts, true) + group('colors', 'Colours', presets + colors, false) + group('style', 'Style And Font', style, false) + group('content', 'Content', content, false) + group('socials', 'Social Links', socialsHtml(), false) +
+            ['name_color', 'border', 'avatar_decoration', 'nameplate'].map(function (part) { return group(part, PART_LABELS[part], partHtml(part), false); }).join('');
+    }
+
     function renderCard(content) {
-        content.innerHTML = '<section class="lh-card lh-section lh-card-section">' +
-            '<div class="lh-card-preview" id="lhCardPreview">' + empty('Generating your card...') + '</div>' +
-            '<div class="lh-card-side">' +
-                '<h2 class="lh-section-title">Profile Card</h2>' +
-                '<p class="lh-section-hint">Your card shows your level, nameplate, badges and favourite tools. Download it or post it straight to our Discord server.</p>' +
-                '<div class="lh-actions lh-actions-column">' +
-                    '<button type="button" class="lh-btn lh-btn-primary" id="lhCardShare" title="Post your card in the showcase channel of our Discord server">Post To Discord</button>' +
-                    '<button type="button" class="lh-btn" id="lhCardDownload" title="Save the card as a PNG image" disabled>Download PNG</button>' +
+        content.innerHTML = '<section class="lh-card lh-section lh-card-section lh-card-editor">' +
+            '<div class="lh-card-stage"><div class="lh-card-preview" id="lhCardPreview">' + empty('Generating your card...') + '</div>' +
+                '<div class="lh-card-status" id="lhCardStatus"></div>' +
+                '<div class="lh-actions lh-card-actions">' +
+                    '<button type="button" class="lh-btn lh-btn-primary" id="lhCardSave" title="Save this design as your profile card" disabled>Save Card</button>' +
+                    '<button type="button" class="lh-btn" id="lhCardAnimate" title="Render the animated version of your current design">Preview Animation</button>' +
+                    '<button type="button" class="lh-btn" id="lhCardDownload" title="Save the card as an image file" disabled>Download</button>' +
                     '<button type="button" class="lh-btn" id="lhCardCopy" title="Copy the image to your clipboard" disabled>Copy Image</button>' +
-                    '<button type="button" class="lh-btn" id="lhCardRefresh" title="Create the card again with your newest stats">Refresh</button>' +
-                '</div>' +
-            '</div></section>';
-        byId('lhCardRefresh').addEventListener('click', function () { loadCard(true); });
+                    '<button type="button" class="lh-btn" id="lhCardShare" title="Post your saved card in the showcase channel of our Discord server">Post To Discord</button>' +
+                    '<button type="button" class="lh-btn" id="lhCardReset" title="Go back to the default card design">Reset Design</button>' +
+                '</div></div>' +
+            '<div class="lh-card-side"><h2 class="lh-section-title">Profile Card</h2><p class="lh-section-hint">Design your own card. Cards with animated parts are created as a looping GIF, everything else as a PNG.</p><div id="lhCardEditor">' + empty('Loading...') + '</div></div></section>';
+        byId('lhCardSave').addEventListener('click', function () { saveCard(this); });
+        byId('lhCardAnimate').addEventListener('click', function () { requestPreview(true); });
         byId('lhCardDownload').addEventListener('click', downloadCard);
         byId('lhCardCopy').addEventListener('click', copyCard);
         byId('lhCardShare').addEventListener('click', function () { shareCard(this); });
-        loadCard(false);
+        byId('lhCardReset').addEventListener('click', function () { resetCard(this); });
+        bindCardEditor(byId('lhCardEditor'));
+        if (cardState.editor) {
+            byId('lhCardEditor').innerHTML = editorHtml();
+            if (state.cardUrl) showCard();
+            else requestPreview(false);
+            syncCardButtons();
+            return;
+        }
+        api('/card/config').then(function (editor) {
+            cardState.editor = editor;
+            cardState.draft = cloneValue(editor.config);
+            cardState.dirty = false;
+            if (state.tab !== 'card') return;
+            byId('lhCardEditor').innerHTML = editorHtml();
+            syncCardButtons();
+            loadCard(true);
+        }).catch(function (error) {
+            if (error && error.status === 401) return requireLogin();
+            var box = byId('lhCardEditor');
+            if (box) box.innerHTML = empty((error && error.message) || 'The card editor could not be loaded.');
+        });
+    }
+
+    function syncCardButtons() {
+        var save = byId('lhCardSave');
+        if (save) save.disabled = !cardState.dirty;
+        var status = byId('lhCardStatus');
+        if (status) status.textContent = cardState.dirty ? 'Unsaved changes' : '';
+    }
+
+    function refreshGroup(key) {
+        var body = document.querySelector('[data-group-body="' + key + '"]');
+        if (!body) return;
+        body.innerHTML = key === 'socials' ? socialsHtml() : partHtml(key);
+    }
+
+    function cardChanged(skipPreview) {
+        cardState.dirty = true;
+        syncCardButtons();
+        if (skipPreview) return;
+        clearTimeout(cardState.previewTimer);
+        cardState.previewTimer = setTimeout(function () { requestPreview(false); }, CARD_PREVIEW_DELAY_MS);
+    }
+
+    function bindCardEditor(editor) {
+        editor.addEventListener('click', function (event) {
+            var draft = cardState.draft;
+            if (!draft) return;
+            var layout = event.target.closest('[data-layout]');
+            if (layout) {
+                draft.layout = layout.getAttribute('data-layout');
+                editor.querySelectorAll('[data-layout]').forEach(function (button) { button.classList.toggle('active', button === layout); });
+                return cardChanged();
+            }
+            var preset = event.target.closest('[data-preset]');
+            if (preset) {
+                var colors = (cardOptions().color_presets || [])[parseInt(preset.getAttribute('data-preset'), 10)];
+                if (!colors) return;
+                Object.keys(COLOR_LABELS).forEach(function (key) {
+                    draft.colors[key] = colors[key];
+                    var input = editor.querySelector('[data-card-color="' + key + '"]');
+                    if (input) input.value = RWL.sanitizeHex(colors[key], '#9d4edd');
+                });
+                return cardChanged();
+            }
+            var mode = event.target.closest('[data-part-mode]');
+            if (mode) {
+                var part = mode.getAttribute('data-part-mode');
+                draft[part].mode = mode.getAttribute('data-mode');
+                refreshGroup(part);
+                return cardChanged(draft[part].mode === 'item' && !draft[part].item_id);
+            }
+            var item = event.target.closest('[data-item-id]');
+            if (item) {
+                var itemPart = item.getAttribute('data-item-part');
+                draft[itemPart].item_id = item.getAttribute('data-item-id');
+                if (itemPart === 'border') draft.border.colors = [];
+                refreshGroup(itemPart);
+                return cardChanged();
+            }
+            var pager = event.target.closest('[data-item-page]');
+            if (pager && !pager.disabled) {
+                var pagePart = pager.getAttribute('data-item-page');
+                cardState.pick[pagePart].page += parseInt(pager.getAttribute('data-step'), 10);
+                var holder = editor.querySelector('[data-item-picker="' + pagePart + '"]');
+                if (holder) holder.innerHTML = itemPickerHtml(pagePart);
+                return;
+            }
+            if (event.target.closest('[data-border-reset]')) {
+                draft.border.colors = [];
+                refreshGroup('border');
+                return cardChanged();
+            }
+            var remove = event.target.closest('[data-social-remove]');
+            if (remove) {
+                draft.socials.splice(parseInt(remove.getAttribute('data-social-remove'), 10), 1);
+                refreshGroup('socials');
+                return cardChanged();
+            }
+            if (event.target.closest('#lhSocialAdd')) addSocial();
+        });
+        editor.addEventListener('input', function (event) {
+            var draft = cardState.draft;
+            var target = event.target;
+            if (!draft) return;
+            if (target.matches('[data-card-range]')) {
+                var path = target.getAttribute('data-card-range');
+                var number = parseFloat(target.value);
+                setPath(draft, path, number);
+                var label = editor.querySelector('[data-range-value="' + path + '"]');
+                if (label) label.textContent = number + target.getAttribute('data-suffix');
+                return cardChanged();
+            }
+            if (target.matches('[data-card-color]') && HEX_PATTERN.test(target.value)) {
+                draft.colors[target.getAttribute('data-card-color')] = target.value.toUpperCase();
+                return cardChanged();
+            }
+            if (target.matches('[data-border-color]') && HEX_PATTERN.test(target.value)) {
+                var entry = findOwned('border', draft.border.item_id) || {};
+                if (!draft.border.colors.length) draft.border.colors = (entry.colors || []).slice();
+                draft.border.colors[parseInt(target.getAttribute('data-border-color'), 10)] = target.value.toUpperCase();
+                return cardChanged();
+            }
+            if (target.id === 'lhCardTagline') {
+                draft.tagline = target.value.slice(0, cardOptions().tagline_max || 60);
+                return cardChanged();
+            }
+            if (target.matches('[data-item-search]')) {
+                var part = target.getAttribute('data-item-search');
+                cardState.pick[part].query = target.value.slice(0, 60);
+                cardState.pick[part].page = 0;
+                var caret = target.selectionStart;
+                var holder = editor.querySelector('[data-item-picker="' + part + '"]');
+                if (holder) holder.innerHTML = itemPickerHtml(part);
+                var again = editor.querySelector('[data-item-search="' + part + '"]');
+                if (again) {
+                    again.focus();
+                    try { again.setSelectionRange(caret, caret); } catch (error) {}
+                }
+            }
+        });
+        editor.addEventListener('change', function (event) {
+            var draft = cardState.draft;
+            var target = event.target;
+            if (!draft) return;
+            if (target.matches('[data-card-select]')) {
+                draft[target.getAttribute('data-card-select')] = target.value;
+                cardChanged();
+            } else if (target.matches('[data-card-flag]')) {
+                draft[target.getAttribute('data-card-flag')] = target.checked;
+                cardChanged();
+            } else if (target.matches('[data-card-show]')) {
+                draft.show[target.getAttribute('data-card-show')] = target.checked;
+                cardChanged();
+            }
+        });
+        editor.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && event.target.id === 'lhSocialHandle') {
+                event.preventDefault();
+                addSocial();
+            }
+        });
+    }
+
+    function addSocial() {
+        var select = byId('lhSocialPlatform');
+        var input = byId('lhSocialHandle');
+        if (!select || !input) return;
+        var platform = (cardOptions().platforms || []).filter(function (candidate) { return candidate.key === select.value; })[0];
+        var handle = input.value.trim().replace(/^@/, '');
+        if (platform && platform.key === 'discord') handle = handle.toLowerCase();
+        var valid = false;
+        try { valid = !!platform && new RegExp(platform.pattern).test(handle); } catch (error) { valid = false; }
+        if (!valid) {
+            markInvalid(input);
+            return;
+        }
+        cardState.draft.socials.push({ platform: platform.key, handle: handle });
+        refreshGroup('socials');
+        cardChanged();
+    }
+
+    function cardBody() {
+        var draft = cloneValue(cardState.draft);
+        ['name_color', 'border', 'avatar_decoration', 'nameplate'].forEach(function (part) {
+            if (draft[part].mode === 'item' && !draft[part].item_id) draft[part].mode = part === 'border' ? 'none' : 'profile';
+            if (draft[part].mode !== 'item') draft[part].item_id = null;
+        });
+        if (draft.border.mode !== 'item') draft.border.colors = [];
+        return draft;
+    }
+
+    function setCardImage(blob) {
+        if (state.cardUrl) URL.revokeObjectURL(state.cardUrl);
+        state.cardBlob = blob;
+        state.cardUrl = URL.createObjectURL(blob);
+        cardState.kind = blob.type === 'image/gif' ? 'image/gif' : 'image/png';
+        showCard();
+    }
+
+    async function cardRequest(path, options) {
+        var response = await fetch(RWL.apiUrl('/api/growth' + path), options);
+        if (!response.ok) {
+            var data = null;
+            try { data = await response.json(); } catch (error) { data = null; }
+            var problem = new Error(RWL.errorDetail(data, 'The card could not be created.'));
+            problem.status = response.status;
+            throw problem;
+        }
+        return response.blob();
+    }
+
+    async function requestPreview(animated) {
+        if (!cardState.draft) return;
+        clearTimeout(cardState.previewTimer);
+        var token = ++cardState.previewToken;
+        var preview = byId('lhCardPreview');
+        var animate = byId('lhCardAnimate');
+        if (preview) preview.classList.add('loading');
+        if (animated && animate) animate.disabled = true;
+        try {
+            var headers = RWL.authHeaders();
+            headers['Content-Type'] = 'application/json';
+            var blob = await cardRequest('/card/preview', { method: 'POST', headers: headers, body: JSON.stringify({ config: cardBody(), animated: !!animated }) });
+            if (token !== cardState.previewToken) return;
+            setCardImage(blob);
+            if (animated && blob.type !== 'image/gif') toast(t('This design has no animated parts, so it stays a still image.'));
+        } catch (error) {
+            if (error && error.status === 401) return requireLogin();
+            if (token === cardState.previewToken) {
+                var status = byId('lhCardStatus');
+                if (status) status.textContent = (error && error.message) || 'The preview could not be created.';
+            }
+        } finally {
+            preview = byId('lhCardPreview');
+            if (preview && token === cardState.previewToken) preview.classList.remove('loading');
+            animate = byId('lhCardAnimate');
+            if (animate) animate.disabled = false;
+        }
     }
 
     function showCard() {
@@ -793,19 +1348,7 @@
         var preview = byId('lhCardPreview');
         if (preview) preview.innerHTML = empty('Generating your card...');
         try {
-            var response = await fetch(RWL.apiUrl('/api/growth/card'), { method: 'GET', headers: RWL.authHeaders() });
-            if (!response.ok) {
-                var data = null;
-                try { data = await response.json(); } catch (error) { data = null; }
-                var problem = new Error(RWL.errorDetail(data, 'The card could not be created.'));
-                problem.status = response.status;
-                throw problem;
-            }
-            var blob = await response.blob();
-            if (state.cardUrl) URL.revokeObjectURL(state.cardUrl);
-            state.cardBlob = blob;
-            state.cardUrl = URL.createObjectURL(blob);
-            showCard();
+            setCardImage(await cardRequest('/card', { method: 'GET', headers: RWL.authHeaders() }));
         } catch (error) {
             if (error && error.status === 401) return requireLogin();
             preview = byId('lhCardPreview');
@@ -813,11 +1356,48 @@
         }
     }
 
+    async function saveCard(button) {
+        button.disabled = true;
+        try {
+            var result = await api('/card/config', { method: 'POST', body: cardBody() });
+            cardState.editor.config = result.config;
+            cardState.editor.saved = true;
+            cardState.draft = cloneValue(result.config);
+            cardState.dirty = false;
+            syncCardButtons();
+            toast(t('Your profile card was saved.'));
+            loadCard(true);
+        } catch (error) {
+            button.disabled = false;
+            failure(error, t('The card could not be saved.'));
+        }
+    }
+
+    async function resetCard(button) {
+        var confirmed = await confirmDialog(t('Reset Design'), t('Your saved card design will be replaced by the default design. Continue?'));
+        if (!confirmed) return;
+        button.disabled = true;
+        try {
+            var result = await api('/card/reset', { method: 'POST' });
+            cardState.editor.config = result.config;
+            cardState.draft = cloneValue(result.config);
+            cardState.dirty = false;
+            cardState.pick = {};
+            byId('lhCardEditor').innerHTML = editorHtml();
+            syncCardButtons();
+            loadCard(true);
+        } catch (error) {
+            failure(error, t('The card could not be reset.'));
+        } finally {
+            button.disabled = false;
+        }
+    }
+
     function downloadCard() {
         if (!state.cardUrl) return;
         var link = document.createElement('a');
         link.href = state.cardUrl;
-        link.download = 'rickware_labs_card.png';
+        link.download = cardState.kind === 'image/gif' ? 'rickware_labs_card.gif' : 'rickware_labs_card.png';
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -825,15 +1405,19 @@
 
     async function copyCard() {
         try {
-            if (!state.cardBlob || !global.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) throw new Error('unsupported');
+            if (!state.cardBlob || cardState.kind !== 'image/png' || !global.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) throw new Error('unsupported');
             await navigator.clipboard.write([new global.ClipboardItem({ 'image/png': state.cardBlob })]);
             toast(t('The card was copied to your clipboard.'));
         } catch (error) {
-            toast(t('Your browser cannot copy images. Use the download button instead.'), 'error');
+            toast(cardState.kind === 'image/gif' ? t('Animated cards cannot be copied. Use the download button instead.') : t('Your browser cannot copy images. Use the download button instead.'), 'error');
         }
     }
 
     async function shareCard(button) {
+        if (cardState.dirty) {
+            toast(t('Save your card first. Only the saved design is posted.'), 'error');
+            return;
+        }
         var confirmed = await confirmDialog(t('Post To Discord'), t('Your profile card will be posted publicly in our Discord server. Continue?'));
         if (!confirmed) return;
         button.disabled = true;
@@ -987,7 +1571,7 @@
         return new Promise(function (resolve) {
             var started = Date.now();
             (function check() {
-                if (global.RWLGrowth || Date.now() - started > timeout) return resolve();
+                if ((global.RWLGrowth && global.RWLPets) || Date.now() - started > timeout) return resolve();
                 setTimeout(check, 100);
             })();
         });

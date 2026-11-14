@@ -3538,6 +3538,24 @@ function setupProfileSidebar() {
             } catch(e) {}
         }
     });
+    var profileCustomerPanelBtn = document.getElementById('profileCustomerPanelBtn');
+    if (profileCustomerPanelBtn) {
+        profileCustomerPanelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (sidebar) sidebar.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
+            if (!currentUser) {
+                window.location.href = './sites/login_register.html?tab=login';
+                return;
+            }
+            document.querySelectorAll('.nav-item[data-page]').forEach(function(n) { n.classList.remove('active'); });
+            hideBankPage();
+            hideReviewsPage();
+            hideSupportPage();
+            hideForumPage();
+            showCustomerPanel();
+        });
+    }
     var profileSupportBtn = document.getElementById('profileSupportBtn');
     if (profileSupportBtn) {
         profileSupportBtn.addEventListener('click', function(e) {
@@ -4595,6 +4613,42 @@ async function loadProducts() {
     setupSortSelect();
 }
 
+var CATEGORY_TAB_LEAD = ['free', 'all', 'beta', 'owned'];
+var CATEGORY_TAB_ORDER = ['Discord Tools', 'Advertising Tools', 'Automation Tools', 'General Tools', 'Discord Bots', 'Websites', 'Fraud'];
+var DOWNLOAD_ONLY_CATEGORIES = ['Discord Bots', 'Websites'];
+
+function categoryTabRank(tab) {
+    var key = tab.getAttribute('data-category') || '';
+    var lead = CATEGORY_TAB_LEAD.indexOf(key);
+    if (lead >= 0) return lead;
+    if (key === 'coming-soon') return 10000;
+    var fixed = CATEGORY_TAB_ORDER.indexOf(key);
+    return fixed >= 0 ? 100 + fixed : 1000;
+}
+
+function orderCategoryTabs(scroll) {
+    if (!scroll) return;
+    var tabs = Array.prototype.slice.call(scroll.querySelectorAll('.category-tab'));
+    tabs.map(function(tab, index) { return { tab: tab, rank: categoryTabRank(tab), index: index }; })
+        .sort(function(a, b) { return a.rank - b.rank || a.index - b.index; })
+        .forEach(function(entry) { scroll.appendChild(entry.tab); });
+}
+
+function ownedDownloadOnly(p) {
+    if (!p || isGithubProduct(p)) return false;
+    if (DOWNLOAD_ONLY_CATEGORIES.indexOf(String(p.category || '')) >= 0) return true;
+    var licenseMap = p.license_categories && p.license_categories[0] ? p.license_categories[0] : {};
+    var licenseKeys = Object.keys(licenseMap);
+    return licenseKeys.length > 0 && licenseKeys.every(function(key) { return key === 'source_code'; });
+}
+
+function userOwnsProduct(p) {
+    if (!p || !p.product_id || !currentUser) return false;
+    return ownedProductList().some(function(entry) { return String(entry.product_id) === String(p.product_id); });
+}
+
+var DOWNLOAD_BUTTON_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
 function buildCategoryTabs() {
     var bar = document.getElementById('categoryTabsBar');
     if (!bar || !productsData) return;
@@ -4700,6 +4754,26 @@ function buildCategoryTabs() {
             renderProducts('all');
         });
     }
+    var hasBeta = productsData.products && productsData.products.some(function(p) { return p && p.channel === 'beta'; });
+    if (hasBeta) {
+        var betaBtn = document.createElement('button');
+        betaBtn.className = 'category-tab category-tab-beta';
+        betaBtn.setAttribute('data-category', 'beta');
+        betaBtn.title = 'Early access products for Beta and higher accounts';
+        betaBtn.textContent = 'Beta';
+        betaBtn.addEventListener('click', function() {
+            document.querySelectorAll('.category-tab').forEach(function(b) { b.classList.remove('active'); });
+            betaBtn.classList.add('active');
+            currentCategory = 'beta';
+            currentPage = 1;
+            searchActiveQuery = '';
+            var si = document.getElementById('searchInput');
+            if (si) si.value = '';
+            renderProducts('beta');
+        });
+        scroll.appendChild(betaBtn);
+    }
+    orderCategoryTabs(scroll);
     var leftBtn = document.getElementById('catSliderLeft');
     var rightBtn = document.getElementById('catSliderRight');
     function updateArrows() {
@@ -5068,8 +5142,17 @@ function buildProductCard(p, showCategory, mode) {
         launchBtn.className = 'product-btn product-btn-launch';
         launchBtn.title = isGithubProduct(p) ? 'Open the GitHub repository in a new tab' : 'Install or start this tool in the Rickware - Labs© Launcher';
         launchBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 4 20 12 6 20 6 4"/></svg> Launch';
+        if (ownedDownloadOnly(p)) {
+            launchBtn.className = 'product-btn product-btn-download';
+            launchBtn.title = 'Download the source code of this product';
+            launchBtn.innerHTML = DOWNLOAD_BUTTON_ICON + ' Download';
+        }
         launchBtn.addEventListener('click', function(e) {
             e.stopPropagation();
+            if (ownedDownloadOnly(p)) {
+                downloadSourceProduct(p.product_id, launchBtn);
+                return;
+            }
             launchOwnedProduct(p, launchBtn);
         });
         actions.appendChild(launchBtn);
@@ -5456,6 +5539,8 @@ function renderProducts(category) {
         list = list.filter(function(p) { return !isComingSoon(p); });
         if (category === 'free' || category === 'Free Tools') {
             list = list.filter(function(p) { return isFreeProduct(p) && p.file_product !== false; });
+        } else if (category === 'beta') {
+            list = list.filter(function(p) { return p.channel === 'beta'; });
         } else if (category !== 'all') {
             list = list.filter(function(p) { return p.category === category && p.file_product !== false; });
         }
@@ -5634,7 +5719,7 @@ function openProductModal(p, options) {
     html += '</div></div>';
 
     if (infoOnly) {
-        html += '<div class="modal-info-note"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg><span>You own this product. Launch it with the Rickware - Labs© Launcher.</span></div>';
+        html += '<div class="modal-info-note"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg><span>' + (ownedDownloadOnly(p) ? 'You own this product. Download the source code below.' : 'You own this product. Launch it with the Rickware - Labs© Launcher.') + '</span></div>';
     }
 
     var descText = (p.full_description && p.full_description.trim()) ? p.full_description : (p.description || '');
@@ -5689,8 +5774,15 @@ function openProductModal(p, options) {
         html += '<div class="modal-coupon-row"><input class="modal-coupon-input" id="modalCouponInput" type="text" placeholder="Enter coupon code..."><button class="modal-coupon-btn" id="modalCouponApply">Apply</button></div>';
     }
 
-    html += '<div class="modal-actions" id="modalActions">';
-    if (infoOnly) {
+    var downloadOnly = ownedDownloadOnly(p);
+    var ownedDownload = downloadOnly && (infoOnly || userOwnsProduct(p));
+    html += '<div class="modal-actions" id="modalActions"' + (downloadOnly ? ' data-launcher-ready="1"' : '') + '>';
+    if (ownedDownload) {
+        html += '<button class="modal-btn modal-btn-download" id="modalOwnedDownloadBtn" title="Download the source code of this product">' + DOWNLOAD_BUTTON_ICON.replace(/"13"/g, '"15"') + ' Download</button>';
+    }
+    if (infoOnly && downloadOnly) {
+        html += '';
+    } else if (infoOnly) {
         if (isGithubProduct(p)) {
             var ownedGithubUrl = p.github_url && p.github_url.trim() ? p.github_url : '#';
             html += '<a class="modal-btn modal-btn-download" id="modalOwnedGithubBtn" title="Open the GitHub repository in a new tab" href="' + escHtml(ownedGithubUrl) + '" target="_blank" rel="noopener noreferrer">' + buildGithubIconSvg(15) + ' Launch</a>';
@@ -5759,6 +5851,10 @@ function openProductModal(p, options) {
     }
 
     inner.innerHTML = html;
+    var ownedDownloadBtn = inner.querySelector('#modalOwnedDownloadBtn');
+    if (ownedDownloadBtn) {
+        ownedDownloadBtn.addEventListener('click', function() { downloadSourceProduct(p.product_id, ownedDownloadBtn); });
+    }
     populateViewCounts(inner);
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';

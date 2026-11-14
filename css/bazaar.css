@@ -1051,3 +1051,26 @@ html.rwl-low-fx .bz-title {
     border-radius: 10px;
     padding: 9px 12px;
 }
+
+.bz-duration {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.bz-duration .rwl-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.bz-duration .rwl-select {
+    width: auto;
+    min-width: 96px;
+}
+
+.bz-duration-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: rgba(224, 170, 255, 0.75);
+}

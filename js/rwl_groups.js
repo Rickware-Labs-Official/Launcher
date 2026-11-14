@@ -197,18 +197,37 @@
         state.current = null;
     }
 
-    async function load(groupId) {
-        var detail = await api('/groups/' + encodeURIComponent(groupId));
+    var CHANNEL_PATTERN = /^[a-z0-9]{4,16}$/;
+    var LABCORD_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+
+    function detailPath(groupId, channelId) {
+        var path = '/groups/' + encodeURIComponent(groupId);
+        return channelId && channelId !== 'general' && CHANNEL_PATTERN.test(channelId) ? path + '?channel=' + encodeURIComponent(channelId) : path;
+    }
+
+    function labcordUrl(groupId, channelId) {
+        var base = global.location.pathname.indexOf('/sites/') >= 0 ? './labcord.html' : './sites/labcord.html';
+        return base + (groupId ? '#server/' + encodeURIComponent(groupId) + (channelId ? '/' + encodeURIComponent(channelId) : '') : '');
+    }
+
+    function openLabcord(groupId, channelId) {
+        var opened = global.open(labcordUrl(groupId, channelId), '_blank', 'noopener');
+        if (opened) opened.opener = null;
+    }
+
+    async function load(groupId, channelId) {
+        var path = detailPath(groupId, channelId);
+        var detail = await api(path);
         await unwrapKeys(detail);
         if (await rotate(detail)) {
-            detail = await api('/groups/' + encodeURIComponent(groupId));
+            detail = await api(path);
             await unwrapKeys(detail);
         }
-        if (await shareWithPending(detail)) detail = await api('/groups/' + encodeURIComponent(groupId));
+        if (await shareWithPending(detail)) detail = await api(path);
         return detail;
     }
 
-    async function open(groupId) {
+    async function open(groupId, channelId) {
         var crypto = cryptoApi();
         if (!crypto || !(await crypto.ensureVault())) return;
         var element = social().chatElement();
@@ -221,8 +240,8 @@
         document.body.classList.add('rwl-chat-open');
         element.innerHTML = '<div class="rwl-center-empty">' + esc(t('Decrypting group...')) + '</div>';
         try {
-            var detail = await load(groupId);
-            state.current = { id: detail.group_id, detail: detail, messages: [], byId: {} };
+            var detail = await load(groupId, channelId);
+            state.current = { id: detail.group_id, detail: detail, messages: [], byId: {}, channelId: detail.channel_id || 'general' };
             for (var index = 0; index < detail.messages.length; index++) {
                 var message = detail.messages[index];
                 message.plain = await decryptMessage(detail.group_id, message);
@@ -280,12 +299,19 @@
         var banner = '';
         if (detail.suspended) banner = t('This group was suspended by the team.');
         else if (!detail.has_current_key) banner = t('Waiting for a member to share the group key with you. It arrives automatically as soon as a member is online.');
-        var locked = !detail.has_current_key || detail.suspended;
+        var channels = detail.channels || [];
+        var channelName = detail.channel_name || 'general';
+        if (!banner && detail.can_send_here === false) banner = t('You can read this channel, but you cannot write here.');
+        var locked = !detail.has_current_key || detail.suspended || detail.can_send_here === false;
+        var channelPicker = channels.length > 1 ? '<select class="rwl-select rwl-group-channel" data-group-channel title="' + esc(t('Switch the channel')) + '" translate="no">' + channels.map(function (channel) { return '<option value="' + esc(channel.id) + '"' + (channel.id === group.channelId ? ' selected' : '') + '># ' + esc(channel.name) + '</option>'; }).join('') + '</select>' : '';
+        element.setAttribute('data-chat-kind', 'group');
         element.innerHTML =
             '<div class="rwl-chat-head" title="' + esc(t('Drag to move the chat')) + '">' +
                 '<button type="button" class="rwl-icon-btn" data-group-action="list" title="' + esc(t('All chats')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>' +
                 '<span class="rwl-group-icon">' + esc(detail.name.slice(0, 2).toUpperCase()) + '</span>' +
-                '<div class="rwl-chat-title" data-group-action="members" title="' + esc(t('Show the members')) + '" translate="no"><strong>' + esc(detail.name) + '</strong><span class="rwl-chat-lock">' + detail.members.length + ' ' + esc(t('members')) + ' · ' + esc(t('End to end encrypted')) + '</span></div>' +
+                '<div class="rwl-chat-title" data-group-action="members" title="' + esc(t('Show the members')) + '" translate="no"><strong>' + esc(detail.name) + '</strong><span class="rwl-chat-lock"><b class="rwl-group-channel-name"># ' + esc(channelName) + '</b> · ' + detail.members.length + ' ' + esc(t('members')) + ' · ' + esc(t('End to end encrypted')) + '</span></div>' +
+                channelPicker +
+                '<button type="button" class="rwl-icon-btn rwl-labcord-btn" data-group-action="labcord" title="' + esc(t('Open Labcord in a new tab')) + '">' + LABCORD_ICON + '</button>' +
                 (detail.permissions.can_invite ? '<button type="button" class="rwl-icon-btn" data-group-action="invite" title="' + esc(t('Invite members')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></button>' : '') +
                 (detail.permissions.can_clear ? '<button type="button" class="rwl-icon-btn" data-group-action="clear" title="' + esc(t('Clear the chat history')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>' : '') +
                 '<button type="button" class="rwl-icon-btn" data-group-action="minimize" title="' + esc(t('Minimize the chat')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
@@ -295,7 +321,7 @@
             '<div class="rwl-chat-banner"' + (banner ? '' : ' hidden') + '><span>' + esc(banner) + '</span></div>' +
             '<div class="rwl-chat-scroll" tabindex="0"></div>' +
             '<div class="rwl-composer"><div class="rwl-composer-box' + (locked ? ' rwl-composer-locked' : '') + '">' +
-                '<textarea class="rwl-composer-input" rows="1" maxlength="' + MAX_TEXT + '" placeholder="' + esc(locked ? t('You cannot send messages yet') : t('Message') + ' #' + detail.name) + '"' + (locked ? ' disabled' : '') + '></textarea>' +
+                '<textarea class="rwl-composer-input" rows="1" maxlength="' + MAX_TEXT + '" placeholder="' + esc(locked ? t('You cannot send messages yet') : t('Message') + ' #' + channelName) + '"' + (locked ? ' disabled' : '') + '></textarea>' +
                 '<button type="button" class="rwl-icon-btn" data-group-action="send" title="' + esc(t('Send')) + '"' + (locked ? ' disabled' : '') + '><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>' +
             '</div><div class="rwl-composer-hint">' + esc(t('Enter to send, Shift + Enter for a new line.')) + '</div></div>';
         renderMessages(true);
@@ -314,6 +340,8 @@
 
     function bind(element) {
         element.onclick = onClick;
+        var picker = element.querySelector('[data-group-channel]');
+        if (picker) picker.addEventListener('change', function () { if (state.current) open(state.current.id, picker.value); });
         var input = element.querySelector('.rwl-composer-input');
         if (!input) return;
         input.addEventListener('input', function () {
@@ -342,13 +370,15 @@
         input.disabled = true;
         try {
             var sealed = await encryptText(group.id, group.detail.key_version, text);
-            var result = await api('/groups/' + encodeURIComponent(group.id) + '/messages', { method: 'POST', body: { ciphertext: sealed.ciphertext, iv: sealed.iv, key_version: group.detail.key_version } });
+            var body = { ciphertext: sealed.ciphertext, iv: sealed.iv, key_version: group.detail.key_version };
+            if (group.channelId && group.channelId !== 'general') body.channel_id = group.channelId;
+            var result = await api('/groups/' + encodeURIComponent(group.id) + '/messages', { method: 'POST', body: body });
             input.value = '';
             input.style.height = 'auto';
             await addMessage(result.message);
         } catch (error) {
             notify(error.message || t('The message could not be sent.'), 'error');
-            if (error.status === 409) open(group.id);
+            if (error.status === 409) open(group.id, group.channelId);
         } finally {
             input.disabled = false;
             input.focus();
@@ -358,6 +388,7 @@
     async function addMessage(message) {
         var group = state.current;
         if (!group || group.byId[message.id]) return;
+        if ((message.channel_id || 'general') !== (group.channelId || 'general')) return;
         message.plain = await decryptMessage(group.id, message);
         group.messages.push(message);
         group.byId[message.id] = message;
@@ -472,6 +503,10 @@
         var chatAction = event.target.closest('[data-chat-action]');
         if (chatAction) {
             var chatName = chatAction.getAttribute('data-chat-action');
+            if (chatName === 'labcord') {
+                openLabcord();
+                return;
+            }
             if (chatName === 'switch_dm') social().openChat(chatAction.getAttribute('data-channel'));
             else if (chatName === 'switch_group') open(chatAction.getAttribute('data-group'));
             else if (chatName === 'group_new') create();
@@ -487,6 +522,7 @@
             else if (action === 'minimize') social().minimize();
             else if (action === 'list') social().showChatList();
             else if (action === 'send') send();
+            else if (action === 'labcord') openLabcord(group.id, group.channelId);
             else if (action === 'members') showMembers();
             else if (action === 'invite') showInvites();
             else if (action === 'invite_create') {
@@ -503,13 +539,13 @@
             } else if (action === 'clear') {
                 if (await confirmDialog(t('Clear Chat'), t('Delete every message of this group for all members?'), true)) {
                     await api('/groups/' + encodeURIComponent(group.id) + '/clear', { method: 'POST' });
-                    open(group.id);
+                    open(group.id, group.channelId);
                 }
             } else if (action === 'kick') {
                 var member = button.getAttribute('data-member');
                 if (await confirmDialog(t('Remove Member'), t('Remove this member from the group? The group key is renewed.'), true)) {
                     await api('/groups/' + encodeURIComponent(group.id) + '/kick', { method: 'POST', body: { username: member } });
-                    open(group.id);
+                    open(group.id, group.channelId);
                 }
             } else if (action === 'leave') {
                 if (await confirmDialog(t('Leave Group'), t('Leave this group?'), true)) {
@@ -527,7 +563,7 @@
                 var name = await promptDialog({ title: t('Rename Group'), value: detail.name, maxLength: 60, pattern: /^.{2,60}$/, invalid: t('Use 2 to 60 characters.'), confirm: t('Save') });
                 if (name) {
                     await api('/groups/' + encodeURIComponent(group.id), { method: 'PUT', body: { name: name } });
-                    open(group.id);
+                    open(group.id, group.channelId);
                 }
             }
         } catch (error) {
@@ -577,6 +613,10 @@
 
     async function onEvent(event) {
         var entry = event.detail || {};
+        if (entry.type === 'labcord_updated') {
+            if (state.current && entry.group_id === state.current.id) open(entry.group_id, state.current.channelId).catch(function () {});
+            return;
+        }
         if (!entry.type || entry.type.indexOf('group') !== 0) return;
         state.listAt = 0;
         var viewing = state.current && entry.group_id === state.current.id;
@@ -609,7 +649,7 @@
                 }
             } catch (error) {}
         } else if (entry.type === 'group_keys' || entry.type === 'group_member_joined' || entry.type === 'group_updated' || entry.type === 'group_cleared') {
-            if (viewing) open(entry.group_id);
+            if (viewing) open(entry.group_id, state.current.channelId);
         } else if (entry.type === 'group_removed' || entry.type === 'group_deleted') {
             if (viewing) {
                 social().closeChat();
@@ -624,7 +664,7 @@
         setTimeout(function () { join(match[1]); }, 900);
     }
 
-    global.RWLGroups = { list: list, open: open, create: create, join: join, current: current, detach: detach };
+    global.RWLGroups = { list: list, open: open, create: create, join: join, current: current, detach: detach, openLabcord: openLabcord, labcordUrl: labcordUrl, detail: function () { return state.current ? state.current.detail : null; }, channelId: function () { return state.current ? state.current.channelId : null; }, showMembers: showMembers, showInvites: showInvites };
     global.addEventListener('rwl-social-event', onEvent);
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', deepLink);
     else deepLink();
