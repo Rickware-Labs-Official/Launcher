@@ -85,6 +85,15 @@
         return style ? ' style="' + esc(style) + '"' : '';
     }
 
+    function presenceOf(user) {
+        if (global.RWLPresence) return global.RWLPresence.statusOf(user);
+        return user && user.online ? 'online' : 'offline';
+    }
+
+    function presenceLabel(status) {
+        return global.RWLPresence ? global.RWLPresence.label(status) : (status === 'online' ? t('Online') : t('Offline'));
+    }
+
     function avatarHtml(user, imageClass, withDecoration, withPresence) {
         var src = pictureUrl(user && user.profile_picture);
         var html = src
@@ -94,7 +103,10 @@
             var deco = decorationSrc(user);
             if (deco) html += '<img class="rwl-plate-decoration" src="' + esc(deco) + '" alt=""' + filterAttr(user.avatar_decoration_filter) + '>';
         }
-        if (withPresence) html += '<span class="rwl-plate-presence' + (user && user.online ? ' online' : '') + '"></span>';
+        if (withPresence) {
+            var presence = presenceOf(user);
+            html += '<span class="rwl-plate-presence' + (presence !== 'offline' ? ' ' + presence : '') + '" data-presence="' + presence + '" title="' + esc(presenceLabel(presence)) + '"></span>';
+        }
         return html;
     }
 
@@ -125,12 +137,26 @@
         return '<img class="rwl-profile-banner-img" src="' + esc(source) + '" alt="" decoding="async" draggable="false">';
     }
 
+    var TYPE_BADGE_STYLES = {
+        owner: 'background:rgba(255,215,0,0.15);color:#ffd700;border:1px solid rgba(255,215,0,0.4);',
+        admin: 'background:rgba(244,67,54,0.15);color:#f44336;border:1px solid rgba(244,67,54,0.4);',
+        beta: 'background:rgba(155,0,204,0.15);color:#c97eff;border:1px solid rgba(155,0,204,0.4);',
+        partner: 'background:rgba(0,188,212,0.15);color:#00bcd4;border:1px solid rgba(0,188,212,0.4);'
+    };
+    var DEFAULT_BADGE_STYLE = 'background:rgba(155,0,204,0.12);color:#b87fff;border:1px solid rgba(155,0,204,0.3);';
+    var CHIP_BASE_STYLE = 'display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.03em;white-space:nowrap;';
+
     function badgesHtml(user) {
         var type = user.account_type || 'User';
-        var style = typeof global.getAccountTypeBadgeStyle === 'function' ? global.getAccountTypeBadgeStyle(type) : '';
-        var html = '<span class="dashboard-type-badge" style="' + esc(style) + '">' + esc(t(type)) + '</span>';
-        var perms = Array.isArray(user.account_permissions) ? user.account_permissions.join(', ') : (user.account_permissions || '');
-        if (perms && perms !== 'none' && perms !== 'User') html += '<span class="dashboard-perms-badge">' + esc(perms) + '</span>';
+        var style = TYPE_BADGE_STYLES[String(type).toLowerCase()] || DEFAULT_BADGE_STYLE;
+        var html = '<span class="rwl-badge rwl-badge-type" translate="no" style="' + esc(CHIP_BASE_STYLE + style) + '">' + esc(type) + '</span>';
+        var perms = Array.isArray(user.account_permissions) ? user.account_permissions : String(user.account_permissions || '').split(',');
+        perms.map(function (entry) { return String(entry).trim(); }).filter(function (entry) { return entry && entry !== 'none' && entry !== 'User' && entry !== type; }).forEach(function (entry) {
+            html += '<span class="rwl-badge rwl-badge-perm" translate="no" style="' + esc(CHIP_BASE_STYLE + 'background:rgba(99,0,138,0.22);color:#c97eff;border:1px solid rgba(155,0,204,0.45);') + '">' + esc(entry) + '</span>';
+        });
+        (Array.isArray(user.badges) ? user.badges : []).slice(0, 12).forEach(function (entry) {
+            html += '<span class="rwl-badge rwl-badge-earned" translate="no" style="' + esc(CHIP_BASE_STYLE + 'background:rgba(224,170,255,0.12);color:#e0aaff;border:1px solid rgba(224,170,255,0.4);') + '">★ ' + esc(entry) + '</span>';
+        });
         return html;
     }
 
@@ -263,7 +289,8 @@
 
     function profileBody(profile, large) {
         var bio = profile.bio ? '<div class="rwl-profile-text" translate="no">' + esc(profile.bio) + '</div>' : '<div class="rwl-profile-text rwl-profile-muted">' + esc(t('This member has not written a bio yet.')) + '</div>';
-        var lastOnline = profile.online ? t('Online now') : (profile.last_online ? t('Last online') + ' ' + formatStamp(profile.last_online) : '');
+        var presenceNow = presenceOf(profile);
+        var lastOnline = presenceNow !== 'offline' ? (presenceNow === 'online' ? t('Online now') : presenceLabel(presenceNow)) : (profile.last_online ? t('Last online') + ' ' + formatStamp(profile.last_online) : '');
         var rel = profile.relationship || {};
         var meta = '<div class="rwl-profile-grid">' +
             '<div><div class="rwl-profile-label">' + esc(t('Member Since')) + '</div><div class="rwl-profile-text">' + esc(formatDate(profile.member_since)) + '</div></div>' +
@@ -525,10 +552,17 @@
         var holder = document.createElement('div');
         holder.className = 'rwl-social-toolbar';
         holder.innerHTML =
+            '<button type="button" class="rwl-social-bell rwl-open-labcord" data-open-labcord="1" title="' + esc(t('Open Labcord in a new tab')) + '"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>' + esc(t('Open LabCord')) + '</span></button>' +
             '<button type="button" class="rwl-social-bell" data-open-center="messages" title="' + esc(t('Open your direct messages')) + '"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>' + esc(t('Messages')) + '</span><span class="rwl-social-count" data-count="unread" hidden>0</span></button>' +
             '<button type="button" class="rwl-social-bell" data-open-center="requests" title="' + esc(t('Open the notification center')) + '"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span>' + esc(t('Notifications')) + '</span><span class="rwl-social-count" data-count="requests" hidden>0</span></button>';
         toolbar.appendChild(holder);
         holder.addEventListener('click', function (event) {
+            if (event.target.closest('[data-open-labcord]')) {
+                event.stopPropagation();
+                if (typeof global.openExternalSitePage === 'function') global.openExternalSitePage('./sites/labcord.html');
+                else if (global.RWLGroups && global.RWLGroups.openLabcord) global.RWLGroups.openLabcord();
+                return;
+            }
             var button = event.target.closest('[data-open-center]');
             if (!button) return;
             event.stopPropagation();
@@ -555,7 +589,7 @@
     function centerGroupsHtml() {
         var groups = state.centerGroups;
         if (!groups) return '<div class="rwl-center-empty">' + esc(t('Loading chats...')) + '</div>';
-        if (!groups.length) return '<div class="rwl-center-empty">' + esc(t('No group chats yet.')) + '</div>';
+        if (!groups.length) return '<div class="rwl-center-empty">' + esc(t('No servers yet.')) + '</div>';
         return groups.map(function (group) {
             var sub = esc(group.member_count + ' ' + t('members')) + (group.unread ? ' · <strong style="color:#f87171">' + esc(group.unread + ' ' + t('new')) + '</strong>' : '');
             return '<div class="rwl-center-row" data-open-group="' + esc(group.group_id) + '" translate="no"><div class="rwl-center-avatar"><span class="rwl-group-icon">' + esc(initials(group.name)) + '</span></div><div class="rwl-center-info"><span class="rwl-center-name">' + esc(group.name) + '</span><span class="rwl-center-sub">' + sub + '</span></div></div>';
@@ -608,7 +642,7 @@
                 var sub = channel.unread ? '<strong style="color:#f87171">' + esc(channel.unread + ' ' + t('new')) + '</strong>' : esc(channel.last_message_at ? formatStamp(channel.last_message_at) : t('No messages yet'));
                 html += centerRow(channel.partner, sub, iconButton('hide', t('Close this conversation'), ICONS.cross, 'rwl-decline', 'data-channel="' + esc(channel.channel_id) + '"'), 'data-open-channel="' + esc(channel.channel_id) + '"');
             });
-            if (global.RWLGroups) html += '<div class="rwl-center-section rwl-center-group-head"><span>' + esc(t('Group Chats')) + '</span><span class="rwl-center-group-buttons"><button type="button" class="rwl-btn rwl-btn-secondary" data-center-group="new" title="' + esc(t('Create Group')) + '">' + esc(t('New Group')) + '</button><button type="button" class="rwl-btn rwl-btn-secondary" data-center-group="join" title="' + esc(t('Join Group')) + '">' + esc(t('Join With Code')) + '</button></span></div><div data-center-groups>' + centerGroupsHtml() + '</div>';
+            if (global.RWLGroups) html += '<div class="rwl-center-section rwl-center-group-head"><span>' + esc(t('Servers')) + '</span><span class="rwl-center-group-buttons"><button type="button" class="rwl-btn rwl-btn-secondary" data-center-group="new" title="' + esc(t('Create Server')) + '">' + esc(t('New Server')) + '</button><button type="button" class="rwl-btn rwl-btn-secondary" data-center-group="join" title="' + esc(t('Join Server')) + '">' + esc(t('Join With Code')) + '</button></span></div><div data-center-groups>' + centerGroupsHtml() + '</div>';
         } else if (state.centerTab === 'requests') {
             html += '<div class="rwl-center-section">' + esc(t('Friend Requests')) + '</div>';
             if (!data.friend_requests.length) html += '<div class="rwl-center-empty">' + esc(t('No open friend requests.')) + '</div>';
@@ -631,7 +665,7 @@
             var friends = (state.friends && state.friends.friends) || [];
             if (!friends.length) html += '<div class="rwl-center-empty">' + esc(t('No friends yet.')) + '</div>';
             friends.forEach(function (user) {
-                html += centerRow(user, esc(user.online ? t('Online') : t('Offline')), iconButton('message', t('Message'), ICONS.chat) + iconButton('profile', t('Profile'), ICONS.user));
+                html += centerRow(user, esc(presenceLabel(presenceOf(user))), iconButton('message', t('Message'), ICONS.chat) + iconButton('profile', t('Profile'), ICONS.user));
             });
         }
         body.innerHTML = html;
@@ -1380,17 +1414,17 @@
         var channels = (state.notifications && state.notifications.channels) || [];
         var currentGroup = global.RWLGroups && global.RWLGroups.current ? global.RWLGroups.current() : null;
         var html = (global.RWLGroups && global.RWLGroups.openLabcord ? '<button type="button" class="rwl-btn rwl-labcord-open" data-chat-action="labcord" title="' + esc(t('Open Labcord in a new tab')) + '">' + esc(t('Open Labcord')) + '</button>' : '') +
-            '<div class="rwl-chat-list-head"><strong>' + esc(t('Direct Messages')) + '</strong>' + (global.RWLGroups ? '<button type="button" class="rwl-btn rwl-btn-secondary" data-chat-action="group_new">' + esc(t('New Group')) + '</button>' : '') + '</div>';
+            '<div class="rwl-chat-list-head"><strong>' + esc(t('Direct Messages')) + '</strong>' + (global.RWLGroups ? '<button type="button" class="rwl-btn rwl-btn-secondary" data-chat-action="group_new">' + esc(t('New Server')) + '</button>' : '') + '</div>';
         html += channels.length ? channels.map(function (row) {
             var active = state.chat && state.chat.id === row.channel_id;
             return '<button type="button" class="rwl-chat-list-row' + (active ? ' active' : '') + '" data-chat-action="switch_dm" data-channel="' + esc(row.channel_id) + '"><span class="rwl-center-avatar">' + avatarHtml(row.partner, 'rwl-center-img', true, true) + '</span><span class="rwl-chat-list-name" translate="no" style="' + esc(nameStyle(row.partner)) + '">' + esc(row.partner.username) + '</span>' + (row.unread ? '<span class="rwl-count-badge">' + (row.unread > 99 ? '99+' : row.unread) + '</span>' : '') + '</button>';
         }).join('') : '<div class="rwl-center-empty">' + esc(t('No direct messages yet.')) + '</div>';
         if (global.RWLGroups) {
-            html += '<div class="rwl-chat-list-head"><strong>' + esc(t('Group Chats')) + '</strong><button type="button" class="rwl-btn rwl-btn-secondary" data-chat-action="group_join">' + esc(t('Join With Code')) + '</button></div>';
+            html += '<div class="rwl-chat-list-head"><strong>' + esc(t('Servers')) + '</strong><button type="button" class="rwl-btn rwl-btn-secondary" data-chat-action="group_join">' + esc(t('Join With Code')) + '</button></div>';
             html += groups.length ? groups.map(function (group) {
                 var active = currentGroup && currentGroup.group_id === group.group_id;
                 return '<button type="button" class="rwl-chat-list-row' + (active ? ' active' : '') + '" data-chat-action="switch_group" data-group="' + esc(group.group_id) + '"><span class="rwl-group-icon">' + esc(initials(group.name)) + '</span><span class="rwl-chat-list-name" translate="no">' + esc(group.name) + '</span><span class="rwl-chat-list-meta">' + group.member_count + ' ' + esc(t('members')) + '</span>' + (group.unread ? '<span class="rwl-count-badge">' + (group.unread > 99 ? '99+' : group.unread) + '</span>' : '') + '</button>';
-            }).join('') : '<div class="rwl-center-empty">' + esc(t('No group chats yet.')) + '</div>';
+            }).join('') : '<div class="rwl-center-empty">' + esc(t('No servers yet.')) + '</div>';
         }
         panel.innerHTML = html;
     }
@@ -2031,10 +2065,14 @@
         }, 400);
     }
 
-    function showTyping() {
+    function showTyping(indicator) {
         var element = document.querySelector('#rwlChat .rwl-chat-typing');
         if (!element || !state.chat) return;
-        element.innerHTML = '<span class="rwl-typing-dots"><i></i><i></i><i></i></span><span translate="no"><strong>' + esc(state.chat.partner.username) + '</strong> ' + esc(t('is typing...')) + '</span>';
+        var custom = indicator && indicator.mode && indicator.mode !== 'default' && (indicator.text || indicator.emoji);
+        var label = custom
+            ? '<span translate="no">' + esc((indicator.emoji ? indicator.emoji + ' ' : '') + (indicator.text ? t(indicator.text) : '')) + '</span>'
+            : '<span translate="no"><strong>' + esc(state.chat.partner.username) + '</strong> ' + esc(t('is typing...')) + '</span>';
+        element.innerHTML = '<span class="rwl-typing-dots"><i></i><i></i><i></i></span>' + label;
         clearTimeout(state.chat.typingTimer);
         state.chat.typingTimer = setTimeout(function () { element.innerHTML = ''; }, 6000);
     }
@@ -2090,7 +2128,7 @@
                 renderMessages(false);
             }
         } else if (entry.type === 'typing' && forChat) {
-            showTyping();
+            showTyping(entry.indicator);
         } else if (entry.type === 'read' && forChat) {
             chat.detail.partner_read_at = new Date(entry.at * 1000).toISOString();
             renderMessages(false);
@@ -2162,6 +2200,16 @@
         var material = await subtle.importKey('raw', bits, 'HKDF', false, ['deriveKey']);
         return subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: encoder.encode(salt), info: encoder.encode(info) }, material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
     }
+
+    document.addEventListener('click', function (event) {
+        var target = event.target.closest ? event.target.closest('[data-profile-user]') : null;
+        if (!target || !signedIn()) return;
+        var username = target.getAttribute('data-profile-user');
+        if (!/^[A-Za-z0-9_.\-]{3,50}$/.test(username || '')) return;
+        event.preventDefault();
+        event.stopPropagation();
+        openProfile(username);
+    }, true);
 
     global.RWLSocial = {
         observeCard: observeCard,

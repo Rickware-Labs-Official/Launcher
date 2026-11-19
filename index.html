@@ -134,15 +134,6 @@
                     </svg>
                     <span>Lab Bazaar</span>
                 </button>
-                <button class="nav-item cfg-gated" data-page="labhub" data-cfg-key="lab_hub_tab">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M10 2v6L4.5 18a3 3 0 0 0 2.6 4.5h9.8a3 3 0 0 0 2.6-4.5L14 8V2"></path>
-                        <path d="M8 2h8"></path>
-                        <path d="M7 15h10"></path>
-                        <circle cx="12" cy="18.5" r="1" fill="currentColor" stroke="none"></circle>
-                    </svg>
-                    <span>Lab Hub</span>
-                </button>
                 <button class="nav-item cfg-gated" data-page="reviews" data-cfg-key="reviews_tab">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
@@ -231,8 +222,10 @@
 
                 <nav class="top-nav">
                     <button class="top-tab" data-tab="dashboard">Dashboard</button>
+                    <button class="top-tab cfg-gated" data-tab="labhub" data-cfg-key="lab_hub_tab">Lab Hub</button>
                     <button class="top-tab active" data-tab="discover">Home</button>
                     <button class="top-tab cfg-gated" data-tab="github" data-cfg-key="github_page">GitHub</button>
+                    <button class="top-tab rwl-top-tab-external cfg-gated" data-tab="assetarchive" data-cfg-key="asset_archive_tab">Asset Archive</button>
                     <button class="top-tab cfg-gated" data-tab="status" data-cfg-key="status_page">Status</button>
                 </nav>
 

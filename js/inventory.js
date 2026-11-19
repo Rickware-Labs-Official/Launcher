@@ -1277,6 +1277,7 @@
             configPreviewHtml(cosmetic.catalog, item, settings) +
             '<label class="inv-config-field"><span>Speed <strong id="invConfigSpeedValue">' + settings.speed.toFixed(2) + 'x</strong></span><input type="range" id="invConfigSpeed" min="0.5" max="2" step="0.25" value="' + settings.speed + '" title="Change the animation speed"></label>' +
             directionHtml +
+            (cosmetic.catalog === 'launcher_themes' && item.sound_url ? '<div class="rwl-sound-slot"></div>' : '') +
             (COLOR_CATALOGS[cosmetic.catalog] ? configColorsHtml(item, settings) : '') +
             (FILTER_CATALOGS[cosmetic.catalog] ? configFilterHtml(settings) : '') +
             '<button type="button" class="inv-chest-action-btn" id="invConfigSave" title="Save these settings, they apply everywhere">Save</button>' +
@@ -1284,6 +1285,8 @@
             '<button type="button" class="inv-chest-action-btn inv-chest-action-secondary" id="invConfigClose" title="Close the settings">Close</button>';
         bar.hidden = false;
         bar.setAttribute('data-item-id', itemId);
+        var soundSlot = bar.querySelector('.rwl-sound-slot');
+        if (soundSlot && window.RWLThemeSound) window.RWLThemeSound.mountField(soundSlot);
         var speedInput = bar.querySelector('#invConfigSpeed');
         speedInput.addEventListener('input', function() {
             bar.querySelector('#invConfigSpeedValue').textContent = parseFloat(speedInput.value).toFixed(2) + 'x';

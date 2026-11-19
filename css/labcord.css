@@ -63,7 +63,10 @@ body.labcord * {
 .lc-app {
     display: grid;
     grid-template-columns: 72px 248px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
 }
 
 .lc-app.lc-with-members {
@@ -538,6 +541,8 @@ body.labcord .lc-avatar-img {
 .lc-main {
     position: relative;
     min-width: 0;
+    min-height: 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     background: var(--lc-main);
@@ -852,6 +857,11 @@ body.labcord .rwl-chat-bubble {
 
 body.labcord .rwl-chat-scroll {
     padding: 16px 20px;
+    min-height: 0;
+}
+
+body.labcord .rwl-composer {
+    flex-shrink: 0;
 }
 
 body.labcord .rwl-composer {
@@ -1511,9 +1521,7 @@ body.labcord .rwl-composer-box {
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    body.labcord * {
-        animation: none !important;
-        transition: none !important;
-    }
+html.rwl-user-reduced-fx body.labcord * {
+    animation: none !important;
+    transition: none !important;
 }

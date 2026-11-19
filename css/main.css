@@ -2529,7 +2529,6 @@ body {
 .bank-coming-soon svg { opacity: 0.3; }
 .bank-coming-soon h2 { color: var(--text-secondary); font-size: 24px; margin-bottom: 4px; }
 
-/* === GLASS CARD UTILITY === */
 .glass-card {
     background: rgba(22,5,40,0.55);
     backdrop-filter: blur(24px) saturate(170%);
@@ -2539,7 +2538,6 @@ body {
     box-shadow: 0 4px 28px rgba(0,0,0,0.35);
 }
 
-/* === LAB COINS DISPLAY === */
 .lab-coins-display {
     display: flex;
     align-items: center;
@@ -2580,7 +2578,6 @@ body {
     white-space: nowrap;
 }
 
-/* === BANK PAGE === */
 .bank-page {
     max-width: 1000px;
     margin: 0 auto;
@@ -2745,7 +2742,6 @@ body {
 }
 .bank-pack-btn:hover { opacity: 0.85; transform: scale(1.03); }
 
-/* === COIN CHECKOUT MODAL === */
 .coin-checkout-modal { display: flex; flex-direction: column; gap: 20px; }
 .coin-checkout-header {
     display: flex;
@@ -4611,12 +4607,12 @@ body {
         grid-template-columns: 1fr 1fr;
     }
 }
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
+html.rwl-user-reduced-fx *,
+html.rwl-user-reduced-fx *::before,
+html.rwl-user-reduced-fx *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
 }
 
 .product-card,

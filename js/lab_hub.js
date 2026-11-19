@@ -489,13 +489,26 @@
         }
     }
 
+    function discordNoticeHtml(catalog) {
+        if (catalog.discord_linked) return '';
+        return '<div class="lh-note lh-discord-note" role="note">🔗 ' + esc(t(catalog.discord_link_notice || 'Link your Discord account to earn XP for every level your pet reaches.')) + ' <a href="./account_settings.html" class="lh-link">' + esc(t('Link Discord')) + '</a></div>';
+    }
+
+    function levelRewardHtml(companion, catalog, maxed) {
+        if (!catalog.discord_linked) return discordNoticeHtml(catalog);
+        if (maxed) return '';
+        return '<div class="lh-row-between"><span>' + esc(t('Reward For Next Level')) + '</span><span>+' + formatNumber(companion.next_level_reward || 0) + ' XP</span></div>' +
+            '<div class="lh-row-between"><span>' + esc(t('Level Rewards Today')) + '</span><span>' + formatNumber(companion.level_xp_today || 0) + ' / ' + formatNumber(catalog.daily_level_xp_cap || 0) + ' XP</span></div>';
+    }
+
     function renderAdoption(content, catalog) {
         var draft = state.adoptDraft || (state.adoptDraft = { species: ((catalog.species || [])[0] || {}).key || 'blob', name: '' });
         content.innerHTML = '<section class="lh-card lh-section lh-companion">' +
             '<div class="lh-companion-stage">' + companionSvg({ species: draft.species, hue: 270, mood: 'happy', equipped: [] }, 160) + '</div>' +
             '<div class="lh-companion-info">' +
                 '<h2 class="lh-section-title">Adopt Your Personal Pet</h2>' +
-                '<p class="lh-section-hint">Your pet lives in the launcher, reacts when you start tools and grows with you up to level ' + formatNumber(catalog.max_level || 1000) + '. Along the way it unlocks ' + formatNumber(catalog.species_total || 400) + ' species and ' + formatNumber(catalog.decorations_total || 500) + ' decorations from Common to Mythical.</p>' +
+                '<p class="lh-section-hint">Your pet lives in the launcher, reacts when you start tools and grows with you up to level ' + formatNumber(catalog.max_level || 10000) + '. Along the way it unlocks ' + formatNumber(catalog.species_total || 400) + ' species and ' + formatNumber(catalog.decorations_total || 500) + ' decorations from Common to Mythical.</p>' +
+                discordNoticeHtml(catalog) +
                 starterPicker(draft.species) +
                 '<label class="lh-field"><span>Name</span><input type="text" class="lh-input" id="lhAdoptName" maxlength="24" placeholder="Give your pet a name" value="' + esc(draft.name) + '"></label>' +
                 '<button type="button" class="lh-btn lh-btn-primary" id="lhAdoptBtn" title="Adopt this pet">Adopt Pet</button>' +
@@ -570,6 +583,7 @@
                         (petState.catalog ? metric('Species', formatNumber(unlockedCount('species', companion.level, everything)) + ' / ' + formatNumber(petState.catalog.species.length), 'Species you unlocked') + metric('Decorations', formatNumber(unlockedCount('decorations', companion.level, everything)) + ' / ' + formatNumber(petState.catalog.decorations.length), 'Decorations you unlocked') : '') + '</div>' +
                     '<div class="lh-row-between"><span>Next Level</span><span>' + (maxed ? 'Max Level' : formatNumber(companion.level_progress) + ' / ' + formatNumber(perLevel)) + '</span></div>' +
                     progressBar(maxed ? perLevel : companion.level_progress, perLevel) +
+                    levelRewardHtml(companion, catalog, maxed) +
                     '<div class="lh-care" id="lhCare">' + (catalog.care_actions || []).map(function (action) {
                         return '<button type="button" class="lh-btn lh-care-btn" data-care="' + esc(action) + '"' + (companion.care_cooldown_seconds > 0 ? ' disabled' : '') + ' title="' + esc(CARE_TITLES[action] || action) + '">' + (CARE_ICONS[action] || '') + ' <span>' + esc(CARE_LABELS[action] || action) + '</span></button>';
                     }).join('') + '</div>' +
@@ -683,6 +697,7 @@
             if (global.RWLGrowth && global.RWLGrowth.react) global.RWLGrowth.react(result.level_up ? 'level' : 'love', result.level_up ? t('Level up! Thank you!') : t('That felt great!'));
             if (state.tab === 'companion') renderTab();
             if (result.level_up) toast(t('Your pet reached a new level!'));
+            if (result.xp_reward) toast(t('You earned') + ' +' + formatNumber(result.xp_reward) + ' XP');
         } catch (error) {
             failure(error, t('Your pet did not react.'));
             loadHub(true).then(function () { if (state.tab === 'companion') renderTab(); });

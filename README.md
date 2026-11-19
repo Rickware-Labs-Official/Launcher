@@ -22,6 +22,13 @@ Rickware - Labs - Website/
 │   ├── rwl_upgrade.js         Live viewers, image lightbox, download center, XP exchange, personal data area
 │   ├── rwl_fx.js              Server driven client effects
 │   ├── rwl_troll_extra.js     Additional server driven client effects
+│   ├── rwl_tutorial.js        First sign in welcome tour
+│   ├── rwl_presence.js        Online, Do Not Disturb and Away
+│   ├── rwl_notifications.js   System notifications (browser and launcher)
+│   ├── rwl_theme_sound.js     Theme sounds with volume and mute
+│   ├── rwl_switch_plan.js     Switch Plan popup
+│   ├── rwl_nav.js             Sidebar sync and nameplate badges
+│   ├── labcord_extras.js      Typing indicator and name colour picker for Labcord
 │   └── i18n/                  Language packs (de, ru, fr, es, it, pt, ja, ko, zh)
 ├── config/products.json       Product list including the base changelogs
 └── images/                    Logos, icons and inventory artwork
@@ -40,6 +47,8 @@ The backend only accepts origins listed in `app.allowed_origins`, so add your lo
 ## Deployment
 
 Deploy the backend first, then publish this folder on GitHub Pages. New website code relies on the new backend endpoints.
+
+The Windows installer is a build artifact of `Rickware - Labs - Installer` and is not stored in this folder. `config/config.json` holds its download path (`windows_launcher_file_path`, plus `macos_launcher_file_path` and `linux_launcher_file_path`). Installer V1.3.1 fixes a crash on non-English Windows (`AttributeError: 'NoneType' object has no attribute 'lower'`), so the rebuilt `rickware-labs_launcher_installer_windows_x64.exe` and its `.sha256` file have to be published under that path. No website file changes for it.
 
 ## Languages
 
@@ -168,3 +177,44 @@ The Profile Card tab of the Lab Hub is an editor for layout, colours, font, back
 - The XP exchange has a Half button, a switch between XP and Lab Coins and themed step buttons.
 - Auctions can be created in hours or days.
 - New texts are in `js/i18n/<lang>_nova.js`, loaded automatically by `rwl_boot.js`.
+
+## Welcome Tour
+`js/rwl_tutorial.js` shows a guided tour (28 steps: every sidebar area, the top bar, the nameplate, the store and the dashboard) the first time a member signs in. It cannot be skipped and it is never shown again. The backend decides: `GET /api/experience/tutorial` returns `required`, `POST /api/experience/tutorial/complete` stores the result. Accounts created before the tour existed only see it when `tutorial.include_existing_accounts` is enabled in the owner panel.
+
+## Navigation
+- Top bar order: Dashboard, Lab Hub, Home, GitHub, Asset Archive, Status. `js/rwl_nav.js` keeps the sidebar in sync: Home highlights Store, Dashboard, Lab Hub and GitHub clear the sidebar selection. On screens up to 768 px the tabs form their own scrollable row below the search bar, between 901 and 1100 px they wrap below the bar.
+- The account type and permission badges are small boxes inside the nameplate, right of the cart (`.rwl-nameplate-badges`).
+- **Asset Archive** (`asset_archive_tab` in `config/config.json`) opens `sites/Discord Asset Archiv/index.html` in a new tab and needs no account.
+- The Beta category only exists for Beta, Admin and Owner accounts, the backend filters it (`product_channel_service`).
+
+## Product Modal
+Download and Launch are shown in the extended view for every product but only work inside the launcher (`RWLLauncher.runAction`). On the website the button stays greyed out with an explanation. Inside the launcher it reads **Download** until the tool is installed and **Launch** afterwards, source products only offer Download. Owned products replace **Buy Now** with **Switch Plan** (`js/rwl_switch_plan.js`): a popup lists upgrades, downgrades and the source code with the prorated credit from `GET /api/plans/{product_id}`. The checkout sends `switchFrom`, the backend calculates the price and retires the old license when the order is fulfilled.
+
+## Presence, Notifications And Sound
+- `js/rwl_presence.js`: Online, Do Not Disturb and Away (never invisible). The status applies to Labcord, the chat popup and the dashboard. The page switches to Away after the idle limit (default 5 minutes), the launcher reports system idle through the `idle` event. Admins with forced online always show as online, only visually. Status dots blink smoothly everywhere, also on phones (`.rwl-status-dot` keyframes in `css/rwl_experience.css`).
+- `js/rwl_notifications.js`: system notifications for messages, friend requests and Labcord activity. In the browser through the Notification API after the member allowed it, in the launcher through `showNotification`. Do Not Disturb silences them.
+- `js/rwl_theme_sound.js`: themes can have a looping sound (the Halloween 2026 and 2027 themes use their theme song). Default volume 37 %, volume 0 to 100 and a mute switch live in the theme settings and are stored on the backend. The launcher floating menu shows the same controls while the theme has sound.
+
+## Member Profiles Everywhere
+Names and avatars in forum posts, comments, reviews, the dashboard and Labcord open the same extended profile (`data-profile-user`, handled once in `js/rwl_social.js`) with Message, Add Friend and Block. Signed out visitors are not redirected, the click is ignored. The profile shows the real account type and permission badges, the same as the nameplate.
+
+## Labcord
+`sites/labcord.html` is titled `Rickware - Labs© - LabCord`. Groups are called **servers** everywhere. Icon limits come from the backend (10 MB members, 25 MB admins, 100 MB owners, owner panel section *Labcord*). Admin and Owner accounts have every permission in every server without a visible mark. New in this round:
+- Role colours support the complete name colour catalog and a scope: usernames and category title, or only the category title in the member list. Colour pickers follow the active theme.
+- Drag and drop ordering for categories, channels, roles and servers, saved by the backend.
+- Reactions, edit, reply and pinned messages in the chat component (`js/rwl_groups.js`) and a custom typing indicator (presets or free text, shown instead of the name and "is typing") plus the name colour picker in `js/labcord_extras.js` with `css/labcord_extras.css`.
+- Files, links and images stay Admin and Owner only. There will never be voice, video or voice messages.
+- The direct message composer is always visible (grid rows fixed in `css/labcord.css`).
+- The dashboard has an **Open LabCord** button left of Messages.
+
+## Asset Archive
+`sites/Discord Asset Archiv/` is part of the platform now. Assets are not read from this folder any more, the page asks the backend (`/api/asset_archive/overview`, `items`, `media/{id}`, `download/{id}`, `download_all`, `showcase`) which reads the file database. Items have opaque ids, the page never shows a path. A category without files shows **No assets found**. The preview shows the first member of the database for visitors and the own profile for signed in members, in the active launcher theme. Downloads are streamed as ZIP archives in chunks. Files of this folder: `config/archive_routes.js` (API routes), `config/archive_labels.js` (texts, plural names), `js/modules/archive_api.js`, `asset_utils.js` and `download_manager.js`.
+
+## Personal Pet And Profile Card
+Personal Pets go up to level 10000. Every level pays XP (`level_reward` in the companion catalog, growing with the level) but only when Discord is linked, otherwise the page shows a note with a link. Pets and decorations animate permanently, `prefers-reduced-motion` only applies when the member enabled Reduced Effects (`rwl-user-reduced-fx`). The profile card renderer uses the same name colour logic as the page (direction, speed, effect, custom settings) and a corrected decoration ratio.
+
+## Responsive Layout
+Every page was checked at 390 px without horizontal scrolling. The top bar compacts in steps (labels hidden below 1700 px, tabs wrap below 1100 px, own tab row below 768 px).
+
+## Languages
+`rwl_boot.js` loads `js/i18n/<lang>_orbit.js` on every page automatically (texts of this round for all 9 languages, including patterns such as "You can own at most {#0} servers").

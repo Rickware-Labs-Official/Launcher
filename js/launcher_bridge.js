@@ -63,9 +63,15 @@
             return TRUSTED_ORIGINS.indexOf(url.origin) >= 0;
         }
 
+        var EXTERNAL_PAGE_PATTERN = /\/sites\/(labcord\.html|Discord(?:%20| )Asset(?:%20| )Archiv\/)/i;
+
         function openOutside(href) {
             var url;
             try { url = new URL(href, global.location.href); } catch (error) { return false; }
+            if (isTrustedUrl(url) && EXTERNAL_PAGE_PATTERN.test(url.pathname)) {
+                desktopCall('openExternal', { url: url.href }).catch(function () {});
+                return true;
+            }
             if (isTrustedUrl(url)) return false;
             if (url.protocol === 'http:' || url.protocol === 'https:') desktopCall('openExternal', { url: url.href }).catch(function () {});
             return true;
@@ -77,7 +83,7 @@
             var href = anchor.getAttribute('href') || '';
             if (!href || href.charAt(0) === '#' || /^javascript:/i.test(href)) return;
             var target = new URL(anchor.href, global.location.href);
-            if (isTrustedUrl(target)) return;
+            if (isTrustedUrl(target) && !EXTERNAL_PAGE_PATTERN.test(target.pathname)) return;
             event.preventDefault();
             openOutside(anchor.href);
         }, true);
@@ -250,30 +256,63 @@
         });
     }
 
-    function buttonLabel(productId) {
+    var LOCK_TEXT = 'Downloads and launching are only available in the Rickware - Labs© Launcher.';
+    var LOCK_TEXT_NOT_OWNED = 'Get this product to download it.';
+
+    function plain(text) {
+        return global.RWLI18n && global.RWLI18n.t ? global.RWLI18n.t(text) : text;
+    }
+
+    function actionLabel(productId, kind) {
+        if (kind === 'source') return ICONS.install + ' ' + plain('Download');
         var state = toolState(productId);
-        if (state === 'running') return ICONS.stop + ' Stop';
-        if (state === 'installed') return ICONS.launch + ' Launch';
-        return ICONS.install + ' Install';
+        if (state === 'running') return ICONS.stop + ' ' + plain('Stop');
+        if (state === 'installed') return ICONS.launch + ' ' + plain('Launch');
+        return ICONS.install + ' ' + plain('Download');
     }
 
     function updateModalButton() {
-        var product = global._rwlActiveProduct;
-        var button = document.getElementById('modalLauncherBtn') || document.querySelector('#modalDlBtn[data-launcher="1"]');
-        if (!product || !button || button.dataset.busy === '1') return;
-        button.innerHTML = buttonLabel(product.product_id);
+        var buttons = document.querySelectorAll('[data-rwl-action="1"][data-product-id]');
+        Array.prototype.forEach.call(buttons, function (button) {
+            if (button.dataset.busy === '1' || button.getAttribute('aria-disabled') === 'true') return;
+            button.innerHTML = actionLabel(button.getAttribute('data-product-id'), button.getAttribute('data-kind'));
+        });
     }
 
-    function attachLauncherButton(button, product) {
-        button.setAttribute('data-launcher', '1');
-        button.title = 'Install, start or stop this tool in the Rickware - Labs© Launcher';
-        button.innerHTML = buttonLabel(product.product_id);
+    function decorateActionButton(button, product, kind) {
+        if (!button || !product || button.getAttribute('data-rwl-action') === '1') return;
+        button.setAttribute('data-rwl-action', '1');
+        button.setAttribute('data-kind', kind === 'source' ? 'source' : 'program');
+        var lock = function (message) {
+            button.setAttribute('aria-disabled', 'true');
+            button.classList.add('rwl-action-locked');
+            button.title = plain(message);
+            button.onclick = function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                notify(plain(message), 'info');
+            };
+        };
+        if (!isLauncher()) {
+            lock(LOCK_TEXT);
+            return;
+        }
+        if (!product.product_id || !canUseProduct(product)) {
+            lock(LOCK_TEXT_NOT_OWNED);
+            return;
+        }
+        button.setAttribute('data-product-id', String(product.product_id));
+        button.classList.remove('rwl-action-locked');
+        button.removeAttribute('aria-disabled');
+        button.title = plain('Install, start or stop this tool in the Rickware - Labs© Launcher');
+        button.innerHTML = actionLabel(product.product_id, kind);
         button.onclick = function (event) {
             event.preventDefault();
+            event.stopPropagation();
             if (button.dataset.busy === '1') return;
             button.dataset.busy = '1';
             button.disabled = true;
-            button.innerHTML = ICONS.busy + ' Working...';
+            button.innerHTML = ICONS.busy + ' ' + plain('Working...');
             runAction(product.product_id).then(function () {
                 button.dataset.busy = '';
                 button.disabled = false;
@@ -288,25 +327,8 @@
         var actions = document.getElementById('modalActions');
         if (!product || !actions || actions.getAttribute('data-launcher-ready') === '1') return;
         actions.setAttribute('data-launcher-ready', '1');
-        var freeButton = document.getElementById('modalDlBtn');
-        if (!isLauncher()) {
-            if (freeButton && freeButton.tagName === 'BUTTON') {
-                freeButton.onclick = function () {
-                    notify('Tools are installed through the Rickware - Labs© Launcher. Open the launcher, log in and click Install.', 'info');
-                };
-            }
-            return;
-        }
-        if (!product.product_id || !canUseProduct(product)) return;
-        if (freeButton && freeButton.tagName === 'BUTTON') {
-            attachLauncherButton(freeButton, product);
-            return;
-        }
-        var button = document.createElement('button');
-        button.className = 'modal-btn modal-btn-download';
-        button.id = 'modalLauncherBtn';
-        actions.insertBefore(button, actions.firstChild);
-        attachLauncherButton(button, product);
+        var button = document.getElementById('modalDownloadBtn');
+        if (button) decorateActionButton(button, product, button.getAttribute('data-kind') === 'source' ? 'source' : 'program');
     }
 
     function observeProductModal() {
@@ -453,6 +475,7 @@
         connect: connect,
         disconnect: disconnect,
         runAction: runAction,
+        decorateActionButton: decorateActionButton,
         refreshTools: refreshTools,
         toolState: toolState,
         setNotifier: setNotifier

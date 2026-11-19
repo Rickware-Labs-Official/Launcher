@@ -19,6 +19,7 @@
     var extraPacks = ((bootScript && bootScript.getAttribute('data-i18n-extra')) || '').split(/\s+/).filter(function (entry) { return /^[a-z_]+$/.test(entry); });
     if (extraPacks.indexOf('growth') < 0) extraPacks.push('growth');
     if (extraPacks.indexOf('nova') < 0) extraPacks.push('nova');
+    if (extraPacks.indexOf('orbit') < 0) extraPacks.push('orbit');
 
     function readStorage(key) {
         try { return global.localStorage.getItem(key); } catch (error) { return null; }
@@ -521,7 +522,8 @@
             band_min: Math.min(bandMin, bandMax),
             band_max: Math.max(bandMin, bandMax),
             min_saturation: clampNumber(raw.min_saturation, 0, 100, 18),
-            dark_lightness: clampNumber(raw.dark_lightness, 0, 60, 20)
+            dark_lightness: clampNumber(raw.dark_lightness, 0, 60, 20),
+            sound_url: typeof raw.sound_url === 'string' && raw.sound_url.indexOf(API_BASE + '/api/client/theme_sound/') === 0 ? raw.sound_url.slice(0, 400) : null
         };
     }
 
@@ -787,6 +789,7 @@
         var reduced = reducedEffects();
         global.RWL_REDUCED_EFFECTS = reduced;
         document.documentElement.classList.toggle('rwl-low-fx', reduced || lowEndDevice() || autoLowEffectsActive());
+        document.documentElement.classList.toggle('rwl-user-reduced-fx', reduced);
     }
 
     function syncScene(theme) {
@@ -926,6 +929,7 @@
         restoreDeclarations();
         colorCache = new Map();
         activeTheme = theme;
+        try { global.dispatchEvent(new CustomEvent('rwl-theme-applied', { detail: { theme: theme, persist: persist !== false } })); } catch (error) {}
         if (persist !== false) writeStorage(THEME_STORAGE_KEY, theme ? JSON.stringify(theme) : null);
         if (!theme) {
             stopThemeObserver();

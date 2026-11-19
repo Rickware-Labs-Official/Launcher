@@ -622,7 +622,8 @@
     }
 
     function stateRequest(longPoll) {
-        var url = API_BASE + '/api/client/state' + (longPoll && currentSignature ? '?wait=1&since=' + encodeURIComponent(currentSignature) : '');
+        var idleFlag = global.RWLPresence && global.RWLPresence.isIdle() ? '1' : '0';
+        var url = API_BASE + '/api/client/state?idle=' + idleFlag + (longPoll && currentSignature ? '&wait=1&since=' + encodeURIComponent(currentSignature) : '');
         return nativeFetch(url, { headers: { 'Authorization': 'Bearer ' + token() }, cache: 'no-store' });
     }
 

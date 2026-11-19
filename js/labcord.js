@@ -21,7 +21,7 @@
         up: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"></polyline></svg>',
         down: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
     };
-    var state = { boot: null, servers: [], server: null, serverId: null, channelId: 'general', view: 'home', homeTab: 'online', friends: null, notifications: null, collapsed: {}, membersOpen: true, settingsTab: 'overview', roleId: null, channelEditId: null, cosmetics: null, cosmeticPart: 'avatar_decoration', cosmeticQuery: '', busy: false, timer: null };
+    var state = { boot: null, servers: [], server: null, serverId: null, channelId: 'general', view: 'home', homeTab: 'online', friends: null, notifications: null, collapsed: {}, membersOpen: true, settingsTab: 'overview', roleId: null, channelEditId: null, cosmetics: null, cosmeticPart: 'avatar_decoration', cosmeticQuery: '', userTab: 'appearance', typingData: null, busy: false, timer: null };
 
     function t(text) {
         return global.RWLI18n && global.RWLI18n.t ? global.RWLI18n.t(text) : text;
@@ -139,7 +139,7 @@
     function renderRail() {
         byId('lcHome').classList.toggle('active', state.view === 'home');
         byId('lcServers').innerHTML = state.servers.map(function (server) {
-            return '<button type="button" class="lc-rail-btn lc-rail-server' + (state.view === 'server' && state.serverId === server.group_id ? ' active' : '') + '" data-server="' + esc(server.group_id) + '" title="' + esc(server.name) + '">' + serverIcon(server, 'lc-rail-icon') + (server.unread ? '<span class="lc-rail-badge">' + (server.unread > 99 ? '99+' : server.unread) + '</span>' : '') + '</button>';
+            return '<button type="button" class="lc-rail-btn lc-rail-server' + (state.view === 'server' && state.serverId === server.group_id ? ' active' : '') + '" data-server="' + esc(server.group_id) + '" data-drag-kind="server" data-drag-id="' + esc(server.group_id) + '" data-drag-handle="1" title="' + esc(server.name) + '">' + serverIcon(server, 'lc-rail-icon') + (server.unread ? '<span class="lc-rail-badge">' + (server.unread > 99 ? '99+' : server.unread) + '</span>' : '') + '</button>';
         }).join('');
         var counts = (state.notifications && state.notifications.counts) || {};
         var total = (counts.unread || 0) + (counts.friend_requests || 0) + (counts.message_requests || 0);
@@ -151,7 +151,10 @@
     function renderUser() {
         var identity = state.boot && state.boot.identity;
         if (!identity) return;
-        byId('lcUser').innerHTML = '<button type="button" class="lc-user-main" data-user-action="profile" title="' + esc(t('Open your profile')) + '"><span class="lc-user-avatar">' + avatar(identity, 'lc-avatar-img') + '</span><span class="lc-user-text"><strong translate="no" style="' + esc(nameStyle(identity)) + '">' + esc(identity.username) + '</strong><small>' + esc(identity.account_type || 'User') + '</small></span></button>' +
+        var presence = global.RWLPresence ? global.RWLPresence.current().selected : 'online';
+        var presenceDot = global.RWLPresence ? global.RWLPresence.dotHtml(presence) : '';
+        byId('lcUser').innerHTML = '<button type="button" class="lc-user-main" data-user-action="profile" title="' + esc(t('Open your profile')) + '"><span class="lc-user-avatar">' + avatar(Object.assign({}, identity, { presence_status: presence }), 'lc-avatar-img') + '</span><span class="lc-user-text"><strong translate="no" style="' + esc(nameStyle(identity)) + '">' + esc(identity.username) + '</strong><small>' + esc(identity.account_type || 'User') + '</small></span></button>' +
+            '<button type="button" class="lc-status-btn" data-user-action="status" title="' + esc(t('Change your status')) + '" data-presence-trigger="1">' + presenceDot + '</button>' +
             '<button type="button" class="lc-icon-btn" data-user-action="settings" title="' + esc(t('User Settings')) + '">' + ICONS.gear + '</button>';
     }
 
@@ -267,7 +270,7 @@
 
     function channelRow(channel) {
         var manage = has('manage_channels');
-        return '<div class="lc-channel' + (channel.id === state.channelId ? ' active' : '') + '" data-channel="' + esc(channel.id) + '" role="button" tabindex="0" title="' + esc(channel.topic || '#' + channel.name) + '">' + ICONS.hash + '<span class="lc-channel-name" translate="no">' + esc(channel.name) + '</span>' + ((channel.view_roles || []).length ? '<span class="lc-channel-flag" title="' + esc(t('Private channel')) + '">' + ICONS.lock + '</span>' : '') +
+        return '<div class="lc-channel' + (channel.id === state.channelId ? ' active' : '') + '" data-channel="' + esc(channel.id) + '"' + (manage ? ' data-drag-kind="channel" data-drag-id="' + esc(channel.id) + '"' : '') + ' role="button" tabindex="0" title="' + esc(channel.topic || '#' + channel.name) + '">' + ICONS.hash + '<span class="lc-channel-name" translate="no">' + esc(channel.name) + '</span>' + ((channel.view_roles || []).length ? '<span class="lc-channel-flag" title="' + esc(t('Private channel')) + '">' + ICONS.lock + '</span>' : '') +
             (manage ? '<button type="button" class="lc-icon-btn lc-channel-edit" data-channel-edit="' + esc(channel.id) + '" title="' + esc(t('Edit Channel')) + '">' + ICONS.gear + '</button>' : '') + '</div>';
     }
 
@@ -281,7 +284,7 @@
             var channels = server.channels.filter(function (channel) { return channel.category_id === category.id; });
             if (!channels.length && !manage) return;
             var collapsed = !!state.collapsed[server.group_id + ':' + category.id];
-            html += '<div class="lc-category' + (collapsed ? ' collapsed' : '') + '"><button type="button" class="lc-category-head" data-category="' + esc(category.id) + '" title="' + esc(t('Show or hide this category')) + '">' + ICONS.chevron + '<span translate="no">' + esc(category.name) + '</span></button>' + (manage ? '<button type="button" class="lc-icon-btn" data-channel-new="' + esc(category.id) + '" title="' + esc(t('Create Channel')) + '">' + ICONS.plus + '</button>' : '') + '</div>';
+            html += '<div class="lc-category' + (collapsed ? ' collapsed' : '') + '"' + (manage ? ' data-drag-kind="category" data-drag-id="' + esc(category.id) + '"' : '') + '><button type="button" class="lc-category-head" data-drag-handle="1" data-category="' + esc(category.id) + '" title="' + esc(t('Show or hide this category')) + '">' + ICONS.chevron + '<span translate="no">' + esc(category.name) + '</span></button>' + (manage ? '<button type="button" class="lc-icon-btn" data-channel-new="' + esc(category.id) + '" title="' + esc(t('Create Channel')) + '">' + ICONS.plus + '</button>' : '') + '</div>';
             if (!collapsed) html += channels.map(channelRow).join('');
             else html += channels.filter(function (channel) { return channel.id === state.channelId; }).map(channelRow).join('');
         });
@@ -300,12 +303,6 @@
         }).join('');
     }
 
-    function memberRole(member) {
-        var roles = (state.server.roles || []);
-        for (var index = 0; index < roles.length; index++) if (member.roles.indexOf(roles[index].id) >= 0) return roles[index];
-        return null;
-    }
-
     function hoistedRole(member) {
         var roles = (state.server.roles || []);
         for (var index = 0; index < roles.length; index++) if (roles[index].hoist && member.roles.indexOf(roles[index].id) >= 0) return roles[index];
@@ -313,8 +310,7 @@
     }
 
     function memberRow(member) {
-        var role = memberRole(member);
-        var style = role ? '--rwl-keep:1;color:' + RWL.sanitizeHex(role.color, '#e0aaff') : nameStyle(member);
+        var style = member.role_style ? RWL.nameColorStyle(member.role_style, '#e0aaff') : nameStyle(member);
         return '<button type="button" class="lc-member' + (member.online ? '' : ' offline') + '" data-member="' + esc(member.username) + '" title="' + esc(member.username) + '"><span class="lc-member-avatar">' + avatar(member, 'lc-avatar-img') + '</span><span class="lc-member-text"><strong translate="no" style="' + esc(style) + '">' + esc(member.nickname || member.username) + '</strong>' + (member.owner ? '<small class="lc-owner-tag" title="' + esc(t('Server Owner')) + '">👑</small>' : '') + '</span></button>';
     }
 
@@ -329,14 +325,14 @@
         var sections = [];
         (server.roles || []).filter(function (role) { return role.hoist; }).forEach(function (role) {
             var rows = server.members.filter(function (member) { return member.online && hoistedRole(member) === role; });
-            if (rows.length) sections.push([role.name, rows]);
+            if (rows.length) sections.push([role.name, rows, role.style]);
         });
         var online = server.members.filter(function (member) { return member.online && !hoistedRole(member); });
         var offline = server.members.filter(function (member) { return !member.online; });
         if (online.length) sections.push([t('Online'), online]);
         if (offline.length) sections.push([t('Offline'), offline]);
         box.innerHTML = sections.map(function (section) {
-            return '<div class="lc-list-label"><span translate="no">' + esc(section[0]) + '</span> — ' + section[1].length + '</div>' + section[1].map(memberRow).join('');
+            return '<div class="lc-list-label"><span translate="no"' + (section[2] ? ' style="' + esc(RWL.nameColorStyle(section[2], '#e0aaff')) + '"' : '') + '>' + esc(section[0]) + '</span> — ' + section[1].length + '</div>' + section[1].map(memberRow).join('');
         }).join('');
     }
 
@@ -557,10 +553,14 @@
         return tabs;
     }
 
+    function iconLimitMb() {
+        return (state.server && state.server.limits && state.server.limits.icon_mb) || 10;
+    }
+
     function overviewPanel() {
         var server = state.server;
         var open = ['send_messages', 'create_invites', 'mention_everyone'];
-        return '<h3>' + esc(t('Server Overview')) + '</h3><div class="lc-overview"><div class="lc-icon-edit">' + serverIcon(server, 'lc-big-icon') + '<div class="lc-icon-buttons"><button type="button" class="lc-btn lc-btn-small" data-icon="upload" title="' + esc(t('Upload a server picture')) + '">' + esc(t('Upload Picture')) + '</button>' + (server.icon_url ? '<button type="button" class="lc-btn lc-btn-small lc-btn-danger" data-icon="remove" title="' + esc(t('Remove the server picture')) + '">' + esc(t('Remove')) + '</button>' : '') + '<input type="file" id="lcIconFile" accept="image/png,image/jpeg,image/webp,image/gif,image/avif,image/bmp,image/x-icon" hidden><small>' + esc(t('PNG, JPG, GIF, WebP, AVIF, BMP or ICO, up to 8 MB.')) + '</small></div></div>' +
+        return '<h3>' + esc(t('Server Overview')) + '</h3><div class="lc-overview"><div class="lc-icon-edit">' + serverIcon(server, 'lc-big-icon') + '<div class="lc-icon-buttons"><button type="button" class="lc-btn lc-btn-small" data-icon="upload" title="' + esc(t('Upload a server picture')) + '">' + esc(t('Upload Picture')) + '</button>' + (server.icon_url ? '<button type="button" class="lc-btn lc-btn-small lc-btn-danger" data-icon="remove" title="' + esc(t('Remove the server picture')) + '">' + esc(t('Remove')) + '</button>' : '') + '<input type="file" id="lcIconFile" accept="image/png,image/jpeg,image/webp,image/gif,image/avif,image/bmp,image/x-icon" hidden><small>' + esc(t('PNG, JPG, GIF, WebP, AVIF, BMP or ICO, up to') + ' ' + iconLimitMb() + ' MB.') + '</small></div></div>' +
             '<form class="lc-form-inline" id="lcOverviewForm" autocomplete="off">' + textField(t('Server Name'), 'name', server.name, 60, '') + '<label class="lc-field"><span>' + esc(t('Description')) + '</span><textarea class="lc-input lc-textarea" name="description" maxlength="200" rows="3" placeholder="' + esc(t('Tell people what this server is about')) + '">' + esc(server.description || '') + '</textarea></label>' +
             (has('manage_roles') ? '<div class="lc-field"><span>' + esc(t('What everyone is allowed to do')) + '</span><div class="lc-checks">' + open.map(function (permission) { return '<label class="lc-check"><input type="checkbox" name="everyone" value="' + permission + '"' + (server.everyone.indexOf(permission) >= 0 ? ' checked' : '') + '><span>' + esc(t(server.permission_labels[permission] || permission)) + '</span></label>'; }).join('') + '</div></div>' : '') +
             '<div class="lc-form-error" id="lcOverviewError"></div><button type="submit" class="lc-btn lc-btn-primary" title="' + esc(t('Save Changes')) + '">' + esc(t('Save Changes')) + '</button></form></div>';
@@ -574,7 +574,7 @@
         var role = roles.filter(function (entry) { return entry.id === state.roleId; })[0];
         var locked = function (index) { return server.my_position >= 0 && index <= server.my_position; };
         var list = roles.map(function (entry, index) {
-            return '<div class="lc-role-row' + (entry.id === state.roleId ? ' active' : '') + '"><button type="button" class="lc-role-pick" data-role="' + esc(entry.id) + '" title="' + esc(entry.name) + '"><i class="lc-role-dot" style="--rwl-keep:1;background:' + RWL.sanitizeHex(entry.color, '#9d4edd') + '"></i><span translate="no">' + esc(entry.name) + '</span></button><span class="lc-order"><button type="button" class="lc-icon-btn" data-role-move="-1" data-role-id="' + esc(entry.id) + '"' + (index === 0 || locked(index) || locked(index - 1) ? ' disabled' : '') + ' title="' + esc(t('Move up')) + '">' + ICONS.up + '</button><button type="button" class="lc-icon-btn" data-role-move="1" data-role-id="' + esc(entry.id) + '"' + (index === roles.length - 1 || locked(index) ? ' disabled' : '') + ' title="' + esc(t('Move down')) + '">' + ICONS.down + '</button></span></div>';
+            return '<div class="lc-role-row' + (entry.id === state.roleId ? ' active' : '') + '"' + (locked(index) ? '' : ' data-drag-kind="role" data-drag-id="' + esc(entry.id) + '"') + '><button type="button" class="lc-role-pick" data-drag-handle="1" data-role="' + esc(entry.id) + '" title="' + esc(entry.name) + '"><i class="lc-role-dot" style="--rwl-keep:1;background:' + RWL.sanitizeHex(entry.color, '#9d4edd') + '"></i><span translate="no">' + esc(entry.name) + '</span></button><span class="lc-order"><button type="button" class="lc-icon-btn" data-role-move="-1" data-role-id="' + esc(entry.id) + '"' + (index === 0 || locked(index) || locked(index - 1) ? ' disabled' : '') + ' title="' + esc(t('Move up')) + '">' + ICONS.up + '</button><button type="button" class="lc-icon-btn" data-role-move="1" data-role-id="' + esc(entry.id) + '"' + (index === roles.length - 1 || locked(index) ? ' disabled' : '') + ' title="' + esc(t('Move down')) + '">' + ICONS.down + '</button></span></div>';
         }).join('');
         var editor = '<p class="lc-note">' + esc(t('Roles higher in the list outrank the roles below. Members can only manage roles below their own highest role.')) + '</p>';
         if (role) {
@@ -582,7 +582,7 @@
             var disabled = locked(index) ? ' disabled' : '';
             editor = '<form class="lc-form-inline" id="lcRoleForm" autocomplete="off">' + (disabled ? '<p class="lc-note">' + esc(t('You cannot edit this role because it is not below your own highest role.')) + '</p>' : '') +
                 '<label class="lc-field"><span>' + esc(t('Role Name')) + '</span><input type="text" class="lc-input" name="name" maxlength="32" value="' + esc(role.name) + '"' + disabled + '></label>' +
-                '<label class="lc-field lc-color-field"><span>' + esc(t('Role Colour')) + '</span><input type="color" name="color" value="' + esc(RWL.sanitizeHex(role.color, '#9d4edd')) + '"' + disabled + '></label>' +
+                '<div class="lc-field lc-color-field"><span>' + esc(t('Role Colour')) + '</span>' + global.LabcordExtras.colorFieldHtml('color', RWL.sanitizeHex(role.color, '#9d4edd'), !!disabled) + '</div>' + global.LabcordExtras.roleStyleFieldsHtml(role, !!disabled) +
                 '<label class="lc-check"><input type="checkbox" name="hoist"' + (role.hoist ? ' checked' : '') + disabled + '><span>' + esc(t('Show members with this role separately in the member list')) + '</span></label>' +
                 '<div class="lc-field"><span>' + esc(t('Permissions')) + '</span><div class="lc-checks">' + Object.keys(server.permission_labels).map(function (permission) {
                     var mine = server.permissions.indexOf(permission) >= 0;
@@ -608,12 +608,12 @@
         };
         var rows = function (channels) {
             return channels.map(function (channel, index) {
-                return '<div class="lc-manage-row lc-manage-channel">' + ICONS.hash + '<span translate="no">' + esc(channel.name) + '</span>' + moveButtons('channel', channel.id, index === 0, index === channels.length - 1) + '<button type="button" class="lc-btn lc-btn-small" data-channel-edit="' + esc(channel.id) + '" title="' + esc(t('Edit Channel')) + '">' + esc(t('Edit')) + '</button></div>';
+                return '<div class="lc-manage-row lc-manage-channel" data-drag-kind="channel" data-drag-id="' + esc(channel.id) + '">' + ICONS.hash + '<span translate="no">' + esc(channel.name) + '</span>' + moveButtons('channel', channel.id, index === 0, index === channels.length - 1) + '<button type="button" class="lc-btn lc-btn-small" data-channel-edit="' + esc(channel.id) + '" title="' + esc(t('Edit Channel')) + '">' + esc(t('Edit')) + '</button></div>';
             }).join('');
         };
         var html = rows(server.channels.filter(function (channel) { return !channel.category_id; }));
         server.categories.forEach(function (category, index) {
-            html += '<div class="lc-manage-row lc-manage-category"><strong translate="no">' + esc(category.name) + '</strong>' + moveButtons('category', category.id, index === 0, index === server.categories.length - 1) + '<button type="button" class="lc-btn lc-btn-small" data-category-edit="' + esc(category.id) + '" title="' + esc(t('Rename Category')) + '">' + esc(t('Rename')) + '</button><button type="button" class="lc-btn lc-btn-small lc-btn-danger" data-category-delete="' + esc(category.id) + '" title="' + esc(t('Delete Category')) + '">' + esc(t('Delete')) + '</button></div>' + rows(server.channels.filter(function (channel) { return channel.category_id === category.id; }));
+            html += '<div class="lc-manage-row lc-manage-category" data-drag-kind="category" data-drag-id="' + esc(category.id) + '"><strong translate="no">' + esc(category.name) + '</strong>' + moveButtons('category', category.id, index === 0, index === server.categories.length - 1) + '<button type="button" class="lc-btn lc-btn-small" data-category-edit="' + esc(category.id) + '" title="' + esc(t('Rename Category')) + '">' + esc(t('Rename')) + '</button><button type="button" class="lc-btn lc-btn-small lc-btn-danger" data-category-delete="' + esc(category.id) + '" title="' + esc(t('Delete Category')) + '">' + esc(t('Delete')) + '</button></div>' + rows(server.channels.filter(function (channel) { return channel.category_id === category.id; }));
         });
         return '<h3>' + esc(t('Channels')) + '</h3><div class="lc-modal-actions lc-actions-left"><button type="button" class="lc-btn lc-btn-primary lc-btn-small" data-server-menu="channel" title="' + esc(t('Create Channel')) + '">' + esc(t('Create Channel')) + '</button><button type="button" class="lc-btn lc-btn-small" data-server-menu="category" title="' + esc(t('Create Category')) + '">' + esc(t('Create Category')) + '</button></div><div class="lc-manage-list">' + html + '</div>';
     }
@@ -667,12 +667,14 @@
         var file = byId('lcIconFile');
         if (file) file.addEventListener('change', function () { uploadIcon(file); });
         var role = byId('lcRoleForm');
+        if (role) global.LabcordExtras.bindRoleStyle(role, (state.server.roles || []).filter(function (entry) { return entry.id === state.roleId; })[0] || {});
         if (role) role.addEventListener('submit', async function (event) {
             event.preventDefault();
             var name = role.elements.name.value.trim();
             if (!name) return markInvalid(role.elements.name);
             if (!HEX_PATTERN.test(role.elements.color.value)) return markInvalid(role.elements.color);
             var body = { id: state.roleId, name: name, color: role.elements.color.value.toUpperCase(), hoist: role.elements.hoist.checked, permissions: Array.prototype.map.call(role.querySelectorAll('input[name="permissions"]:checked'), function (input) { return input.value; }) };
+            Object.assign(body, global.LabcordExtras.readRoleStyle(role));
             try {
                 await api('/servers/' + encodeURIComponent(state.serverId) + '/roles', { method: 'POST', body: body });
                 toast(t('The role was saved.'));
@@ -688,8 +690,8 @@
         var file = input.files && input.files[0];
         input.value = '';
         if (!file) return;
-        if (IMAGE_TYPES.indexOf(file.type) < 0 || file.size > ((state.server.limits && state.server.limits.icon_bytes) || 8388608)) {
-            toast(t('Choose a PNG, JPG, GIF, WebP, AVIF, BMP or ICO picture up to 8 MB.'), 'error');
+        if (IMAGE_TYPES.indexOf(file.type) < 0 || file.size > ((state.server.limits && state.server.limits.icon_bytes) || 10485760)) {
+            toast(t('Choose a PNG, JPG, GIF, WebP, AVIF, BMP or ICO picture up to') + ' ' + iconLimitMb() + ' MB.', 'error');
             return;
         }
         var form = new FormData();
@@ -814,11 +816,37 @@
             }).join('') + '</div>';
     }
 
+    function userSettingsTabs() {
+        return [['appearance', 'Appearance'], ['typing', 'Typing Indicator'], ['notifications', 'Status And Notifications']];
+    }
+
+    function userPanelHtml() {
+        if (state.userTab === 'typing') {
+            if (!state.typingData) return '<div class="lc-empty">' + esc(t('Loading...')) + '</div>';
+            return global.LabcordExtras.typingSettingsHtml(state.typingData);
+        }
+        if (state.userTab === 'notifications') {
+            var presence = global.RWLPresence ? global.RWLPresence.current() : { selected: 'online' };
+            var current = global.RWLPresence ? global.RWLPresence.label(presence.selected) : '';
+            return '<div class="lc-form"><p class="lc-note">' + esc(t('Your status applies to Labcord, the chat popup and the dashboard. You switch to Away automatically when you are idle.')) + '</p><div class="lc-modal-actions lc-actions-left"><button type="button" class="lc-btn" data-user-status-open title="' + esc(t('Change your status')) + '">' + (global.RWLPresence ? global.RWLPresence.dotHtml(presence.selected) : '') + ' ' + esc(current) + '</button><span data-notify-slot></span></div></div>';
+        }
+        return '<p class="lc-note">' + esc(t('Decorations you choose here are used everywhere on Rickware - Labs. Your theme, profile picture and banner can only be changed in the launcher.')) + '</p><div id="lcCosmetics">' + cosmeticsPanel() + '</div>';
+    }
+
     function renderUserSettings() {
         var identity = state.boot.identity;
+        var tabs = userSettingsTabs().map(function (tab) {
+            return '<button type="button" class="lc-tab' + (state.userTab === tab[0] ? ' active' : '') + '" data-user-tab="' + tab[0] + '" title="' + esc(t(tab[1])) + '">' + esc(t(tab[1])) + '</button>';
+        }).join('');
         openModal('<div class="lc-form lc-user-settings"><h2>' + esc(t('User Settings')) + '</h2><div class="lc-profile-preview"><span class="lc-profile-avatar">' + avatar(identity, 'lc-avatar-img') + '</span><div><strong translate="no" style="' + esc(nameStyle(identity)) + '">' + esc(identity.username) + '</strong><small>' + esc(identity.account_type || 'User') + '</small></div></div>' +
-            '<p class="lc-note">' + esc(t('Decorations you choose here are used everywhere on Rickware - Labs. Your theme, profile picture and banner can only be changed in the launcher.')) + '</p><div id="lcCosmetics">' + cosmeticsPanel() + '</div><div class="lc-modal-actions"><a class="lc-btn" href="./inventory.html" target="_blank" rel="noopener" title="' + esc(t('Open your inventory')) + '">' + esc(t('Open Inventory')) + '</a><button type="button" class="lc-btn lc-btn-primary" data-modal-close title="' + esc(t('Done')) + '">' + esc(t('Done')) + '</button></div></div>', 'user', true);
-        if (!state.cosmetics) {
+            '<div class="lc-tabs lc-user-settings-tabs">' + tabs + '</div><div id="lcUserPanel">' + userPanelHtml() + '</div><div class="lc-modal-actions"><a class="lc-btn" href="./inventory.html" target="_blank" rel="noopener" title="' + esc(t('Open your inventory')) + '">' + esc(t('Open Inventory')) + '</a><button type="button" class="lc-btn lc-btn-primary" data-modal-close title="' + esc(t('Done')) + '">' + esc(t('Done')) + '</button></div></div>', 'user', true);
+        bindUserPanel();
+    }
+
+    function bindUserPanel() {
+        var panel = byId('lcUserPanel');
+        if (!panel) return;
+        if (state.userTab === 'appearance' && !state.cosmetics) {
             RWL.apiRequest('/api/growth/card/config').then(function (data) {
                 state.cosmetics = { owned: data.owned || {}, profile: data.profile || {} };
                 var box = byId('lcCosmetics');
@@ -826,6 +854,26 @@
             }).catch(function (error) {
                 var box = byId('lcCosmetics');
                 if (box) box.innerHTML = '<div class="lc-empty">' + esc((error && error.message) || t('Your items could not be loaded.')) + '</div>';
+            });
+        } else if (state.userTab === 'typing') {
+            var show = function () {
+                var holder = byId('lcUserPanel');
+                if (!holder || state.userTab !== 'typing') return;
+                holder.innerHTML = global.LabcordExtras.typingSettingsHtml(state.typingData);
+                global.LabcordExtras.bindTypingSettings(holder, state.typingData, function (saved) { state.typingData.typing_indicator = saved; });
+            };
+            if (state.typingData) show();
+            else global.LabcordExtras.loadTypingSettings().then(function (data) { state.typingData = data; show(); }).catch(function (error) {
+                var holder = byId('lcUserPanel');
+                if (holder) holder.innerHTML = '<div class="lc-empty">' + esc((error && error.message) || t('Your typing indicator could not be loaded.')) + '</div>';
+            });
+        } else if (state.userTab === 'notifications') {
+            var slot = panel.querySelector('[data-notify-slot]');
+            if (slot && global.RWLNotify) global.RWLNotify.mountToggle(slot);
+            var statusButton = panel.querySelector('[data-user-status-open]');
+            if (statusButton && global.RWLPresence) statusButton.addEventListener('click', function (event) {
+                event.stopPropagation();
+                global.RWLPresence.openMenu(statusButton);
             });
         }
     }
@@ -884,8 +932,11 @@
         if (event.target.closest('[data-home="friends"]')) return showHome();
         var user = event.target.closest('[data-user-action]');
         if (user) {
-            if (user.getAttribute('data-user-action') === 'settings') renderUserSettings();
-            else if (social() && state.boot) social().openProfile(state.boot.identity.username);
+            var userAction = user.getAttribute('data-user-action');
+            if (userAction === 'settings') renderUserSettings();
+            else if (userAction === 'status') {
+                if (global.RWLPresence) global.RWLPresence.openMenu(user);
+            } else if (social() && state.boot) social().openProfile(state.boot.identity.username);
         }
     }
 
@@ -950,6 +1001,11 @@
             if (state.modalCancel) state.modalCancel();
             state.modalCancel = null;
             return closeModal();
+        }
+        var userTab = event.target.closest('[data-user-tab]');
+        if (userTab) {
+            state.userTab = userTab.getAttribute('data-user-tab');
+            return renderUserSettings();
         }
         var add = event.target.closest('[data-add]');
         if (add) return createOrJoin(add.getAttribute('data-add'));
@@ -1050,6 +1106,134 @@
         }
         var cosmetic = event.target.closest('[data-cosmetic]');
         if (cosmetic) equipCosmetic(cosmetic.getAttribute('data-cosmetic'));
+    }
+
+    function reorderIds(ids, sourceId, targetId, position) {
+        var rest = ids.filter(function (entry) { return entry !== sourceId; });
+        var index = rest.indexOf(targetId);
+        if (index < 0) return null;
+        rest.splice(position === 'before' ? index : index + 1, 0, sourceId);
+        return rest;
+    }
+
+    async function dropServer(sourceId, targetId, position) {
+        var ids = reorderIds(state.servers.map(function (server) { return server.group_id; }), sourceId, targetId, position);
+        if (!ids) return;
+        var byIdMap = {};
+        state.servers.forEach(function (server) { byIdMap[server.group_id] = server; });
+        state.servers = ids.map(function (identifier) { return byIdMap[identifier]; });
+        renderRail();
+        try {
+            await api('/servers/order', { method: 'POST', body: { group_ids: ids } });
+        } catch (error) {
+            failure(error, t('The order could not be saved.'));
+            loadServers();
+        }
+    }
+
+    async function dropLayout(source, target, position) {
+        var layout = layoutOf();
+        var kind = source.getAttribute('data-drag-kind');
+        var sourceId = source.getAttribute('data-drag-id');
+        var targetKind = target.getAttribute('data-drag-kind');
+        var targetId = target.getAttribute('data-drag-id');
+        var containerOf = function (channelId) {
+            if (layout.uncategorized.indexOf(channelId) >= 0) return layout.uncategorized;
+            var found = layout.categories.filter(function (category) { return category.channels.indexOf(channelId) >= 0; })[0];
+            return found ? found.channels : null;
+        };
+        if (kind === 'category') {
+            var anchorCategory = targetKind === 'category' ? targetId : (function () {
+                var found = layout.categories.filter(function (category) { return category.channels.indexOf(targetId) >= 0; })[0];
+                return found ? found.id : null;
+            })();
+            if (!anchorCategory || anchorCategory === sourceId) return;
+            var moving = layout.categories.filter(function (category) { return category.id === sourceId; })[0];
+            var remaining = layout.categories.filter(function (category) { return category.id !== sourceId; });
+            var at = remaining.map(function (category) { return category.id; }).indexOf(anchorCategory);
+            remaining.splice(position === 'before' ? at : at + 1, 0, moving);
+            layout.categories = remaining;
+        } else {
+            var origin = containerOf(sourceId);
+            if (!origin) return;
+            origin.splice(origin.indexOf(sourceId), 1);
+            if (targetKind === 'channel') {
+                var destination = containerOf(targetId);
+                if (!destination) return;
+                var position2 = destination.indexOf(targetId);
+                destination.splice(position === 'before' ? position2 : position2 + 1, 0, sourceId);
+            } else {
+                var category = layout.categories.filter(function (entry) { return entry.id === targetId; })[0];
+                if (!category) return;
+                category.channels.unshift(sourceId);
+            }
+        }
+        try {
+            await api('/servers/' + encodeURIComponent(state.serverId) + '/layout', { method: 'POST', body: layout });
+            await refreshServer(true);
+            if (state.modal === 'settings') renderSettings();
+        } catch (error) {
+            failure(error, t('The order could not be saved.'));
+            refreshServer(true);
+        }
+    }
+
+    async function dropRole(sourceId, targetId, position) {
+        var ids = reorderIds(state.server.roles.map(function (role) { return role.id; }), sourceId, targetId, position);
+        if (!ids) return;
+        try {
+            await api('/servers/' + encodeURIComponent(state.serverId) + '/roles/order', { method: 'POST', body: { role_ids: ids } });
+            await refreshServer(true);
+            renderSettings();
+        } catch (error) {
+            failure(error, t('The order could not be saved.'));
+        }
+    }
+
+    function setupSortables() {
+        var extras = global.LabcordExtras;
+        if (!extras) return;
+        extras.attachSortable(byId('lcServers'), {
+            itemSelector: '[data-drag-kind="server"]',
+            canDrag: function () { return true; },
+            canDrop: function () { return true; },
+            onDrop: function (source, target, position) { dropServer(source.getAttribute('data-drag-id'), target.getAttribute('data-drag-id'), position); }
+        });
+        var layoutOptions = {
+            itemSelector: '[data-drag-kind="channel"], [data-drag-kind="category"]',
+            intoSelector: '[data-drag-kind="category"]',
+            canDrag: function () { return has('manage_channels'); },
+            canDrop: function (source, target) { return source !== target; },
+            onDrop: dropLayout
+        };
+        extras.attachSortable(byId('lcSideBody'), layoutOptions);
+        extras.attachSortable(byId('lcModalLayer'), {
+            itemSelector: '[data-drag-kind]',
+            intoSelector: '[data-drag-kind="category"]',
+            canDrag: function (source) { return source.getAttribute('data-drag-kind') === 'role' ? has('manage_roles') : has('manage_channels'); },
+            canDrop: function (source, target) {
+                var sourceKind = source.getAttribute('data-drag-kind');
+                var targetKind = target.getAttribute('data-drag-kind');
+                return sourceKind === 'role' ? targetKind === 'role' : targetKind !== 'role';
+            },
+            onDrop: function (source, target, position) {
+                if (source.getAttribute('data-drag-kind') === 'role') dropRole(source.getAttribute('data-drag-id'), target.getAttribute('data-drag-id'), position);
+                else dropLayout(source, target, position);
+            }
+        });
+    }
+
+    function installHooks() {
+        global.RWLLabcordRoleStyle = function (username) {
+            if (!state.server || !state.server.members) return null;
+            var member = state.server.members.filter(function (entry) { return entry.username === username; })[0];
+            return member && member.role_style ? member.role_style : null;
+        };
+        global.RWLLabcordCan = function (permission) { return has(permission); };
+        global.RWLLabcordFocus = function (groupId) {
+            return state.view === 'server' && state.serverId === groupId && !document.hidden && document.hasFocus();
+        };
+        global.addEventListener('rwl-presence-change', function () { if (state.boot) renderUser(); });
     }
 
     function onModalInput(event) {
@@ -1156,6 +1340,8 @@
         }).observe(chat, { attributes: true, attributeFilter: ['hidden'] });
         renderUser();
         renderRail();
+        setupSortables();
+        installHooks();
         await loadHomeData();
         route();
         state.timer = setInterval(function () {

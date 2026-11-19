@@ -8,7 +8,10 @@
     var subtle = global.crypto && global.crypto.subtle;
     var encoder = new TextEncoder();
     var decoder = new TextDecoder();
-    var state = { current: null, keys: {}, list: null, listAt: 0, sharing: {}, rotating: {} };
+    var REACTION_CHOICES = ['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👀', '💜', '✅', '🚀', '🤝'];
+    var TYPING_SEND_MS = 3000;
+    var TYPING_SHOW_MS = 6000;
+    var state = { current: null, keys: {}, list: null, listAt: 0, sharing: {}, rotating: {}, typingSentAt: 0, typingUsers: {} };
 
     function t(text) {
         return global.RWLI18n && global.RWLI18n.t ? global.RWLI18n.t(text) : text;
@@ -124,7 +127,7 @@
     async function encryptText(groupId, version, text) {
         var crypto = cryptoApi();
         var entry = (state.keys[groupId] || {})[version];
-        if (!entry) throw new Error(t('The group key is not available yet.'));
+        if (!entry) throw new Error(t('The server key is not available yet.'));
         var iv = crypto.randomBytes(12);
         var payload = encoder.encode(JSON.stringify({ t: text, v: MESSAGE_INFO }));
         var sealed = await subtle.encrypt({ name: 'AES-GCM', iv: iv }, entry.key, payload);
@@ -135,7 +138,7 @@
         if (message.kind === 'system') return { ok: true, text: message.system_text || '', system: true };
         var crypto = cryptoApi();
         var entry = (state.keys[groupId] || {})[message.key_version];
-        if (!entry) return { ok: false, text: t('This message was sent before you received the group key.') };
+        if (!entry) return { ok: false, text: t('This message was sent before you received the server key.') };
         try {
             var plain = await subtle.decrypt({ name: 'AES-GCM', iv: crypto.fromBase64(message.iv) }, entry.key, crypto.fromBase64(message.ciphertext));
             var data = JSON.parse(decoder.decode(plain));
@@ -238,7 +241,7 @@
         }
         element.hidden = false;
         document.body.classList.add('rwl-chat-open');
-        element.innerHTML = '<div class="rwl-center-empty">' + esc(t('Decrypting group...')) + '</div>';
+        element.innerHTML = '<div class="rwl-center-empty">' + esc(t('Decrypting server...')) + '</div>';
         try {
             var detail = await load(groupId, channelId);
             state.current = { id: detail.group_id, detail: detail, messages: [], byId: {}, channelId: detail.channel_id || 'general' };
@@ -252,7 +255,7 @@
             markRead();
             state.listAt = 0;
         } catch (error) {
-            element.innerHTML = '<div class="rwl-center-empty">' + esc(error.message || t('The group could not be loaded.')) + '<br><button type="button" class="rwl-btn rwl-btn-secondary" data-group-action="close">' + esc(t('Close')) + '</button></div>';
+            element.innerHTML = '<div class="rwl-center-empty">' + esc(error.message || t('The server could not be loaded.')) + '<br><button type="button" class="rwl-btn rwl-btn-secondary" data-group-action="close">' + esc(t('Close')) + '</button></div>';
             element.onclick = function (event) { if (event.target.closest('[data-group-action="close"]')) social().closeChat(); };
         }
     }
@@ -272,22 +275,58 @@
         return fresh && (message.mine || rules.staff_any_message || detail.permissions.moderator);
     }
 
+    function roleStyleFor(username) {
+        var provider = global.RWLLabcordRoleStyle;
+        var roleStyle = typeof provider === 'function' ? provider(username) : null;
+        return roleStyle ? RWL.nameColorStyle(roleStyle, '#ffffff') : null;
+    }
+
+    function canPin() {
+        var detail = state.current && state.current.detail;
+        if (!detail) return false;
+        if (detail.permissions && detail.permissions.moderator) return true;
+        return typeof global.RWLLabcordCan === 'function' && global.RWLLabcordCan('manage_messages');
+    }
+
+    function replyQuoteHtml(message) {
+        if (!message.reply_to || !state.current) return '';
+        var target = state.current.byId[message.reply_to];
+        if (!target || target.kind === 'system') return '<div class="rwl-reply-quote rwl-reply-missing">↩ ' + esc(t('The original message is not available.')) + '</div>';
+        var snippet = target.plain && target.plain.ok ? target.plain.text.replace(/\s+/g, ' ').slice(0, 90) : '';
+        return '<div class="rwl-reply-quote" translate="no" data-reply-jump="' + esc(target.id) + '">↩ <strong>' + esc(target.mine ? (myName() || t('You')) : (target.sender || t('Former member'))) + '</strong> ' + esc(snippet) + '</div>';
+    }
+
+    function reactionsHtml(message) {
+        var reactions = Array.isArray(message.reactions) ? message.reactions : [];
+        if (!reactions.length) return '';
+        return '<div class="rwl-reactions">' + reactions.map(function (reaction) {
+            return '<button type="button" class="rwl-reaction' + (reaction.me ? ' mine' : '') + '" data-group-react="' + esc(reaction.emoji) + '" title="' + esc(t('React')) + '">' + esc(reaction.emoji) + ' <span>' + reaction.count + '</span></button>';
+        }).join('') + '</div>';
+    }
+
     function messageHtml(message, previous) {
         if (message.kind === 'system') return '<div class="rwl-group-system" data-message-id="' + esc(message.id) + '">' + esc(message.plain.text) + '</div>';
         var author = message.mine ? (myName() || t('You')) : (message.sender || t('Former member'));
         var identity = message.mine ? (social().identity() || memberIdentity(author)) : memberIdentity(author);
         var grouped = previous && previous.kind !== 'system' && previous.sender === message.sender && Date.parse(message.created_at) - Date.parse(previous.created_at) < 7 * 60 * 1000;
         var body = message.plain.ok ? social().renderMarkdown(message.plain.text, message.links_allowed, false) : esc(message.plain.text);
+        var authorStyle = roleStyleFor(author) || social().nameStyle(identity);
         var tools = '<div class="rwl-msg-tools">' +
+            (message.plain.ok ? '<button type="button" class="rwl-tool" data-group-tool="reply" title="' + esc(t('Reply')) + '">↩</button>' : '') +
+            '<button type="button" class="rwl-tool" data-group-tool="react" title="' + esc(t('Add reaction')) + '">😀</button>' +
+            (message.mine && message.plain.ok ? '<button type="button" class="rwl-tool" data-group-tool="edit" title="' + esc(t('Edit message')) + '">✎</button>' : '') +
+            (canPin() ? '<button type="button" class="rwl-tool" data-group-tool="pin" title="' + esc(message.pinned ? t('Unpin message') : t('Pin message')) + '">📌</button>' : '') +
             (message.plain.ok ? '<button type="button" class="rwl-tool" data-group-tool="copy" title="' + esc(t('Copy text')) + '">⧉</button>' : '') +
             '<button type="button" class="rwl-tool" data-group-tool="delete_me" title="' + esc(t('Delete for me')) + '">🙈</button>' +
             (canDeleteForEveryone(message) ? '<button type="button" class="rwl-tool rwl-tool-danger" data-group-tool="delete" title="' + esc(t('Delete for everyone')) + '">🗑</button>' : '') +
         '</div>';
         var head = grouped ? '<span class="rwl-msg-time-gutter"></span>' : '<div class="rwl-msg-avatar-wrap">' + social().avatarHtml(identity, 'rwl-msg-avatar', true, false) + '</div>';
-        return '<div class="rwl-msg' + (grouped ? '' : ' rwl-msg-start') + '" data-message-id="' + esc(message.id) + '">' + head +
+        return '<div class="rwl-msg' + (grouped ? '' : ' rwl-msg-start') + (message.pinned ? ' rwl-msg-pinned' : '') + '" data-message-id="' + esc(message.id) + '">' + head +
             '<div class="rwl-msg-content">' +
-                (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(social().nameStyle(identity)) + '">' + esc(author) + '</span><span class="rwl-msg-time">' + esc(social().formatStamp(message.created_at)) + '</span></div>') +
+                (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(authorStyle) + '">' + esc(author) + '</span><span class="rwl-msg-time">' + esc(social().formatStamp(message.created_at)) + '</span>' + (message.pinned ? '<span class="rwl-msg-pin" title="' + esc(t('Pinned message')) + '">📌</span>' : '') + '</div>') +
+                replyQuoteHtml(message) +
                 '<div class="rwl-msg-body' + (message.plain.ok ? '' : ' rwl-msg-locked') + '" translate="no">' + body + (message.edited_at ? '<span class="rwl-msg-edited">(' + esc(t('edited')) + ')</span>' : '') + '</div>' +
+                reactionsHtml(message) +
             '</div>' + tools + '</div>';
     }
 
@@ -297,8 +336,8 @@
         var detail = group.detail;
         var element = social().chatElement();
         var banner = '';
-        if (detail.suspended) banner = t('This group was suspended by the team.');
-        else if (!detail.has_current_key) banner = t('Waiting for a member to share the group key with you. It arrives automatically as soon as a member is online.');
+        if (detail.suspended) banner = t('This server was suspended by the team.');
+        else if (!detail.has_current_key) banner = t('Waiting for a member to share the server key with you. It arrives automatically as soon as a member is online.');
         var channels = detail.channels || [];
         var channelName = detail.channel_name || 'general';
         if (!banner && detail.can_send_here === false) banner = t('You can read this channel, but you cannot write here.');
@@ -320,7 +359,8 @@
             '<div class="rwl-chat-list" hidden></div>' +
             '<div class="rwl-chat-banner"' + (banner ? '' : ' hidden') + '><span>' + esc(banner) + '</span></div>' +
             '<div class="rwl-chat-scroll" tabindex="0"></div>' +
-            '<div class="rwl-composer"><div class="rwl-composer-box' + (locked ? ' rwl-composer-locked' : '') + '">' +
+            '<div class="rwl-chat-typing" data-group-typing></div>' +
+            '<div class="rwl-composer"><div class="rwl-composer-context" data-group-reply hidden></div><div class="rwl-composer-box' + (locked ? ' rwl-composer-locked' : '') + '">' +
                 '<textarea class="rwl-composer-input" rows="1" maxlength="' + MAX_TEXT + '" placeholder="' + esc(locked ? t('You cannot send messages yet') : t('Message') + ' #' + channelName) + '"' + (locked ? ' disabled' : '') + '></textarea>' +
                 '<button type="button" class="rwl-icon-btn" data-group-action="send" title="' + esc(t('Send')) + '"' + (locked ? ' disabled' : '') + '><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>' +
             '</div><div class="rwl-composer-hint">' + esc(t('Enter to send, Shift + Enter for a new line.')) + '</div></div>';
@@ -347,6 +387,7 @@
         input.addEventListener('input', function () {
             input.style.height = 'auto';
             input.style.height = Math.min(160, input.scrollHeight) + 'px';
+            announceTyping();
         });
         input.addEventListener('keydown', function (event) {
             if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
@@ -354,6 +395,110 @@
                 send();
             }
         });
+    }
+
+    function announceTyping() {
+        var group = state.current;
+        var now = Date.now();
+        if (!group || now - state.typingSentAt < TYPING_SEND_MS) return;
+        state.typingSentAt = now;
+        var body = {};
+        if (group.channelId && group.channelId !== 'general') body.channel_id = group.channelId;
+        api('/groups/' + encodeURIComponent(group.id) + '/typing', { method: 'POST', body: body }).catch(function () {});
+    }
+
+    function typingText(entry) {
+        var indicator = entry.indicator || {};
+        if (indicator.mode && indicator.mode !== 'default' && (indicator.text || indicator.emoji)) return (indicator.emoji ? indicator.emoji + ' ' : '') + (indicator.text ? t(indicator.text) : '');
+        return entry.username + ' ' + t('is typing...');
+    }
+
+    function renderTyping() {
+        var element = social().chatElement();
+        var box = element && element.querySelector('[data-group-typing]');
+        if (!box) return;
+        var now = Date.now();
+        var active = Object.keys(state.typingUsers).filter(function (name) { return now - state.typingUsers[name].at < TYPING_SHOW_MS; });
+        if (!active.length) {
+            box.innerHTML = '';
+            return;
+        }
+        box.innerHTML = '<span class="rwl-typing-dots"><i></i><i></i><i></i></span>' + active.slice(0, 3).map(function (name) {
+            return '<span translate="no">' + esc(typingText(state.typingUsers[name])) + '</span>';
+        }).join(' · ');
+        clearTimeout(state.typingTimer);
+        state.typingTimer = setTimeout(renderTyping, 1000);
+    }
+
+    function setReply(message) {
+        var group = state.current;
+        if (!group) return;
+        group.replyTo = message ? { id: message.id, author: message.mine ? (myName() || t('You')) : (message.sender || t('Former member')), text: message.plain && message.plain.ok ? message.plain.text.replace(/\s+/g, ' ').slice(0, 120) : '' } : null;
+        var bar = social().chatElement().querySelector('[data-group-reply]');
+        if (!bar) return;
+        if (!group.replyTo) {
+            bar.hidden = true;
+            bar.innerHTML = '';
+            return;
+        }
+        bar.hidden = false;
+        bar.innerHTML = '<span translate="no">' + esc(t('Replying to')) + ' <strong>' + esc(group.replyTo.author) + '</strong>: ' + esc(group.replyTo.text) + '</span><button type="button" class="rwl-icon-btn" data-group-tool="cancel_reply" title="' + esc(t('Cancel reply')) + '">✕</button>';
+        var input = social().chatElement().querySelector('.rwl-composer-input');
+        if (input) input.focus();
+    }
+
+    async function toggleReaction(messageId, emoji) {
+        try {
+            await api('/groups/messages/' + encodeURIComponent(messageId) + '/react', { method: 'POST', body: { emoji: emoji } });
+        } catch (error) {
+            notify(error.message || t('The reaction could not be saved.'), 'error');
+        }
+    }
+
+    function showReactionMenu(anchor, messageId) {
+        var existing = document.querySelector('.rwl-reaction-menu');
+        if (existing) existing.remove();
+        var menu = document.createElement('div');
+        menu.className = 'rwl-reaction-menu';
+        menu.innerHTML = REACTION_CHOICES.map(function (emoji) { return '<button type="button" data-pick="' + esc(emoji) + '">' + esc(emoji) + '</button>'; }).join('');
+        document.body.appendChild(menu);
+        var rect = anchor.getBoundingClientRect();
+        menu.style.top = Math.max(8, Math.min(global.innerHeight - menu.offsetHeight - 8, rect.top - menu.offsetHeight - 6)) + 'px';
+        menu.style.left = Math.max(8, Math.min(global.innerWidth - menu.offsetWidth - 8, rect.left - 80)) + 'px';
+        menu.addEventListener('click', function (event) {
+            var pick = event.target.closest('[data-pick]');
+            if (!pick) return;
+            menu.remove();
+            toggleReaction(messageId, pick.getAttribute('data-pick'));
+        });
+        setTimeout(function () {
+            document.addEventListener('click', function close(event) {
+                if (!menu.contains(event.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', close, true);
+                }
+            }, true);
+        }, 0);
+    }
+
+    async function editMessage(message) {
+        var group = state.current;
+        var value = await promptDialog({ title: t('Edit message'), value: message.plain.text, maxLength: MAX_TEXT, pattern: /^[\s\S]{1,4000}$/, invalid: t('The message is too long.'), confirm: t('Save') });
+        if (value === null || value === message.plain.text) return;
+        try {
+            var sealed = await encryptText(group.id, group.detail.key_version, value);
+            await api('/groups/messages/' + encodeURIComponent(message.id) + '/edit', { method: 'POST', body: { ciphertext: sealed.ciphertext, iv: sealed.iv, key_version: group.detail.key_version } });
+        } catch (error) {
+            notify(error.message || t('The message could not be edited.'), 'error');
+        }
+    }
+
+    async function pinMessage(message) {
+        try {
+            await api('/groups/messages/' + encodeURIComponent(message.id) + '/pin', { method: 'POST', body: { pinned: !message.pinned } });
+        } catch (error) {
+            notify(error.message || t('The message could not be pinned.'), 'error');
+        }
     }
 
     async function send() {
@@ -372,7 +517,9 @@
             var sealed = await encryptText(group.id, group.detail.key_version, text);
             var body = { ciphertext: sealed.ciphertext, iv: sealed.iv, key_version: group.detail.key_version };
             if (group.channelId && group.channelId !== 'general') body.channel_id = group.channelId;
+            if (group.replyTo) body.reply_to = group.replyTo.id;
             var result = await api('/groups/' + encodeURIComponent(group.id) + '/messages', { method: 'POST', body: body });
+            setReply(null);
             input.value = '';
             input.style.height = 'auto';
             await addMessage(result.message);
@@ -443,7 +590,7 @@
             return '<div class="rwl-chat-list-row"><span class="rwl-center-avatar">' + social().avatarHtml(member, 'rwl-center-img', true, true) + '</span><span class="rwl-chat-list-name" translate="no" style="' + esc(social().nameStyle(member)) + '">' + esc(member.username) + '</span><span class="rwl-chat-list-meta">' + esc(member.role === 'owner' ? t('Owner') : t('Member')) + (member.has_key ? '' : ' · ' + esc(t('waiting for key'))) + '</span>' + kick + '</div>';
         }).join('');
         if (manage) html += '<label class="rwl-group-toggle"><input type="checkbox" data-group-toggle="members_can_invite"' + (detail.members_can_invite ? ' checked' : '') + '> ' + esc(t('Members can create invite links')) + '</label>';
-        html += '<div class="rwl-group-actions"><button type="button" class="rwl-btn rwl-btn-secondary" data-group-action="leave">' + esc(t('Leave Group')) + '</button>' + (manage ? '<button type="button" class="rwl-btn rwl-btn-danger" data-group-action="delete">' + esc(t('Delete Group')) + '</button>' : '') + '</div>';
+        html += '<div class="rwl-group-actions"><button type="button" class="rwl-btn rwl-btn-secondary" data-group-action="leave">' + esc(t('Leave Server')) + '</button>' + (manage ? '<button type="button" class="rwl-btn rwl-btn-danger" data-group-action="delete">' + esc(t('Delete Server')) + '</button>' : '') + '</div>';
         panel.innerHTML = html;
         var toggle = panel.querySelector('[data-group-toggle]');
         if (toggle) toggle.addEventListener('change', async function () {
@@ -498,6 +645,23 @@
             if (name === 'copy' && group.byId[messageId]) copyText(group.byId[messageId].plain.text);
             else if (name === 'delete') deleteMessage(messageId, 'everyone');
             else if (name === 'delete_me') deleteMessage(messageId, 'me');
+            else if (name === 'reply' && group.byId[messageId]) setReply(group.byId[messageId]);
+            else if (name === 'cancel_reply') setReply(null);
+            else if (name === 'react') showReactionMenu(tool, messageId);
+            else if (name === 'edit' && group.byId[messageId]) editMessage(group.byId[messageId]);
+            else if (name === 'pin' && group.byId[messageId]) pinMessage(group.byId[messageId]);
+            return;
+        }
+        var reactButton = event.target.closest('[data-group-react]');
+        if (reactButton) {
+            var reactRow = reactButton.closest('[data-message-id]');
+            if (reactRow) toggleReaction(reactRow.getAttribute('data-message-id'), reactButton.getAttribute('data-group-react'));
+            return;
+        }
+        var jump = event.target.closest('[data-reply-jump]');
+        if (jump) {
+            var targetRow = social().chatElement().querySelector('[data-message-id="' + jump.getAttribute('data-reply-jump') + '"]');
+            if (targetRow) targetRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
             return;
         }
         var chatAction = event.target.closest('[data-chat-action]');
@@ -537,30 +701,30 @@
                 detail.invites = (detail.invites || []).filter(function (invite) { return invite.code !== button.getAttribute('data-code'); });
                 showInvites();
             } else if (action === 'clear') {
-                if (await confirmDialog(t('Clear Chat'), t('Delete every message of this group for all members?'), true)) {
+                if (await confirmDialog(t('Clear Chat'), t('Delete every message of this server for all members?'), true)) {
                     await api('/groups/' + encodeURIComponent(group.id) + '/clear', { method: 'POST' });
                     open(group.id, group.channelId);
                 }
             } else if (action === 'kick') {
                 var member = button.getAttribute('data-member');
-                if (await confirmDialog(t('Remove Member'), t('Remove this member from the group? The group key is renewed.'), true)) {
+                if (await confirmDialog(t('Remove Member'), t('Remove this member from the server? The server key is renewed.'), true)) {
                     await api('/groups/' + encodeURIComponent(group.id) + '/kick', { method: 'POST', body: { username: member } });
                     open(group.id, group.channelId);
                 }
             } else if (action === 'leave') {
-                if (await confirmDialog(t('Leave Group'), t('Leave this group?'), true)) {
+                if (await confirmDialog(t('Leave Server'), t('Leave this server?'), true)) {
                     await api('/groups/' + encodeURIComponent(group.id) + '/leave', { method: 'POST' });
                     state.listAt = 0;
                     social().closeChat();
                 }
             } else if (action === 'delete') {
-                if (await confirmDialog(t('Delete Group'), t('Delete this group and every message for all members?'), true)) {
+                if (await confirmDialog(t('Delete Server'), t('Delete this server and every message for all members?'), true)) {
                     await api('/groups/' + encodeURIComponent(group.id), { method: 'DELETE' });
                     state.listAt = 0;
                     social().closeChat();
                 }
             } else if (action === 'rename') {
-                var name = await promptDialog({ title: t('Rename Group'), value: detail.name, maxLength: 60, pattern: /^.{2,60}$/, invalid: t('Use 2 to 60 characters.'), confirm: t('Save') });
+                var name = await promptDialog({ title: t('Rename Server'), value: detail.name, maxLength: 60, pattern: /^.{2,60}$/, invalid: t('Use 2 to 60 characters.'), confirm: t('Save') });
                 if (name) {
                     await api('/groups/' + encodeURIComponent(group.id), { method: 'PUT', body: { name: name } });
                     open(group.id, group.channelId);
@@ -574,21 +738,21 @@
     async function create() {
         var crypto = cryptoApi();
         if (!crypto || !(await crypto.ensureVault())) return;
-        var name = await promptDialog({ title: t('Create Group'), text: t('Group chats are end to end encrypted. Invite members with a link after creating the group.'), placeholder: t('Group name'), maxLength: 60, pattern: /^.{2,60}$/, invalid: t('Use 2 to 60 characters.'), confirm: t('Create') });
+        var name = await promptDialog({ title: t('Create Server'), text: t('Servers are end to end encrypted. Invite members with a link after creating the server.'), placeholder: t('Server name'), maxLength: 60, pattern: /^.{2,60}$/, invalid: t('Use 2 to 60 characters.'), confirm: t('Create') });
         if (!name) return;
         try {
             var created = await api('/groups', { method: 'POST', body: { name: name, members_can_invite: true, wraps: [] } });
             state.listAt = 0;
             open(created.group_id);
         } catch (error) {
-            notify(error.message || t('The group could not be created.'), 'error');
+            notify(error.message || t('The server could not be created.'), 'error');
         }
     }
 
     async function join(prefilled) {
         var crypto = cryptoApi();
         if (!crypto || !(await crypto.ensureVault())) return;
-        var code = prefilled || await promptDialog({ title: t('Join Group'), text: t('Enter the invite code or paste the invite link.'), placeholder: 'AbCdEf1234', maxLength: 300, confirm: t('Continue') });
+        var code = prefilled || await promptDialog({ title: t('Join Server'), text: t('Enter the invite code or paste the invite link.'), placeholder: 'AbCdEf1234', maxLength: 300, confirm: t('Continue') });
         if (!code) return;
         var match = /group_invite=([A-Za-z0-9]{6,24})/.exec(code);
         code = match ? match[1] : code.replace(/[^A-Za-z0-9]/g, '');
@@ -599,10 +763,10 @@
                 return;
             }
             if (preview.full) {
-                notify(t('This group is full.'), 'error');
+                notify(t('This server is full.'), 'error');
                 return;
             }
-            if (!(await confirmDialog(t('Join Group'), t('Join') + ' "' + preview.name + '" (' + preview.member_count + ' ' + t('members') + ')?', false))) return;
+            if (!(await confirmDialog(t('Join Server'), t('Join') + ' "' + preview.name + '" (' + preview.member_count + ' ' + t('members') + ')?', false))) return;
             var joined = await api('/groups/join', { method: 'POST', body: { code: code } });
             state.listAt = 0;
             open(joined.group_id);
@@ -625,7 +789,7 @@
                 await addMessage(entry.message);
                 markRead();
             } else if (entry.from && global.RWLSocialNotify && global.RWLSocialNotify.popup) {
-                global.RWLSocialNotify.popup({ title: entry.from.username, body: t('Sent an encrypted message in a group'), picture: entry.from.profile_picture, icon: '👥', onOpen: function () { open(entry.group_id); } });
+                global.RWLSocialNotify.popup({ title: entry.from.username, body: t('Sent an encrypted message in a server'), picture: entry.from.profile_picture, icon: '👥', onOpen: function () { open(entry.group_id); } });
             }
         } else if (entry.type === 'group_message_delete' || entry.type === 'group_message_hidden') {
             if (viewing) removeMessage(entry.message_id);
@@ -637,6 +801,18 @@
                 if (index >= 0) state.current.messages[index] = message;
                 state.current.byId[message.id] = message;
                 renderMessages(false);
+            }
+        } else if (entry.type === 'group_reaction' || entry.type === 'group_pin') {
+            if (viewing && state.current.byId[entry.message_id]) {
+                var target = state.current.byId[entry.message_id];
+                if (entry.type === 'group_reaction') target.reactions = entry.reactions || [];
+                else target.pinned = !!entry.pinned;
+                renderMessages(false);
+            }
+        } else if (entry.type === 'group_typing') {
+            if (viewing && (entry.channel_id || 'general') === (state.current.channelId || 'general')) {
+                state.typingUsers[entry.username] = { at: Date.now(), indicator: entry.indicator || null, username: entry.username };
+                renderTyping();
             }
         } else if (entry.type === 'group_key_request' || entry.type === 'group_member_left') {
             var crypto = cryptoApi();
@@ -653,7 +829,7 @@
         } else if (entry.type === 'group_removed' || entry.type === 'group_deleted') {
             if (viewing) {
                 social().closeChat();
-                notify(entry.type === 'group_removed' ? t('You were removed from the group.') : t('The group was deleted.'), 'info');
+                notify(entry.type === 'group_removed' ? t('You were removed from the server.') : t('The server was deleted.'), 'info');
             }
         }
     }

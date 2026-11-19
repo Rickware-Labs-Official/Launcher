@@ -1342,13 +1342,39 @@ function showTab(tabId) {
     }
 }
 
+function openExternalSitePage(relativePath) {
+    var url = new URL(relativePath, window.location.href).href;
+    if (window.RickwareBridge && window.RickwareBridge.isLauncher) {
+        window.RickwareBridge.call('openExternal', { url: url }).catch(function() {});
+        return;
+    }
+    window.open(url, '_blank', 'noopener');
+}
+
+function syncSidebarWithTopTab(tabKey) {
+    var items = document.querySelectorAll('.nav-item[data-page]');
+    items.forEach(function(item) { item.classList.remove('active'); });
+    if (tabKey !== 'discover') return;
+    var store = document.querySelector('.nav-item[data-page="store"]');
+    if (store) store.classList.add('active');
+}
+
 function setupTabs() {
     var tabs = document.querySelectorAll('.top-tab');
     tabs.forEach(function(btn) {
         btn.addEventListener('click', function() {
+            var key = btn.getAttribute('data-tab');
+            if (key === 'labhub') {
+                window.location.href = currentUser ? './sites/lab_hub.html' : './sites/login_register.html?tab=login';
+                return;
+            }
+            if (key === 'assetarchive') {
+                openExternalSitePage('./sites/Discord Asset Archiv/index.html');
+                return;
+            }
             tabs.forEach(function(b) { b.classList.remove('active'); });
             btn.classList.add('active');
-            var key = btn.getAttribute('data-tab');
+            syncSidebarWithTopTab(key);
             if (key === 'dashboard') { showTab('dashboardTab'); loadDashboard(); }
             else if (key === 'discover') showTab('discoverTab');
             else if (key === 'partner') showTab('partnerTab');
@@ -1384,7 +1410,9 @@ function buildDashboardCard(member) {
     var speed = member.nameplate_speed ? parseFloat(member.nameplate_speed) : 1;
     var plateFilter = RWL.mediaFilterStyle(member.nameplate_filter);
     var lastOnline = member.last_online ? new Date(member.last_online) : null;
-    var statusText = member.online ? 'Online now' : (lastOnline && !isNaN(lastOnline.getTime()) ? 'Last online: ' + lastOnline.toLocaleDateString() : (member.member_since ? 'Member since ' + member.member_since : ''));
+    var presenceKey = window.RWLPresence ? window.RWLPresence.statusOf(member) : (member.online ? 'online' : 'offline');
+    var presenceTexts = { online: 'Online now', dnd: 'Do Not Disturb', away: 'Away' };
+    var statusText = presenceTexts[presenceKey] ? presenceTexts[presenceKey] : (lastOnline && !isNaN(lastOnline.getTime()) ? 'Last online: ' + lastOnline.toLocaleDateString() : (member.member_since ? 'Member since ' + member.member_since : ''));
     var card = document.createElement('div');
     card.className = 'dashboard-member-card rwl-plate-card' + (member.online ? ' online' : '');
     card.setAttribute('data-username', member.username || '');
@@ -1395,13 +1423,13 @@ function buildDashboardCard(member) {
     card.innerHTML =
         '<div class="rwl-plate' + outlineClasses(member) + '"' + outlineStyleAttr(member) + '>' +
             '<video class="rwl-plate-bg"' + (plateFilter ? ' style="' + escHtml(plateFilter) + '"' : '') + ' muted loop playsinline preload="none" data-rwl-speed="' + (isNaN(speed) ? 1 : speed) + '" data-src="' + escHtml(userNameplateSrc(member)) + '"></video>' +
-            '<div class="rwl-plate-avatar" translate="no">' + avatar + decorationHtml + '<span class="rwl-plate-presence' + (member.online ? ' online' : '') + '"></span></div>' +
+            '<div class="rwl-plate-avatar" translate="no">' + avatar + decorationHtml + '<span class="rwl-plate-presence' + (presenceKey !== 'offline' ? ' ' + presenceKey : '') + '" data-presence="' + presenceKey + '"></span></div>' +
             '<div class="rwl-plate-text">' +
                 '<span class="rwl-plate-line">' +
                     '<span class="rwl-plate-name" translate="no" style="' + escHtml(userNameStyle(member)) + '">' + escHtml(member.username) + '</span>' +
                     '<span class="rwl-plate-badges">' + dashboardRankBadge(member) + permsHtml + '</span>' +
                 '</span>' +
-                '<span class="rwl-plate-status' + (member.online ? ' online' : '') + '">' + escHtml(statusText) + '</span>' +
+                '<span class="rwl-plate-status' + (presenceKey !== 'offline' ? ' online' : '') + '">' + escHtml(statusText) + '</span>' +
             '</div>' +
         '</div>';
     if (window.RWLSocial && window.RWLSocial.observeCard) window.RWLSocial.observeCard(card);
@@ -2187,40 +2215,13 @@ async function readDownloadBlob(response, entry) {
 async function downloadSourceProduct(productId, button) {
     var token = sessionStorage.getItem('rickware_token');
     if (!token) { showBanner('Please log in to download this product.', 'error'); return; }
-    if (button) button.disabled = true;
-    var downloadEntry = null;
-    try {
-        var response = await fetch(apiUrl('/api/product/source'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ product_id: productId, hwid: 'website' })
-        });
-        if (!response.ok) {
-            var detail = 'The download is not available.';
-            try { detail = (await response.json()).detail || detail; } catch (e) {}
-            showBanner(detail, 'error');
-            return;
-        }
-        var fileName = response.headers.get('X-File-Name') || 'rickware-labs-product.zip';
-        downloadEntry = startWebDownload(productId, fileName, parseInt(response.headers.get('Content-Length'), 10) || 0);
-        var blob = await readDownloadBlob(response, downloadEntry);
-        finishWebDownload(downloadEntry, 'completed');
-        var url = URL.createObjectURL(blob);
-        var link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.addEventListener('click', function(event) { event.stopPropagation(); });
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(function() { URL.revokeObjectURL(url); }, 4000);
-        showBanner('Download finished.', 'success');
-    } catch (e) {
-        if (downloadEntry) finishWebDownload(downloadEntry, 'failed');
-        showBanner('The download failed. Please try again.', 'error');
-    } finally {
-        if (button) button.disabled = false;
+    if (!window.RWLLauncher || !RWLLauncher.isLauncher()) {
+        showBanner('Downloads and launching are only available in the Rickware - Labs© Launcher.', 'info');
+        return;
     }
+    if (button) button.disabled = true;
+    await RWLLauncher.runAction(productId);
+    if (button) button.disabled = false;
 }
 
 var EMAIL_EYE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -2523,7 +2524,7 @@ function attachForumEventListeners() {
 }
 
 function buildCommentHtml(c, postIdx, commentPath) {
-    var avatarHtml = '<div class="forum-post-avatar-wrap">' + forumUserAvatar(c.username, c.profile_picture, c) + '</div>';
+    var avatarHtml = '<div class="forum-post-avatar-wrap" data-profile-user="' + escHtml(c.username) + '">' + forumUserAvatar(c.username, c.profile_picture, c) + '</div>';
     var badges = forumBadgesHtml(c.account_type, c.account_permissions);
     var repliesHtml = '';
     if (c.replies && c.replies.length > 0) {
@@ -2549,7 +2550,7 @@ function buildCommentHtml(c, postIdx, commentPath) {
                 nameplateVideoHtml(c) +
                 avatarHtml +
                 '<div class="forum-comment-meta">' +
-                    '<span class="forum-comment-user" style=\"' + escHtml(userNameStyle(c)) + '\">' + escHtml(c.username) + '</span>' +
+                    '<span class="forum-comment-user" data-profile-user="' + escHtml(c.username) + '" style=\"' + escHtml(userNameStyle(c)) + '\">' + escHtml(c.username) + '</span>' +
                     badges +
                     '<span class="forum-comment-time">' + escHtml(c.time) + '</span>' +
                 '</div>' +
@@ -2573,7 +2574,7 @@ function buildCommentHtml(c, postIdx, commentPath) {
 }
 
 function buildForumPostCard(p, idx) {
-    var avatarHtml = '<div class="forum-post-avatar-wrap">' + forumUserAvatar(p.username, p.profile_picture, p) + '</div>';
+    var avatarHtml = '<div class="forum-post-avatar-wrap" data-profile-user="' + escHtml(p.username) + '">' + forumUserAvatar(p.username, p.profile_picture, p) + '</div>';
     var badges = forumBadgesHtml(p.account_type, p.account_permissions);
     var commentsHtml = '';
     if (forumCommentOpen[idx]) {
@@ -2605,7 +2606,7 @@ function buildForumPostCard(p, idx) {
                 avatarHtml +
                 '<div class="forum-post-meta">' +
                     '<div class="forum-post-user-row">' +
-                        '<span class="forum-post-username" style=\"' + escHtml(userNameStyle(p)) + '\">' + escHtml(p.username) + '</span>' +
+                        '<span class="forum-post-username" data-profile-user="' + escHtml(p.username) + '" style=\"' + escHtml(userNameStyle(p)) + '\">' + escHtml(p.username) + '</span>' +
                         badges +
                     '</div>' +
                     '<span class="forum-post-time">' + escHtml(p.time) + '</span>' +
@@ -3333,10 +3334,10 @@ async function showReviewsPage() {
             '</div>' +
             '<div class="review-user-row' + outlineClasses(r) + '"' + outlineStyleAttr(r) + '>' +
                 nameplateVideoHtml(r) +
-                '<div class="review-avatar-wrap">' + avatarHtml + decorationHtmlR + '</div>' +
+                '<div class="review-avatar-wrap" data-profile-user="' + escHtml(r.username) + '">' + avatarHtml + decorationHtmlR + '</div>' +
                 '<div class="review-user-info">' +
                     '<div class="review-user-name-row">' +
-                        '<span class="review-username" style=\"' + escHtml(userNameStyle(r)) + '\">' + escHtml(r.username) + '</span>' +
+                        '<span class="review-username" data-profile-user="' + escHtml(r.username) + '" style=\"' + escHtml(userNameStyle(r)) + '\">' + escHtml(r.username) + '</span>' +
                         typeBadgeHtml +
                         permsBadgeHtml +
                     '</div>' +
@@ -4435,6 +4436,7 @@ function setupCheckoutModal() {
     var overlay = document.getElementById('checkoutModalOverlay');
     var closeBtn = document.getElementById('checkoutModalClose');
     function closeCheckoutOverlay() {
+        checkoutOverrideItems = null;
         if (overlay) {
             overlay.classList.remove('open');
             overlay.classList.remove('active');
@@ -4442,12 +4444,25 @@ function setupCheckoutModal() {
         }
         document.body.style.overflow = '';
     }
-    if (openBtn) openBtn.addEventListener('click', function() { openCheckoutModal(); });
+    if (openBtn) openBtn.addEventListener('click', function() { checkoutOverrideItems = null; openCheckoutModal(); });
     if (closeBtn) closeBtn.addEventListener('click', closeCheckoutOverlay);
     if (overlay) overlay.addEventListener('click', function(e) {
         if (e.target === overlay) closeCheckoutOverlay();
     });
 }
+
+var checkoutOverrideItems = null;
+
+function checkoutItems() {
+    return checkoutOverrideItems || cart || [];
+}
+
+window.RWLCheckout = {
+    openFor: function(items) {
+        checkoutOverrideItems = Array.isArray(items) && items.length ? items.slice() : null;
+        openCheckoutModal();
+    }
+};
 
 function openCheckoutModal() {
     var overlay = document.getElementById('checkoutModalOverlay');
@@ -4455,7 +4470,7 @@ function openCheckoutModal() {
     if (!overlay || !inner) return;
     var cartDropdown = document.getElementById('cartDropdown');
     if (cartDropdown) cartDropdown.classList.remove('open');
-    var items = cart || [];
+    var items = checkoutItems();
     var total = items.reduce(function(sum, item) {
         var p = parseFloat(String(item.price || '0').replace(',', '.')) || 0;
         return sum + p * (item.qty || 1);
@@ -4541,15 +4556,17 @@ async function confirmCheckout() {
         showBanner('Please select a payment method.', 'error');
         return;
     }
-    if (cart.length === 0 || !inner) return;
+    if (checkoutItems().length === 0 || !inner) return;
+    var overridden = !!checkoutOverrideItems;
     await runCheckout({
         overlayId: 'checkoutModalOverlay',
         inner: inner,
-        items: cart.slice(),
+        items: checkoutItems().slice(),
         selectedBtn: selectedBtn,
         couponCode: checkoutCouponValue(document.getElementById('checkoutCoupon')),
         onComplete: function() {
-            cart = [];
+            if (overridden) checkoutOverrideItems = null;
+            else cart = [];
             updateCartBadge();
             if (typeof renderCartDropdown === 'function') renderCartDropdown();
         }
@@ -4754,7 +4771,7 @@ function buildCategoryTabs() {
             renderProducts('all');
         });
     }
-    var hasBeta = productsData.products && productsData.products.some(function(p) { return p && p.channel === 'beta'; });
+    var hasBeta = !!(toolState && toolState.beta_access === true);
     if (hasBeta) {
         var betaBtn = document.createElement('button');
         betaBtn.className = 'category-tab category-tab-beta';
@@ -5147,14 +5164,18 @@ function buildProductCard(p, showCategory, mode) {
             launchBtn.title = 'Download the source code of this product';
             launchBtn.innerHTML = DOWNLOAD_BUTTON_ICON + ' Download';
         }
-        launchBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (ownedDownloadOnly(p)) {
-                downloadSourceProduct(p.product_id, launchBtn);
-                return;
-            }
-            launchOwnedProduct(p, launchBtn);
-        });
+        if (isGithubProduct(p)) {
+            launchBtn.setAttribute('data-github-link', '1');
+            launchBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                launchOwnedProduct(p, launchBtn);
+            });
+        } else {
+            launchBtn.setAttribute('aria-disabled', 'true');
+            launchBtn.innerHTML = DOWNLOAD_BUTTON_ICON + ' Download';
+            launchBtn.title = 'Downloads and launching are only available in the Rickware - Labs© Launcher.';
+            if (window.RWLLauncher && RWLLauncher.decorateActionButton) RWLLauncher.decorateActionButton(launchBtn, p, ownedDownloadOnly(p) ? 'source' : 'program');
+        }
         actions.appendChild(launchBtn);
         if (p.discord_url && p.discord_url.trim()) {
             var ownedDiscordBtn = document.createElement('a');
@@ -5190,13 +5211,15 @@ function buildProductCard(p, showCategory, mode) {
         dlBtn.className = 'product-btn product-btn-download';
         if (isGithubProduct(p)) {
             var ghUrl = p.github_url && p.github_url.trim() ? p.github_url : '';
+            dlBtn.setAttribute('data-github-link', '1');
             dlBtn.title = 'Open the GitHub repository in a new tab';
             dlBtn.innerHTML = buildGithubIconSvg(13) + ' Download via GitHub';
             dlBtn.addEventListener('click', function(e) { e.stopPropagation(); openGithubProductPage(ghUrl); });
         } else {
             dlBtn.title = 'Download this product for free';
             dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Free';
-            dlBtn.addEventListener('click', function(e) { e.stopPropagation(); });
+            dlBtn.setAttribute('aria-disabled', 'true');
+            if (window.RWLLauncher && RWLLauncher.decorateActionButton) RWLLauncher.decorateActionButton(dlBtn, p, ownedDownloadOnly(p) ? 'source' : 'program');
         }
         actions.appendChild(dlBtn);
     }
@@ -5269,6 +5292,7 @@ function toolLaunches(p) {
 
 async function refreshToolState(skipRender) {
     var added = 0;
+    var betaBefore = !!(toolState && toolState.beta_access === true);
     try {
         if (RWL.getToken()) {
             toolState = await RWL.apiRequest('/api/growth/tools');
@@ -5283,7 +5307,7 @@ async function refreshToolState(skipRender) {
     }
     renderToolOfTheDay();
     if (skipRender || !document.getElementById('productsGrid')) return;
-    if (added) buildCategoryTabs();
+    if (added || betaBefore !== !!(toolState && toolState.beta_access === true)) buildCategoryTabs();
     if (currentCategory === 'owned') renderOwnedProducts();
     else if (added) renderProducts(currentCategory || 'all');
 }
@@ -5775,30 +5799,22 @@ function openProductModal(p, options) {
     }
 
     var downloadOnly = ownedDownloadOnly(p);
-    var ownedDownload = downloadOnly && (infoOnly || userOwnsProduct(p));
-    html += '<div class="modal-actions" id="modalActions"' + (downloadOnly ? ' data-launcher-ready="1"' : '') + '>';
-    if (ownedDownload) {
-        html += '<button class="modal-btn modal-btn-download" id="modalOwnedDownloadBtn" title="Download the source code of this product">' + DOWNLOAD_BUTTON_ICON.replace(/"13"/g, '"15"') + ' Download</button>';
-    }
-    if (infoOnly && downloadOnly) {
-        html += '';
-    } else if (infoOnly) {
-        if (isGithubProduct(p)) {
-            var ownedGithubUrl = p.github_url && p.github_url.trim() ? p.github_url : '#';
-            html += '<a class="modal-btn modal-btn-download" id="modalOwnedGithubBtn" title="Open the GitHub repository in a new tab" href="' + escHtml(ownedGithubUrl) + '" target="_blank" rel="noopener noreferrer">' + buildGithubIconSvg(15) + ' Launch</a>';
-        } else {
-            html += '<button class="modal-btn modal-btn-download" id="modalDlBtn" title="Install or start this tool in the Rickware - Labs© Launcher"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 4 20 12 6 20 6 4"/></svg> Launch</button>';
-        }
-    } else if (isFree) {
-        if (isGithubProduct(p)) {
-            var ghUrl2 = p.github_url && p.github_url.trim() ? p.github_url : '#';
-            html += '<a class="modal-btn modal-btn-download" id="modalDlBtn" title="Open the GitHub repository in a new tab" href="' + escHtml(ghUrl2) + '" target="_blank" rel="noopener noreferrer">' + buildGithubIconSvg(15) + ' Download via GitHub</a>';
-        } else {
-            html += '<button class="modal-btn modal-btn-download" id="modalDlBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Free</button>';
-        }
+    var ownsIt = infoOnly || userOwnsProduct(p);
+    var githubProduct = isGithubProduct(p);
+    html += '<div class="modal-actions" id="modalActions">';
+    if (githubProduct && (infoOnly || isFree)) {
+        var githubActionUrl = p.github_url && p.github_url.trim() ? p.github_url : '#';
+        html += '<a class="modal-btn modal-btn-download" id="modalDlBtn" title="Open the GitHub repository in a new tab" href="' + escHtml(githubActionUrl) + '" target="_blank" rel="noopener noreferrer">' + buildGithubIconSvg(15) + (infoOnly ? ' Launch' : ' Download via GitHub') + '</a>';
     } else {
-        html += '<button class="modal-btn modal-btn-buy" id="modalBuyBtn">Buy Now</button>';
-        html += '<button class="modal-btn modal-btn-cart" id="modalCartBtn"' + (hasMultiLicense ? ' disabled' : '') + '><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Add to Cart</button>';
+        html += '<button type="button" class="modal-btn modal-btn-download" id="modalDownloadBtn" data-kind="' + (downloadOnly ? 'source' : 'program') + '" aria-disabled="true" title="Downloads and launching are only available in the Rickware - Labs© Launcher.">' + DOWNLOAD_BUTTON_ICON.replace(/"13"/g, '"15"') + ' Download</button>';
+    }
+    if (!isFree) {
+        if (ownsIt) {
+            html += '<button type="button" class="modal-btn modal-btn-switch" id="modalSwitchPlanBtn" title="Upgrade, downgrade or buy the source code">Switch Plan</button>';
+        } else {
+            html += '<button class="modal-btn modal-btn-buy" id="modalBuyBtn">Buy Now</button>';
+            html += '<button class="modal-btn modal-btn-cart" id="modalCartBtn"' + (hasMultiLicense ? ' disabled' : '') + '><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Add to Cart</button>';
+        }
     }
     if (!infoOnly) html += '<button class="modal-btn modal-btn-wishlist' + (inWL ? ' active' : '') + '" id="modalWishBtn" title="Wishlist"><svg width="16" height="16" viewBox="0 0 24 24" fill="' + (inWL ? '#c97eff' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>';
     if (p.discord_url && p.discord_url.trim()) {
@@ -5851,9 +5867,11 @@ function openProductModal(p, options) {
     }
 
     inner.innerHTML = html;
-    var ownedDownloadBtn = inner.querySelector('#modalOwnedDownloadBtn');
-    if (ownedDownloadBtn) {
-        ownedDownloadBtn.addEventListener('click', function() { downloadSourceProduct(p.product_id, ownedDownloadBtn); });
+    var switchPlanBtn = inner.querySelector('#modalSwitchPlanBtn');
+    if (switchPlanBtn) {
+        switchPlanBtn.addEventListener('click', function() {
+            if (window.RWLSwitchPlan) window.RWLSwitchPlan.open(p);
+        });
     }
     populateViewCounts(inner);
     overlay.classList.add('open');
@@ -6637,12 +6655,14 @@ function checkoutCartPayload(items) {
             name: String(item.name || '').slice(0, 300),
             qty: Math.max(1, Math.min(parseInt(item.qty, 10) || 1, 10)),
             product: productPayload,
-            licenseKey: item.licenseKey || null
+            licenseKey: item.licenseKey || null,
+            switchFrom: item.switchFrom || null
         };
     });
 }
 
 function closeCheckoutOverlayById(overlayId) {
+    if (overlayId === 'checkoutModalOverlay') checkoutOverrideItems = null;
     var overlay = document.getElementById(overlayId);
     if (overlay) {
         overlay.classList.remove('open');

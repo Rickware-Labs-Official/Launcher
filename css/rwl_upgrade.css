@@ -829,14 +829,12 @@ body {
     cursor: pointer;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .rwl-frame::before,
-    .rwl-frame::after,
-    .rwl-small-button,
-    .rwl-security-button,
-    .product-live-dot {
-        animation: none !important;
-    }
+html.rwl-user-reduced-fx .rwl-frame::before,
+html.rwl-user-reduced-fx .rwl-frame::after,
+html.rwl-user-reduced-fx .rwl-small-button,
+html.rwl-user-reduced-fx .rwl-security-button,
+html.rwl-user-reduced-fx .product-live-dot {
+    animation: none !important;
 }
 
 .rwl-dialog-overlay {

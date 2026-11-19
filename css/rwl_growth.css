@@ -515,19 +515,17 @@
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .rwl-companion-orb,
-    .rwl-companion-react-jump,
-    .rwl-companion-react-spin,
-    .rwl-companion-react-love,
-    .rwl-event-banner,
-    .rwl-companion-svg .cp-deco-aura {
-        animation: none;
-    }
+html.rwl-user-reduced-fx .rwl-companion-orb,
+html.rwl-user-reduced-fx .rwl-companion-react-jump,
+html.rwl-user-reduced-fx .rwl-companion-react-spin,
+html.rwl-user-reduced-fx .rwl-companion-react-love,
+html.rwl-user-reduced-fx .rwl-event-banner,
+html.rwl-user-reduced-fx .rwl-companion-svg .cp-deco-aura {
+    animation: none;
 }
 
-html.rwl-low-fx .rwl-companion-orb,
-html.rwl-low-fx .rwl-event-banner {
+html.rwl-user-reduced-fx .rwl-companion-orb,
+html.rwl-user-reduced-fx .rwl-event-banner {
     animation: none;
 }
 .rwl-pet.pv .cp-body { fill: var(--pa); stroke: var(--pb); }
@@ -634,8 +632,4 @@ html.rwl-low-fx .rwl-event-banner {
 @keyframes rwlPetGlitch { 0%, 86%, 100% { transform: translate(0, 0); filter: none; } 88% { transform: translate(-3px, 1px); filter: hue-rotate(80deg); } 92% { transform: translate(3px, -1px); filter: hue-rotate(-60deg); } 96% { transform: translate(-1px, 0); } }
 @keyframes rwlPetHeat { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25) saturate(1.3); } }
 
-@media (prefers-reduced-motion: reduce) {
-    .rwl-pet, .rwl-pet * { animation: none !important; }
-}
-
-html.rwl-low-fx .rwl-pet, html.rwl-low-fx .rwl-pet * { animation: none !important; }
+html.rwl-user-reduced-fx .rwl-pet, html.rwl-user-reduced-fx .rwl-pet * { animation: none !important; }

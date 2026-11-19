@@ -590,12 +590,29 @@
         (document.head || document.documentElement).appendChild(script);
     }
 
+    function loadCompanionStyle(fileName) {
+        var current = document.currentScript || document.querySelector('script[src*="api_client.js"]');
+        if (!current || !current.src || document.getElementById('rwlExperienceStyles')) return;
+        var link = document.createElement('link');
+        link.id = 'rwlExperienceStyles';
+        link.rel = 'stylesheet';
+        link.href = current.src.replace(/js\/api_client\.js.*$/, fileName);
+        (document.head || document.documentElement).appendChild(link);
+    }
+
+    loadCompanionStyle('css/rwl_experience.css');
     loadCompanion('rwl_guard.js');
     loadCompanion('rwl_upgrade.js');
     loadCompanion('rwl_behavior.js');
     loadCompanion('rwl_social_notify.js');
     loadCompanion('rwl_pets.js');
     loadCompanion('rwl_growth.js');
+    loadCompanion('rwl_presence.js');
+    loadCompanion('rwl_theme_sound.js');
+    loadCompanion('rwl_notifications.js');
+    loadCompanion('rwl_nav.js');
+    loadCompanion('rwl_switch_plan.js');
+    loadCompanion('rwl_tutorial.js');
 
     global.RWL = {
         apiBase: RWL_API_BASE,
