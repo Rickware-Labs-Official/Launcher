@@ -13,7 +13,7 @@ window.archive_labels = {
     download_busy: "Too many downloads are running right now, please try again in a moment.",
     download_all_part: "Downloading part",
     download_all_done: "All download parts were started.",
-    status_online: "Online",
+    status_online: "RwL Database",
     status_offline: "Unavailable",
     status_loading: "Loading",
     guest_preview: "Previewing assets on the profile of the first member. Sign in to preview them on your own profile.",

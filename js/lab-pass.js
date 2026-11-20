@@ -22,7 +22,7 @@
     };
 
     function rewardImageSource(reward) {
-        if (reward.type === 'lab_coins' || reward.icon === 'lc') return '../images/main/lc_coin_96.webp';
+        if (reward.type === 'lab_coins' || reward.icon === 'lc') return '../images/main/labs_coin.webp';
         if (reward.type === 'mystery_chest' || reward.icon === 'chest') return '../images/assets/lab_pass/rickware-labs_chest.webp';
         if (reward.type === 'license_voucher') return '../images/assets/inventory/' + REWARD_CATEGORY_IMAGES.licenses;
         var image = REWARD_CATEGORY_IMAGES[reward.category];
@@ -189,7 +189,7 @@
             var label = option.levels === 1 ? '+1 Level' : '+' + option.levels + ' Levels';
             return '<button class="lp-buy-level-btn' + (affordable ? '' : ' lp-buy-level-locked') + '" data-buy-levels="' + option.levels + '" title="Buy ' + option.levels + ' level(s) for ' + option.price + ' Lab Coins">' +
                 '<span class="lp-buy-level-count">' + label + '</span>' +
-                '<span class="lp-buy-level-price"><img src="../images/main/lc_coin_96.webp" alt="LC" onerror="this.style.display=\'none\'">' + option.price + ' LC</span>' +
+                '<span class="lp-buy-level-price"><img src="../images/main/labs_coin.webp" alt="LC" onerror="this.style.display=\'none\'">' + option.price + ' LC</span>' +
             '</button>';
         }).join('');
     }

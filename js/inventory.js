@@ -294,8 +294,9 @@
         var html = '<div class="inv-category-card" data-category="' + cat.id + '">';
         html += '<div class="inv-category-count">' + esc(String(categoryCount(cat))) + '</div>';
         if (newKey && newCount(newKey)) html += '<div class="inv-category-new" title="' + esc(formatNumber(newCount(newKey))) + ' new">NEW</div>';
-        html += '<img class="inv-category-image" src="../images/assets/inventory/' + cat.image + '" alt="' + esc(cat.name) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+        html += '<img class="inv-category-image" src="../images/assets/inventory/' + cat.image + '" alt="' + esc(cat.name) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';this.parentNode.classList.add(\'inv-category-noimage\')">';
         html += '<div class="inv-category-fallback" style="display:none;">' + cat.icon + '<span>' + esc(cat.name) + '</span></div>';
+        html += '<div class="inv-category-label">' + esc(cat.name) + '</div>';
         html += '</div>';
         return html;
     }
@@ -1579,6 +1580,17 @@
             return;
         }
         var nextValue = (itemId === DEFAULT_THEME_ID || equipped[cosmetic.field] === itemId) ? '' : itemId;
+        if (nextValue === '') {
+            var releasedId = equipped[cosmetic.field] || itemId;
+            var confirmed = await global.RWLDialog.confirm({
+                title: 'Unequip This Item?',
+                message: 'Do you really want to unequip ' + itemName(cosmetic.catalog, releasedId) + '?',
+                confirmText: 'Unequip',
+                cancelText: 'Keep Equipped',
+                danger: true
+            });
+            if (!confirmed) return;
+        }
         var payload = {};
         payload[cosmetic.field] = nextValue;
         slot.classList.add('inv-slot-busy');

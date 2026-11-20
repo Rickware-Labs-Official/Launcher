@@ -788,6 +788,9 @@ html, body {
 
 .mini-profile-card.frame-target-card {
     min-height: 0;
+    --frame-overlay-scale-x: 1.07;
+    --frame-overlay-scale: 1.05;
+    --frame-bottom-offset: 5%;
 }
 
 .frame-target-card .mini-identity {

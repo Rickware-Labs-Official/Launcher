@@ -2,11 +2,13 @@
     if (global.RWLThemeSound || !global.RWL) return;
     if (/[?&]rwl_preview=1/.test(global.location.search) || global.top !== global.self) return;
 
-    var DEFAULT_VOLUME = 37;
+    var DEFAULT_VOLUME = 30;
     var SAVE_DELAY_MS = 450;
     var GESTURES = ['pointerdown', 'keydown', 'touchstart', 'click'];
     var audio = null;
     var activeUrl = null;
+    var objectUrl = null;
+    var sourceToken = 0;
     var settings = { volume: DEFAULT_VOLUME, muted: false, loaded: false };
     var waitingForGesture = false;
     var saveTimer = null;
@@ -32,7 +34,9 @@
         audio = new Audio();
         audio.loop = true;
         audio.preload = 'auto';
-        audio.crossOrigin = 'anonymous';
+        audio.controls = false;
+        audio.disableRemotePlayback = true;
+        if (audio.controlsList) audio.controlsList.add('nodownload');
         return audio;
     }
 
@@ -52,13 +56,46 @@
         GESTURES.forEach(function (name) { global.addEventListener(name, onGesture, { capture: true, once: false, passive: true }); });
     }
 
-    function play() {
+    function releaseObjectUrl() {
+        if (objectUrl) {
+            try { URL.revokeObjectURL(objectUrl); } catch (error) {}
+            objectUrl = null;
+        }
+    }
+
+    async function streamSource(url) {
+        var response = await global.fetch(url, { method: 'GET', headers: RWL.authHeaders(), cache: 'no-store', credentials: 'omit' });
+        if (!response.ok) throw new Error('theme sound unavailable');
+        var type = response.headers.get('Content-Type') || 'audio/mpeg';
+        var data = await response.arrayBuffer();
+        return URL.createObjectURL(new Blob([data], { type: type }));
+    }
+
+    async function ensureSource(element) {
+        if (element.getAttribute('data-source') === activeUrl && objectUrl) return true;
+        var token = ++sourceToken;
+        var wanted = activeUrl;
+        var nextObjectUrl;
+        try {
+            nextObjectUrl = await streamSource(wanted);
+        } catch (error) {
+            return false;
+        }
+        if (token !== sourceToken || wanted !== activeUrl) {
+            try { URL.revokeObjectURL(nextObjectUrl); } catch (error) {}
+            return false;
+        }
+        releaseObjectUrl();
+        objectUrl = nextObjectUrl;
+        element.src = nextObjectUrl;
+        element.setAttribute('data-source', wanted);
+        return true;
+    }
+
+    async function play() {
         if (!activeUrl) return;
         var element = ensureAudio();
-        if (element.getAttribute('data-source') !== activeUrl) {
-            element.src = activeUrl;
-            element.setAttribute('data-source', activeUrl);
-        }
+        if (!(await ensureSource(element)) || !activeUrl) return;
         element.volume = effectiveVolume();
         element.muted = settings.muted || dndActive();
         var attempt = element.play();
@@ -66,6 +103,7 @@
     }
 
     function stop() {
+        sourceToken++;
         removeGestureListeners();
         if (audio) {
             audio.pause();
@@ -73,6 +111,7 @@
             audio.removeAttribute('data-source');
             audio.load();
         }
+        releaseObjectUrl();
     }
 
     function applyVolume() {
@@ -150,7 +189,7 @@
         var tr = function (text) { return global.RWLI18n && global.RWLI18n.t ? global.RWLI18n.t(text) : text; };
         field.innerHTML = '<span><span>' + RWL.escapeHtml(tr('Theme Sound')) + '</span><strong class="rwl-sound-value"></strong></span>' +
             '<input type="range" min="0" max="100" step="1" class="rwl-sound-range" title="' + RWL.escapeHtml(tr('Change the volume of the theme sound')) + '">' +
-            '<label class="rwl-sound-mute"><input type="checkbox" class="rwl-sound-mutebox"> ' + RWL.escapeHtml(tr('Mute theme sound')) + '</label>';
+            '<label class="rwl-sound-mute"><span class="rwl-switch"><input type="checkbox" role="switch" class="rwl-sound-mutebox"><span class="rwl-switch-track"></span></span><span>' + RWL.escapeHtml(tr('Mute theme sound')) + '</span></label>';
         var range = field.querySelector('.rwl-sound-range');
         var box = field.querySelector('.rwl-sound-mutebox');
         var value = field.querySelector('.rwl-sound-value');

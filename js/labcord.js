@@ -153,9 +153,11 @@
         if (!identity) return;
         var presence = global.RWLPresence ? global.RWLPresence.current().selected : 'online';
         var presenceDot = global.RWLPresence ? global.RWLPresence.dotHtml(presence) : '';
-        byId('lcUser').innerHTML = '<button type="button" class="lc-user-main" data-user-action="profile" title="' + esc(t('Open your profile')) + '"><span class="lc-user-avatar">' + avatar(Object.assign({}, identity, { presence_status: presence }), 'lc-avatar-img') + '</span><span class="lc-user-text"><strong translate="no" style="' + esc(nameStyle(identity)) + '">' + esc(identity.username) + '</strong><small>' + esc(identity.account_type || 'User') + '</small></span></button>' +
+        var plate = social() && social().plateVideo ? social().plateVideo(identity, 'lc-plate-bg') : '';
+        byId('lcUser').innerHTML = plate + '<button type="button" class="lc-user-main" data-user-action="profile" title="' + esc(t('Open your profile')) + '"><span class="lc-user-avatar">' + avatar(Object.assign({}, identity, { presence_status: presence }), 'lc-avatar-img') + '</span><span class="lc-user-text"><strong translate="no" style="' + esc(nameStyle(identity)) + '">' + esc(identity.username) + '</strong><small>' + esc(identity.account_type || 'User') + '</small></span></button>' +
             '<button type="button" class="lc-status-btn" data-user-action="status" title="' + esc(t('Change your status')) + '" data-presence-trigger="1">' + presenceDot + '</button>' +
             '<button type="button" class="lc-icon-btn" data-user-action="settings" title="' + esc(t('User Settings')) + '">' + ICONS.gear + '</button>';
+        if (plate && social().observeCard) social().observeCard(byId('lcUser'));
     }
 
     function renderHomeSide() {
@@ -164,8 +166,12 @@
         byId('lcSideBody').innerHTML = '<button type="button" class="lc-side-row lc-side-friends' + (!chatOpen() ? ' active' : '') + '" data-home="friends" title="' + esc(t('Friends')) + '">' + ICONS.users + '<span>' + esc(t('Friends')) + '</span></button>' +
             '<div class="lc-side-label">' + esc(t('Direct Messages')) + '</div>' +
             (channels.length ? channels.map(function (row) {
-                return '<button type="button" class="lc-side-row lc-dm-row" data-dm="' + esc(row.channel_id) + '" title="' + esc(row.partner.username) + '"><span class="lc-dm-avatar">' + avatar(row.partner, 'lc-avatar-img') + '</span><span class="lc-dm-name" translate="no" style="' + esc(nameStyle(row.partner)) + '">' + esc(row.partner.username) + '</span>' + (row.unread ? '<span class="lc-pill">' + (row.unread > 99 ? '99+' : row.unread) + '</span>' : '') + '</button>';
+                var rowPlate = social() && social().plateVideo ? social().plateVideo(row.partner, 'lc-plate-bg') : '';
+                var rowBadges = social() && social().badgesHtml ? social().badgesHtml(row.partner) : '';
+                var rowPet = social() && social().petHtml ? social().petHtml(row.partner, 16, false, false) : '';
+                return '<button type="button" class="lc-side-row lc-dm-row" data-dm="' + esc(row.channel_id) + '" title="' + esc(row.partner.username) + '">' + rowPlate + '<span class="lc-dm-avatar">' + avatar(row.partner, 'lc-avatar-img') + '</span><span class="lc-dm-text"><span class="lc-dm-nameline"><span class="lc-dm-name" translate="no" style="' + esc(nameStyle(row.partner)) + '">' + esc(row.partner.username) + '</span>' + rowPet + '</span>' + rowBadges + '</span>' + (row.unread ? '<span class="lc-pill">' + (row.unread > 99 ? '99+' : row.unread) + '</span>' : '') + '</button>';
             }).join('') : '<div class="lc-empty">' + esc(t('No direct messages yet.')) + '</div>');
+        if (social() && social().observeCard) social().observeCard(byId('lcSideBody'));
     }
 
     function chatOpen() {

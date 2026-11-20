@@ -386,6 +386,70 @@ body {
     font-size: 13px;
 }
 
+.auth-remember-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--text-secondary, #b8b8c0);
+    font-size: 13px;
+    user-select: none;
+}
+
+.auth-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.auth-switch input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.auth-switch-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    background: rgba(155, 0, 204, 0.15);
+    border: 1px solid rgba(157, 78, 221, 0.45);
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+    pointer-events: none;
+}
+
+.auth-switch-track::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #808080;
+    transition: transform 0.25s ease, background 0.25s ease;
+}
+
+.auth-switch input:checked + .auth-switch-track {
+    background: linear-gradient(135deg, #7b2cbf, #9d4edd);
+    box-shadow: 0 0 14px rgba(157, 78, 221, 0.55);
+}
+
+.auth-switch input:checked + .auth-switch-track::after {
+    transform: translateX(20px);
+    background: #ffffff;
+}
+
+.auth-switch input:focus-visible + .auth-switch-track {
+    outline: 2px solid #e0aaff;
+    outline-offset: 2px;
+}
+
 .auth-options a {
     color: rgba(180, 80, 220, 0.9);
     text-decoration: none;

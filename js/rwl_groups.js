@@ -323,7 +323,7 @@
         var head = grouped ? '<span class="rwl-msg-time-gutter"></span>' : '<div class="rwl-msg-avatar-wrap">' + social().avatarHtml(identity, 'rwl-msg-avatar', true, false) + '</div>';
         return '<div class="rwl-msg' + (grouped ? '' : ' rwl-msg-start') + (message.pinned ? ' rwl-msg-pinned' : '') + '" data-message-id="' + esc(message.id) + '">' + head +
             '<div class="rwl-msg-content">' +
-                (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(authorStyle) + '">' + esc(author) + '</span><span class="rwl-msg-time">' + esc(social().formatStamp(message.created_at)) + '</span>' + (message.pinned ? '<span class="rwl-msg-pin" title="' + esc(t('Pinned message')) + '">📌</span>' : '') + '</div>') +
+                (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(authorStyle) + '">' + esc(author) + '</span>' + social().petHtml(identity, 18, false, false) + '<span class="rwl-msg-time">' + esc(social().formatStamp(message.created_at)) + '</span>' + (message.pinned ? '<span class="rwl-msg-pin" title="' + esc(t('Pinned message')) + '">📌</span>' : '') + '</div>') +
                 replyQuoteHtml(message) +
                 '<div class="rwl-msg-body' + (message.plain.ok ? '' : ' rwl-msg-locked') + '" translate="no">' + body + (message.edited_at ? '<span class="rwl-msg-edited">(' + esc(t('edited')) + ')</span>' : '') + '</div>' +
                 reactionsHtml(message) +
@@ -348,7 +348,7 @@
             '<div class="rwl-chat-head" title="' + esc(t('Drag to move the chat')) + '">' +
                 '<button type="button" class="rwl-icon-btn" data-group-action="list" title="' + esc(t('All chats')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>' +
                 '<span class="rwl-group-icon">' + esc(detail.name.slice(0, 2).toUpperCase()) + '</span>' +
-                '<div class="rwl-chat-title" data-group-action="members" title="' + esc(t('Show the members')) + '" translate="no"><strong>' + esc(detail.name) + '</strong><span class="rwl-chat-lock"><b class="rwl-group-channel-name"># ' + esc(channelName) + '</b> · ' + detail.members.length + ' ' + esc(t('members')) + ' · ' + esc(t('End to end encrypted')) + '</span></div>' +
+                '<div class="rwl-chat-title" data-group-action="members" title="' + esc(t('Show the members')) + '" translate="no"><div class="rwl-chat-title-main"><strong>' + esc(detail.name) + '</strong><b class="rwl-group-channel-name"># ' + esc(channelName) + '</b></div><span class="rwl-chat-lock">' + detail.members.length + ' ' + esc(t('members')) + ' · ' + esc(t('End to end encrypted')) + '</span></div>' +
                 channelPicker +
                 '<button type="button" class="rwl-icon-btn rwl-labcord-btn" data-group-action="labcord" title="' + esc(t('Open Labcord in a new tab')) + '">' + LABCORD_ICON + '</button>' +
                 (detail.permissions.can_invite ? '<button type="button" class="rwl-icon-btn" data-group-action="invite" title="' + esc(t('Invite members')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></button>' : '') +
@@ -462,6 +462,13 @@
         menu.className = 'rwl-reaction-menu';
         menu.innerHTML = REACTION_CHOICES.map(function (emoji) { return '<button type="button" data-pick="' + esc(emoji) + '">' + esc(emoji) + '</button>'; }).join('');
         document.body.appendChild(menu);
+        if (global.RWLEmoji) {
+            menu.classList.add('rwl-reaction-menu-full');
+            global.RWLEmoji.fill(menu, { attribute: 'data-pick', quick: REACTION_CHOICES }).then(function () {
+                var shifted = menu.getBoundingClientRect();
+                menu.style.top = Math.max(8, Math.min(global.innerHeight - shifted.height - 8, shifted.top)) + 'px';
+            });
+        }
         var rect = anchor.getBoundingClientRect();
         menu.style.top = Math.max(8, Math.min(global.innerHeight - menu.offsetHeight - 8, rect.top - menu.offsetHeight - 6)) + 'px';
         menu.style.left = Math.max(8, Math.min(global.innerWidth - menu.offsetWidth - 8, rect.left - 80)) + 'px';

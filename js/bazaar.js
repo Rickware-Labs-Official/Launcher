@@ -101,6 +101,14 @@
         return '<span class="bz-pill bz-pill-muted">' + esc(t(listing.status.charAt(0).toUpperCase() + listing.status.slice(1))) + '</span>';
     }
 
+    function personHtml(person) {
+        var name = (person && person.username) || '';
+        if (!name) return '';
+        var style = RWL.nameColorStyle(person, '#ffffff');
+        var linked = /^[A-Za-z0-9_.\-]{3,50}$/.test(name) && name !== 'Unknown';
+        return '<span class="bz-person"' + (linked ? ' data-profile-user="' + esc(name) + '" role="button" tabindex="0"' : '') + ' style="' + esc(style) + '">' + esc(name) + '</span>';
+    }
+
     function cardHtml(listing) {
         var item = listing.item || {};
         return '<article class="bz-listing bz-kind-' + esc(listing.kind) + '" data-listing="' + esc(listing.id) + '" tabindex="0" role="button" style="--rwl-keep:1;border-color:' + esc(RWL.rarityColor(item.rarity)) + '55;">' +
@@ -110,7 +118,7 @@
                 '<div class="bz-item-name" translate="no">' + esc(item.name || '') + '</div>' +
                 '<div class="bz-item-cat">' + esc(t(CATEGORY_LABELS[item.category] || '')) + (item.exclusive ? ' · <span class="bz-exclusive">' + esc(t('Exclusive')) + '</span>' : '') + '</div>' +
                 '<div class="bz-price-row">' + priceLine(listing) + '</div>' +
-                '<div class="bz-seller" translate="no"><span class="bz-seller-dot' + (listing.seller && listing.seller.online ? ' online' : '') + '"></span>' + esc((listing.seller && listing.seller.username) || '') + statusPill(listing) + '</div>' +
+                '<div class="bz-seller" translate="no"><span class="bz-seller-dot' + (listing.seller && listing.seller.online ? ' online' : '') + '"></span>' + personHtml(listing.seller) + statusPill(listing) + '</div>' +
             '</div>' +
         '</article>';
     }
@@ -250,7 +258,7 @@
                 else if (listing.kind === 'auction') actions = '<form class="bz-bid-form" data-bid><input type="number" class="rwl-input" min="' + listing.next_min_bid + '" step="1" value="' + listing.next_min_bid + '" title="' + esc(t('Your bid')) + '"><button type="submit" class="bz-btn bz-btn-primary" title="' + esc(t('Place your bid, it is reserved until you are outbid')) + '">' + esc(t('Place Bid')) + '</button></form><p class="bz-note">' + esc(t('Minimum bid') + ': ' + price(listing.next_min_bid, listing.currency) + ' · ' + (listing.reserve_met ? t('Minimum price reached') : t('Minimum price not reached yet'))) + '</p>';
             }
             if (listing.status === 'active' && listing.is_mine && !(listing.kind === 'auction' && listing.bid_count)) actions += '<button type="button" class="bz-btn bz-btn-danger" data-cancel title="' + esc(t('Cancel the listing and get the item back')) + '">' + esc(t('Cancel Listing')) + '</button>';
-            var bids = listing.kind === 'auction' ? '<div class="bz-section-title">' + esc(t('Bids')) + '</div>' + ((listing.bids || []).length ? '<div class="bz-bids">' + listing.bids.map(function (bid) { return '<div class="bz-bid-row" translate="no"><span>' + esc(bid.username) + '</span><b>' + esc(price(bid.amount, listing.currency)) + '</b><span class="bz-sub">' + esc(new Date(bid.at).toLocaleString()) + '</span></div>'; }).join('') + '</div>' : emptyHtml(t('No bids yet.'))) : '';
+            var bids = listing.kind === 'auction' ? '<div class="bz-section-title">' + esc(t('Bids')) + '</div>' + ((listing.bids || []).length ? '<div class="bz-bids">' + listing.bids.map(function (bid) { return '<div class="bz-bid-row" translate="no"><span>' + personHtml(bid) + '</span><b>' + esc(price(bid.amount, listing.currency)) + '</b><span class="bz-sub">' + esc(new Date(bid.at).toLocaleString()) + '</span></div>'; }).join('') + '</div>' : emptyHtml(t('No bids yet.'))) : '';
             modal = openModal(
                 '<div class="bz-detail">' +
                     '<div class="bz-detail-visual" style="--rwl-keep:1;border-color:' + esc(RWL.rarityColor(item.rarity)) + ';">' + rarityBanner(item) + itemVisual(item) + '</div>' +
@@ -258,7 +266,7 @@
                         '<div class="bz-kind">' + esc(kindLabel(listing.kind)) + '</div>' +
                         '<h2 translate="no">' + esc(item.name) + '</h2>' +
                         '<div class="bz-item-cat">' + esc(t(CATEGORY_LABELS[item.category] || '')) + ' · ' + esc(t(item.rarity || '')) + '</div>' +
-                        '<div class="bz-detail-seller" translate="no">' + esc(t('Seller')) + ': <strong>' + esc((listing.seller && listing.seller.username) || '') + '</strong></div>' +
+                        '<div class="bz-detail-seller" translate="no">' + esc(t('Seller')) + ': <strong>' + personHtml(listing.seller) + '</strong></div>' +
                         (listing.note ? '<p class="bz-detail-note" translate="no">' + esc(listing.note) + '</p>' : '') +
                         '<div class="bz-price-row bz-price-large">' + priceLine(listing) + '</div>' +
                         (listing.is_mine && listing.kind === 'auction' ? '<p class="bz-note">' + esc(t('Your minimum price') + ': ' + price(listing.min_price, listing.currency)) + '</p>' : '') +

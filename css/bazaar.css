@@ -1074,3 +1074,19 @@ html.rwl-low-fx .bz-title {
     font-size: 11px;
     color: rgba(224, 170, 255, 0.75);
 }
+
+.bz-person {
+    display: inline-block;
+    max-width: 100%;
+    font-weight: 700;
+    cursor: pointer;
+    vertical-align: bottom;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bz-person:hover {
+    text-decoration: underline;
+    text-decoration-color: rgba(224, 170, 255, 0.7);
+}

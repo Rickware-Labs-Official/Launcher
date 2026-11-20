@@ -281,6 +281,7 @@
         if (token) outgoing = await signedInit(input, init, token);
         else outgoing = await withTurnstile(url, init);
         outgoing = await withDeviceFingerprint(input, outgoing);
+        outgoing = await withLauncherProof(input, outgoing);
         var response = await nativeFetch(input, outgoing);
         noteServerTime(response);
         announceSystemState(response, url);
@@ -321,6 +322,32 @@
             fingerprintPromise = (global.crypto && global.crypto.subtle && encoder ? sha256Hex(fingerprintSource()) : Promise.resolve('')).catch(function () { return ''; });
         }
         return fingerprintPromise;
+    }
+
+    var launcherProof = null;
+    var launcherProofPromise = null;
+
+    function loadLauncherProof() {
+        if (!launcherHost() || typeof global.RickwareBridge.call !== 'function') return Promise.resolve(null);
+        if (launcherProof) return Promise.resolve(launcherProof);
+        if (!launcherProofPromise) {
+            launcherProofPromise = global.RickwareBridge.call('clientProof', {}).then(function (proof) {
+                launcherProof = proof && proof.hash ? proof : null;
+                return launcherProof;
+            }).catch(function () { return null; });
+        }
+        return launcherProofPromise;
+    }
+
+    async function withLauncherProof(input, init) {
+        var proof = await loadLauncherProof();
+        if (!proof) return init;
+        var headers = new Headers((init && init.headers) || (input && input.headers) || undefined);
+        headers.set('X-RWL-Client-Kind', 'launcher');
+        headers.set('X-RWL-Client-Hash', String(proof.hash));
+        headers.set('X-RWL-Client-Platform', String(proof.platform || 'windows'));
+        headers.set('X-RWL-Client-Version', String(proof.version || ''));
+        return Object.assign({}, init || {}, { headers: headers });
     }
 
     async function withDeviceFingerprint(input, init) {
@@ -491,7 +518,8 @@
             var baseSeconds = Math.max(1, Math.min(parseInt(data.name_color_animation_seconds, 10) || 4, 20)) / clampSpeed(data.name_color_speed);
             var fill = animatedFill(data.name_color_gradient, baseSeconds, data.name_color_effect || 'flow', data.name_color_direction || 'ltr');
             if (fill) {
-                return KEEP_COLORS_STYLE + fill + '-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;';
+                var radial = data.name_color_direction === 'center_out' || data.name_color_direction === 'edge_in';
+                return KEEP_COLORS_STYLE + fill + (radial ? 'width:fit-content;max-width:100%;' : '') + '-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;';
             }
         }
         if (data.name_color_hex) return KEEP_COLORS_STYLE + 'color:' + sanitizeHex(data.name_color_hex, fallback) + ';';
@@ -613,6 +641,7 @@
     loadCompanion('rwl_nav.js');
     loadCompanion('rwl_switch_plan.js');
     loadCompanion('rwl_tutorial.js');
+    loadCompanion('rwl_emoji.js');
 
     global.RWL = {
         apiBase: RWL_API_BASE,

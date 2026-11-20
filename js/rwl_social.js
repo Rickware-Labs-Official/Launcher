@@ -146,6 +146,60 @@
     var DEFAULT_BADGE_STYLE = 'background:rgba(155,0,204,0.12);color:#b87fff;border:1px solid rgba(155,0,204,0.3);';
     var CHIP_BASE_STYLE = 'display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.03em;white-space:nowrap;';
 
+    var COMPACT_CHIP_STYLE = 'display:inline-flex;align-items:center;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:0.03em;white-space:nowrap;flex-shrink:0;';
+
+    function permissionList(user, type) {
+        var perms = Array.isArray(user.account_permissions) ? user.account_permissions : String(user.account_permissions || '').split(',');
+        return perms.map(function (entry) { return String(entry).trim(); }).filter(function (entry) { return entry && entry !== 'none' && entry !== 'User' && entry !== type; });
+    }
+
+    function compactBadgesHtml(user) {
+        if (!user) return '';
+        var type = user.account_type || 'User';
+        var style = TYPE_BADGE_STYLES[String(type).toLowerCase()] || DEFAULT_BADGE_STYLE;
+        var html = '<span class="rwl-badge rwl-badge-type" translate="no" style="' + esc(COMPACT_CHIP_STYLE + style) + '">' + esc(type) + '</span>';
+        permissionList(user, type).forEach(function (entry) {
+            html += '<span class="rwl-badge rwl-badge-perm" translate="no" style="' + esc(COMPACT_CHIP_STYLE + 'background:rgba(99,0,138,0.22);color:#c97eff;border:1px solid rgba(155,0,204,0.45);') + '">' + esc(entry) + '</span>';
+        });
+        return '<span class="rwl-compact-badges">' + html + '</span>';
+    }
+
+    var PET_STYLE_URL = (document.currentScript && document.currentScript.src ? document.currentScript.src : '').replace(/js\/rwl_social\.js.*$/, 'css/rwl_growth.css');
+
+    function ensurePetStyles() {
+        if (!PET_STYLE_URL || document.querySelector('link[href*="rwl_growth.css"]')) return;
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = PET_STYLE_URL;
+        document.head.appendChild(link);
+    }
+
+    function petLevel(pet) {
+        return Math.max(1, Math.floor(Number(pet && pet.level) || 1));
+    }
+
+    function petHtml(user, size, withLevel, animated) {
+        var pet = user && user.pet;
+        if (!pet || !global.RWLPets || typeof global.RWLPets.svg !== 'function') return '';
+        ensurePetStyles();
+        var level = petLevel(pet).toLocaleString('en-US');
+        var label = (pet.name || 'Pet') + ' · ' + t('Level') + ' ' + level;
+        var figure = global.RWLPets.svg(Object.assign({}, pet, { still: !animated }), size || 20);
+        return '<span class="rwl-user-pet" translate="no" title="' + esc(label) + '">' + figure + (withLevel ? '<small class="rwl-user-pet-level">' + esc(t('Level')) + ' ' + esc(level) + '</small>' : '') + '</span>';
+    }
+
+    function petCardHtml(profile) {
+        var pet = profile && profile.pet;
+        if (!pet || !global.RWLPets || typeof global.RWLPets.svg !== 'function') return '';
+        ensurePetStyles();
+        return '<div class="rwl-profile-label">' + esc(t('Personal Pet')) + '</div>' +
+            '<div class="rwl-profile-pet" translate="no"><span class="rwl-profile-pet-figure">' + global.RWLPets.svg(pet, 76) + '</span>' +
+            '<div class="rwl-profile-pet-info"><strong>' + esc(pet.name || 'Pet') + '</strong>' +
+            '<span class="rwl-profile-pet-level">' + esc(t('Level')) + ' ' + esc(petLevel(pet).toLocaleString('en-US')) + '</span>' +
+            '<small>' + esc(pet.species_name || '') + (pet.rarity ? ' · ' + esc(t(pet.rarity)) : '') + '</small></div></div>' +
+            '<div class="rwl-profile-divider"></div>';
+    }
+
     function badgesHtml(user) {
         var type = user.account_type || 'User';
         var style = TYPE_BADGE_STYLES[String(type).toLowerCase()] || DEFAULT_BADGE_STYLE;
@@ -309,7 +363,7 @@
                 '<div class="rwl-profile-name" style="' + esc(nameStyle(profile)) + '">' + esc(profile.username) + '</div>' +
                 '<div class="rwl-profile-tag">' + esc(lastOnline) + '</div>' +
                 '<div class="rwl-profile-badges">' + badgesHtml(profile) + '</div>' +
-                '<div class="rwl-profile-divider"></div>' +
+                '<div class="rwl-profile-divider"></div>' + petCardHtml(profile) +
                 '<div class="rwl-profile-label">' + esc(t('About Me')) + '</div>' + bio +
                 '<div class="rwl-profile-divider"></div>' + meta +
                 footer +
@@ -1238,7 +1292,7 @@
             '<div class="rwl-chat-head" data-username="' + esc(partner.username) + '" title="' + esc(t('Drag to move the chat')) + '">' + plateVideo(partner, '') +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="list" title="' + esc(t('All chats')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>' +
                 '<div class="rwl-center-avatar">' + avatarHtml(partner, 'rwl-center-img', true, true) + '</div>' +
-                '<div class="rwl-chat-title" data-chat-action="profile" title="' + esc(t('Open the profile')) + '" translate="no"><strong style="' + esc(nameStyle(partner)) + '">' + esc(partner.username) + '</strong><span class="rwl-chat-lock"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' + esc(t('End to end encrypted')) + '</span></div>' +
+                '<div class="rwl-chat-title" data-chat-action="profile" title="' + esc(t('Open the profile')) + '" translate="no"><span class="rwl-chat-title-main"><strong style="' + esc(nameStyle(partner)) + '">' + esc(partner.username) + '</strong>' + petHtml(partner, 20, false, false) + compactBadgesHtml(partner) + '</span><span class="rwl-chat-lock"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' + esc(t('End to end encrypted')) + '</span></div>' +
                 '<button type="button" class="rwl-icon-btn rwl-labcord-btn" data-chat-action="labcord" title="' + esc(t('Open Labcord in a new tab')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>' +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="pins" title="' + esc(t('Pinned messages')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5"/><path d="M5 17h14l-2-5V5h1V3H6v2h1v7z"/></svg></button>' +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="clear" title="' + esc(t('Clear the chat history')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>' +
@@ -1726,8 +1780,106 @@
         }
     }
 
+    var MEDIA_PATH_PATTERN = /\.(?:png|jpe?g|gif|webp|avif)(?:$|[?#])/i;
+    var MEDIA_CACHE_LIMIT = 48;
+    var mediaCache = new Map();
+    var mediaIntersection = null;
+
+    function isMediaUrl(url) {
+        return /^https:\/\//i.test(url) && MEDIA_PATH_PATTERN.test(url);
+    }
+
+    function mediaLinkHtml(url) {
+        return '<a class="rwl-link-media" href="' + url + '" target="_blank" rel="noopener noreferrer nofollow" data-rwl-media="' + url + '" title="' + esc(t('Open the original link')) + '"><span class="rwl-link-media-state">' + esc(t('Loading preview...')) + '</span></a>';
+    }
+
+    function rememberMedia(url, objectUrl) {
+        mediaCache.set(url, objectUrl);
+        while (mediaCache.size > MEDIA_CACHE_LIMIT) {
+            var oldest = mediaCache.keys().next().value;
+            try { URL.revokeObjectURL(mediaCache.get(oldest)); } catch (error) {}
+            mediaCache.delete(oldest);
+        }
+    }
+
+    async function loadMediaNode(node) {
+        var url = node.getAttribute('data-rwl-media');
+        node.setAttribute('data-state', 'loading');
+        try {
+            var objectUrl = mediaCache.get(url);
+            if (!objectUrl) {
+                var response = await fetch(RWL.apiUrl('/api/social/link_media?url=' + encodeURIComponent(url)), { headers: RWL.authHeaders(), cache: 'no-store' });
+                if (!response.ok) throw new Error('unavailable');
+                objectUrl = URL.createObjectURL(await response.blob());
+                rememberMedia(url, objectUrl);
+            }
+            var image = new Image();
+            image.className = 'rwl-link-media-img';
+            image.alt = '';
+            image.decoding = 'async';
+            image.addEventListener('load', function () {
+                var scroller = node.closest ? node.closest('.rwl-chat-scroll') : null;
+                if (scroller && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < image.height + 120) scroller.scrollTop = scroller.scrollHeight;
+            });
+            image.addEventListener('error', function () { failMediaNode(node, url); });
+            image.src = objectUrl;
+            node.textContent = '';
+            node.appendChild(image);
+            node.setAttribute('data-state', 'ready');
+        } catch (error) {
+            failMediaNode(node, url);
+        }
+    }
+
+    function failMediaNode(node, url) {
+        node.setAttribute('data-state', 'failed');
+        node.textContent = url.length > 70 ? url.slice(0, 67) + '...' : url;
+    }
+
+    function queueMediaNode(node) {
+        if (node.getAttribute('data-state') || !signedIn()) return;
+        node.setAttribute('data-state', 'queued');
+        if (!('IntersectionObserver' in global)) { loadMediaNode(node); return; }
+        if (!mediaIntersection) {
+            mediaIntersection = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) return;
+                    mediaIntersection.unobserve(entry.target);
+                    loadMediaNode(entry.target);
+                });
+            }, { rootMargin: '300px' });
+        }
+        mediaIntersection.observe(node);
+    }
+
+    function scanMedia(root) {
+        if (!root || root.nodeType !== 1) return;
+        if (root.hasAttribute && root.hasAttribute('data-rwl-media')) queueMediaNode(root);
+        Array.prototype.forEach.call(root.querySelectorAll ? root.querySelectorAll('[data-rwl-media]:not([data-state])') : [], queueMediaNode);
+    }
+
+    function installMediaWatcher() {
+        if (!('MutationObserver' in global)) return;
+        var pending = false;
+        var added = [];
+        new MutationObserver(function (records) {
+            records.forEach(function (record) {
+                Array.prototype.forEach.call(record.addedNodes, function (node) { if (node.nodeType === 1) added.push(node); });
+            });
+            if (pending || !added.length) return;
+            pending = true;
+            global.requestAnimationFrame(function () {
+                pending = false;
+                var batch = added.splice(0, added.length);
+                batch.forEach(scanMedia);
+            });
+        }).observe(document.body, { childList: true, subtree: true });
+        scanMedia(document.body);
+    }
+
     function linkify(escaped, allowed, hidden) {
         return escaped.replace(URL_PATTERN, function (url) {
+            if (allowed && !hidden && isMediaUrl(url.replace(/&amp;/g, '&'))) return mediaLinkHtml(url);
             if (allowed && !hidden) return '<a href="' + url + '" target="_blank" rel="noopener noreferrer nofollow">' + url + '</a>';
             return '<span class="rwl-link-blocked" title="' + esc(hidden ? t('Links from members are hidden by your safety settings') : t('This member is not allowed to send links')) + '">' + esc(t('link removed')) + '</span>';
         });
@@ -1800,7 +1952,7 @@
         return '<div class="rwl-msg' + (grouped ? '' : ' rwl-msg-start') + (message.pinned ? ' rwl-msg-pinned' : '') + '" data-message-id="' + esc(message.id) + '">' +
             reply + head +
             '<div class="rwl-msg-content">' +
-                (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(nameStyle(authorUser)) + '" data-chat-action="profile_author" data-author="' + (mine ? 'me' : 'partner') + '">' + esc(author) + '</span><span class="rwl-msg-time">' + esc(formatStamp(message.created_at)) + '</span></div>') +
+                (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(nameStyle(authorUser)) + '" data-chat-action="profile_author" data-author="' + (mine ? 'me' : 'partner') + '">' + esc(author) + '</span>' + petHtml(authorUser, 18, false, false) + '<span class="rwl-msg-time">' + esc(formatStamp(message.created_at)) + '</span></div>') +
                 '<div class="rwl-msg-body' + bodyState + '" translate="no">' + body + (message.edited_at ? '<span class="rwl-msg-edited">(' + esc(t('edited')) + ')</span>' : '') + waitingNote + '</div>' +
                 (attachments ? '<div class="rwl-attachments">' + attachments + '</div>' : '') +
                 (reactions ? '<div class="rwl-reactions">' + reactions + '</div>' : '') +
@@ -1892,7 +2044,8 @@
     function showReactionPicker(button, messageId) {
         var emoji = (state.chat && state.chat.detail.reaction_emoji) || [];
         var panel = document.querySelector('#rwlChat .rwl-emoji-panel');
-        panel.innerHTML = emoji.map(function (item) { return '<button type="button" class="rwl-emoji" data-reaction-pick="' + item + '" data-message="' + esc(messageId) + '">' + item + '</button>'; }).join('');
+        if (global.RWLEmoji) global.RWLEmoji.fill(panel, { attribute: 'data-reaction-pick', extra: { 'data-message': messageId }, quick: emoji });
+        else panel.innerHTML = emoji.map(function (item) { return '<button type="button" class="rwl-emoji" data-reaction-pick="' + item + '" data-message="' + esc(messageId) + '">' + item + '</button>'; }).join('');
         panel.hidden = false;
         panel.setAttribute('data-mode', 'reaction');
     }
@@ -1903,7 +2056,8 @@
             panel.hidden = true;
             return;
         }
-        panel.innerHTML = EMOJI_SET.map(function (emoji) { return '<button type="button" class="rwl-emoji" data-emoji="' + emoji + '">' + emoji + '</button>'; }).join('');
+        if (global.RWLEmoji) global.RWLEmoji.fill(panel, { attribute: 'data-emoji' });
+        else panel.innerHTML = EMOJI_SET.map(function (emoji) { return '<button type="button" class="rwl-emoji" data-emoji="' + emoji + '">' + emoji + '</button>'; }).join('');
         panel.hidden = false;
         panel.setAttribute('data-mode', 'emoji');
     }
@@ -2227,6 +2381,9 @@
         bumpBubble: bumpBubble,
         avatarHtml: avatarHtml,
         nameStyle: nameStyle,
+        plateVideo: plateVideo,
+        badgesHtml: compactBadgesHtml,
+        petHtml: petHtml,
         renderMarkdown: renderMarkdown,
         formatStamp: formatStamp,
         confirmDialog: confirmDialog,
@@ -2257,6 +2414,6 @@
         if (tab) setTimeout(onDashboardShown, 50);
     });
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 400); });
-    else setTimeout(init, 400);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 400); installMediaWatcher(); });
+    else { setTimeout(init, 400); installMediaWatcher(); }
 })(window);

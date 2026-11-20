@@ -1093,7 +1093,7 @@ function getAccountTypeBadgeStyle(accountType) {
 }
 
 function applyNameColor(el, cosmetics, fallback) {
-    ['background-image', 'background-size', '-webkit-background-clip', 'background-clip', '-webkit-text-fill-color', 'animation', 'color'].forEach(function(property) {
+    ['background-image', 'background-size', '-webkit-background-clip', 'background-clip', '-webkit-text-fill-color', 'animation', 'color', 'width', 'max-width'].forEach(function(property) {
         el.style.removeProperty(property);
     });
     RWL.nameColorStyle(cosmetics || {}, fallback).split(';').forEach(function(rule) {
@@ -1210,7 +1210,7 @@ function updateUserProfile(user) {
     }
 }
 
-async function loginUser(usernameOrEmail, password) {
+async function loginUser(usernameOrEmail, password, rememberMe) {
     try {
         var res = await fetch(apiUrl('/api/login'), {
             method: 'POST',
@@ -1218,6 +1218,7 @@ async function loginUser(usernameOrEmail, password) {
             body: JSON.stringify({
                 username: usernameOrEmail,
                 password: password,
+                remember_me: typeof rememberMe === 'boolean' ? rememberMe : undefined,
                 device_key: RWL.deviceKey(),
                 client: RWL.clientKind(),
                 user_agent: navigator.userAgent || null,
@@ -1724,7 +1725,7 @@ async function showBankPage() {
         var popularBadge = pkg.popular ? '<div class="bank-pack-popular">Most Popular</div>' : '';
         return '<div class="bank-coin-pack glass-card' + (pkg.popular ? ' bank-pack-featured' : '') + '" data-pack="' + pkg.id + '">' +
             popularBadge +
-            '<div class="bank-pack-icon"><img src="./images/main/lc_coin_96.webp" alt="LC" decoding="async" style="width:48px;height:48px;object-fit:contain;" onerror="this.style.display=\'none\'"></div>' +
+            '<div class="bank-pack-icon"><img src="./images/main/labs_coin.webp" alt="LC" decoding="async" style="width:48px;height:48px;object-fit:contain;" onerror="this.style.display=\'none\'"></div>' +
             '<div class="bank-pack-label">' + pkg.label + '</div>' +
             '<div class="bank-pack-coins">' + total + ' <span>LC</span></div>' +
             (pkg.bonus > 0 ? '<div class="bank-pack-bonus">+' + pkg.bonus + ' bonus coins</div>' : '<div class="bank-pack-bonus">&nbsp;</div>') +
@@ -1735,7 +1736,7 @@ async function showBankPage() {
     section.innerHTML =
         '<div class="bank-page">' +
             '<div style="display:flex;align-items:flex-start;gap:24px;">' +
-                '<img src="./images/main/lc_coin_400.webp" alt="Lab Coin" decoding="async" style="width:200px;height:200px;object-fit:contain;flex-shrink:0;" onerror="this.style.display=\'none\'">' +
+                '<img src="./images/main/labs_coin.webp" alt="Lab Coin" decoding="async" style="width:200px;height:200px;object-fit:contain;flex-shrink:0;" onerror="this.style.display=\'none\'">' +
                 '<div class="bank-page-header glass-card" style="flex:1;">' +
                     '<div class="bank-header-left">' +
                         '<h1><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:10px"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 2 7 22 7"/></svg><span class="shiny-text-js" style="background-image:linear-gradient(120deg,#c97eff 35%,#ffffff 50%,#c97eff 65%);">Lab Bank</span></h1>' +
@@ -1749,7 +1750,7 @@ async function showBankPage() {
                 '</div>' +
             '</div>' +
             '<div class="bank-coin-value-banner glass-card">' +
-                '<div class="bank-coin-icon-big"><img src="./images/main/lc_coin_96.webp" alt="LC" decoding="async" style="width:40px;height:40px;object-fit:contain;"></div>' +
+                '<div class="bank-coin-icon-big"><img src="./images/main/labs_coin.webp" alt="LC" decoding="async" style="width:40px;height:40px;object-fit:contain;"></div>' +
                 '<div>' +
                     '<div class="bank-coin-value-title"><span class="shiny-text-js" style="background-image:linear-gradient(120deg,#c97eff 35%,#ffffff 50%,#c97eff 65%);">Lab Coin (LC)</span></div>' +
                     '<div class="bank-coin-value-desc">Discord Server XP = <strong style="color:#c97eff">Lab Coins (LC)</strong> &nbsp;|&nbsp; Use coins to purchase tools, licenses and exclusive content</div>' +
@@ -3473,15 +3474,9 @@ function getReviewsData() {
 
 function setupLoginRegisterButtons() {
     var loginBtn = document.getElementById('loginBtn');
-    var registerBtn = document.getElementById('registerBtn');
     if (loginBtn) {
         loginBtn.addEventListener('click', function() {
             window.location.href = './sites/login_register.html?tab=login';
-        });
-    }
-    if (registerBtn) {
-        registerBtn.addEventListener('click', function() {
-            window.location.href = './sites/login_register.html?tab=register';
         });
     }
 }
@@ -4261,39 +4256,26 @@ function renderGithubProfileStats(container, udata, username, profileEntry) {
 }
 
 async function downloadLauncher() {
-    var ua = navigator.userAgent || '';
-    var filePath = null;
-    var fileName = null;
-    if (/Mac|iPhone|iPad|iPod/i.test(ua) && !/Windows/i.test(ua)) {
-        filePath = (config && config.macos_launcher_file_path) ? config.macos_launcher_file_path : null;
-        fileName = filePath ? filePath.split('/').pop() : null;
-    } else if (/Linux/i.test(ua) && !/Android/i.test(ua) && !/Windows/i.test(ua)) {
-        filePath = (config && config.linux_launcher_file_path) ? config.linux_launcher_file_path : null;
-        fileName = filePath ? filePath.split('/').pop() : null;
-    } else {
-        filePath = (config && config.windows_launcher_file_path) ? config.windows_launcher_file_path : null;
-        fileName = filePath ? filePath.split('/').pop() : null;
-    }
-    if (!filePath) {
-        showBanner('Launcher file path is not configured.', 'error');
-        return;
-    }
+    var button = document.getElementById('downloadLauncherBtn');
+    if (button && button.dataset.busy === '1') return;
+    if (button) button.dataset.busy = '1';
     try {
-        var headRes = await fetch(filePath, { method: 'HEAD' });
-        if (!headRes.ok) {
-            showBanner('Launcher file not found. Please try again later.', 'error');
+        var response = await fetch(apiUrl('/api/launcher/installer/info'), { cache: 'no-store' });
+        var info = await response.json();
+        var installer = info && info.installer;
+        if (!response.ok || !info || !info.available || !installer || !installer.download_url) {
+            var message = info && info.platform
+                ? 'The installer file for your platform is currently not available.'
+                : 'The launcher is available for Windows, macOS and Linux computers only.';
+            window.RWLDialog.alert({ title: 'Download Launcher', message: message });
             return;
         }
-    } catch(e) {
-        showBanner('Launcher file not found. Please try again later.', 'error');
-        return;
+        window.location.assign(installer.download_url);
+    } catch (error) {
+        showBanner('The launcher download could not be started. Please try again later.', 'error');
+    } finally {
+        if (button) setTimeout(function() { button.dataset.busy = ''; }, 1500);
     }
-    var a = document.createElement('a');
-    a.href = filePath;
-    a.download = fileName || '';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
 }
 
 document.addEventListener('DOMContentLoaded', async function() {

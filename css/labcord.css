@@ -1499,6 +1499,20 @@ body.labcord .rwl-composer-box {
         grid-template-columns: 1fr;
     }
 
+    .lc-friend {
+        flex-wrap: wrap;
+    }
+
+    .lc-friend-text {
+        flex: 1 1 140px;
+    }
+
+    .lc-friend-actions {
+        flex: 1 1 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
     .lc-settings-nav {
         flex-direction: row;
         flex-wrap: wrap;
@@ -1524,4 +1538,51 @@ body.labcord .rwl-composer-box {
 html.rwl-user-reduced-fx body.labcord * {
     animation: none !important;
     transition: none !important;
+}
+
+.lc-user,
+.lc-dm-row {
+    position: relative;
+    overflow: hidden;
+}
+
+.lc-user .lc-plate-bg,
+.lc-dm-row .lc-plate-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.lc-user > *:not(.lc-plate-bg),
+.lc-dm-row > *:not(.lc-plate-bg) {
+    position: relative;
+    z-index: 1;
+}
+
+.lc-dm-row {
+    min-height: 46px;
+}
+
+.lc-dm-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.lc-dm-nameline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.lc-dm-nameline .lc-dm-name {
+    flex: 0 1 auto;
 }

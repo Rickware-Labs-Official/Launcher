@@ -190,21 +190,22 @@ function loadRememberedCredentials() {
         return;
     }
 
-    var savedUsername = localStorage.getItem('rickware_saved_username');
-    if (!savedUsername) return;
-    var rememberCheckbox = document.getElementById('login-remember');
-    var usernameInput = document.getElementById('login-username-email');
-    if (usernameInput) usernameInput.value = savedUsername;
-    if (rememberCheckbox) rememberCheckbox.checked = true;
+    localStorage.removeItem('rickware_saved_username');
+    var rememberSwitch = document.getElementById('login-remember');
+    if (!rememberSwitch) return;
+    if (RWL.isLauncherHost() && window.RickwareBridge && typeof window.RickwareBridge.call === 'function') {
+        window.RickwareBridge.call('getLauncherConfig', {}).then(function (config) {
+            rememberSwitch.checked = !!(config && config.auto_login);
+        }).catch(function () {});
+        return;
+    }
+    rememberSwitch.checked = localStorage.getItem('rickware_remember_me') === '1';
 }
 
-function saveRememberMe(usernameOrEmail, token, refreshToken, user) {
-    var checkbox = document.getElementById('login-remember');
-    if (checkbox && checkbox.checked && !RWL.isLauncherHost()) {
-        localStorage.setItem('rickware_saved_username', usernameOrEmail);
-    } else {
-        localStorage.removeItem('rickware_saved_username');
-    }
+function syncLauncherRemember(rememberSwitch, username, password) {
+    if (!RWL.isLauncherHost() || !window.RickwareBridge || typeof window.RickwareBridge.call !== 'function') return Promise.resolve();
+    var payload = rememberSwitch && rememberSwitch.checked ? { enabled: true, username: username, password: password } : { enabled: false };
+    return window.RickwareBridge.call('rememberLogin', payload).catch(function () {});
 }
 
 async function runWithSubmitLock(formEl, task) {
@@ -302,11 +303,10 @@ function initAuthPage() {
             runWithSubmitLock(loginFormEl, async function() {
                 var usernameOrEmail = document.getElementById('login-username-email').value;
                 var password = document.getElementById('login-password').value;
-                var user = await loginUser(usernameOrEmail, password);
+                var rememberSwitch = document.getElementById('login-remember');
+                var user = await loginUser(usernameOrEmail, password, rememberSwitch ? rememberSwitch.checked : undefined);
                 if (user) {
-                    var token = sessionStorage.getItem('rickware_token');
-                    var refreshToken = sessionStorage.getItem('rickware_refresh_token');
-                    saveRememberMe(usernameOrEmail, token, refreshToken, user);
+                    await syncLauncherRemember(rememberSwitch, usernameOrEmail, password);
                     sessionStorage.setItem('rickware_pending_banner', JSON.stringify({ message: 'Successfully logged in. Welcome back, ' + (user.username || 'User') + '!', type: 'success' }));
                     window.location.href = '../index.html';
                 }

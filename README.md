@@ -218,3 +218,19 @@ Every page was checked at 390 px without horizontal scrolling. The top bar compa
 
 ## Languages
 `rwl_boot.js` loads `js/i18n/<lang>_orbit.js` on every page automatically (texts of this round for all 9 languages, including patterns such as "You can own at most {#0} servers").
+
+## Top Bar, Login And Locker
+- One *Login / Register* button opens the login page (switch between both forms there). The *Download Launcher* button sits between the logo and the store search and asks the backend for the installer of the visitor's platform. `config/config.json` key `download_button` shows or hides it, the old `*_launcher_file_path` keys are gone because the backend serves the file.
+- The login form has a *Remember me* switch (`#login-remember`). Inside the launcher it is the launcher Auto Login. The account settings keep the *Keep me signed in* switch.
+- Locker and inventory: the category images carry no text, the name is shown under the logo. Unequipping an item asks for a second confirmation (`RWLDialog.confirm`).
+
+## Theme Sound
+- `js/rwl_theme_sound.js` loads the sound through an authenticated request into memory (no file URL), loops it, default volume 30, volume slider and a mute switch in the theme settings. Every theme with a sound gets the same settings, it works on Labcord and the Asset Archive.
+
+## Chat, Labcord And Emoji
+- `js/rwl_emoji.js` with `js/rwl_emoji_data.js` and `js/emoji_names/<lang>.js` is the picker (search in the current language, nine categories). The font is `fonts/twemoji.woff2` (license next to it), applied through `css/rwl_social.css`.
+- Links to images and GIFs show the media in the chat through the backend media proxy. Pets, badges and nameplates appear in the chat window, the profile cards and Labcord. Name colours with the direction *center to outside* shrink-wrap the text so the colours really run from the inside.
+- `js/i18n/<lang>_atlas.js` holds the texts of this round including the server messages shown in the chat.
+
+## Images
+- Every image exists exactly once. New: `images/main/labs_coin.webp` and the six locker images in `images/assets/inventory/`. Removed: the four old coin images, `images/main/rickware-labs_chest.webp` (the chest lives in `images/assets/lab_pass/`), `images/partner/r_l_logo_1.webp` and every image that no page or config references.
