@@ -2,6 +2,7 @@
     if (global.RWLGroups || !global.RWL) return;
 
     var esc = RWL.escapeHtml;
+    var icon = RWL.uiIcon || function () { return ''; };
     var MAX_TEXT = 4000;
     var WRAP_INFO = 'rwl-group-wrap-v1';
     var MESSAGE_INFO = 'rwl-group-message-v1';
@@ -291,9 +292,9 @@
     function replyQuoteHtml(message) {
         if (!message.reply_to || !state.current) return '';
         var target = state.current.byId[message.reply_to];
-        if (!target || target.kind === 'system') return '<div class="rwl-reply-quote rwl-reply-missing">↩ ' + esc(t('The original message is not available.')) + '</div>';
+        if (!target || target.kind === 'system') return '<div class="rwl-reply-quote rwl-reply-missing">' + icon('reply', 13) + ' ' + esc(t('The original message is not available.')) + '</div>';
         var snippet = target.plain && target.plain.ok ? target.plain.text.replace(/\s+/g, ' ').slice(0, 90) : '';
-        return '<div class="rwl-reply-quote" translate="no" data-reply-jump="' + esc(target.id) + '">↩ <strong>' + esc(target.mine ? (myName() || t('You')) : (target.sender || t('Former member'))) + '</strong> ' + esc(snippet) + '</div>';
+        return '<div class="rwl-reply-quote" translate="no" data-reply-jump="' + esc(target.id) + '">' + icon('reply', 13) + ' <strong>' + esc(target.mine ? (myName() || t('You')) : (target.sender || t('Former member'))) + '</strong> ' + esc(snippet) + '</div>';
     }
 
     function reactionsHtml(message) {
@@ -312,18 +313,18 @@
         var body = message.plain.ok ? social().renderMarkdown(message.plain.text, message.links_allowed, false) : esc(message.plain.text);
         var authorStyle = roleStyleFor(author) || social().nameStyle(identity);
         var tools = '<div class="rwl-msg-tools">' +
-            (message.plain.ok ? '<button type="button" class="rwl-tool" data-group-tool="reply" title="' + esc(t('Reply')) + '">↩</button>' : '') +
-            '<button type="button" class="rwl-tool" data-group-tool="react" title="' + esc(t('Add reaction')) + '">😀</button>' +
-            (message.mine && message.plain.ok ? '<button type="button" class="rwl-tool" data-group-tool="edit" title="' + esc(t('Edit message')) + '">✎</button>' : '') +
-            (canPin() ? '<button type="button" class="rwl-tool" data-group-tool="pin" title="' + esc(message.pinned ? t('Unpin message') : t('Pin message')) + '">📌</button>' : '') +
-            (message.plain.ok ? '<button type="button" class="rwl-tool" data-group-tool="copy" title="' + esc(t('Copy text')) + '">⧉</button>' : '') +
-            '<button type="button" class="rwl-tool" data-group-tool="delete_me" title="' + esc(t('Delete for me')) + '">🙈</button>' +
-            (canDeleteForEveryone(message) ? '<button type="button" class="rwl-tool rwl-tool-danger" data-group-tool="delete" title="' + esc(t('Delete for everyone')) + '">🗑</button>' : '') +
+            (message.plain.ok ? '<button type="button" class="rwl-tool" data-group-tool="reply" title="' + esc(t('Reply')) + '">' + icon('reply', 16) + '</button>' : '') +
+            '<button type="button" class="rwl-tool" data-group-tool="react" title="' + esc(t('Add reaction')) + '">' + icon('emoji_add', 16) + '</button>' +
+            (message.mine && message.plain.ok ? '<button type="button" class="rwl-tool" data-group-tool="edit" title="' + esc(t('Edit message')) + '">' + icon('edit', 16) + '</button>' : '') +
+            (canPin() ? '<button type="button" class="rwl-tool" data-group-tool="pin" title="' + esc(message.pinned ? t('Unpin message') : t('Pin message')) + '">' + icon('pin', 16) + '</button>' : '') +
+            (message.plain.ok ? '<button type="button" class="rwl-tool" data-group-tool="copy" title="' + esc(t('Copy text')) + '">' + icon('copy', 16) + '</button>' : '') +
+            '<button type="button" class="rwl-tool" data-group-tool="delete_me" title="' + esc(t('Delete for me')) + '">' + icon('eye_off', 16) + '</button>' +
+            (canDeleteForEveryone(message) ? '<button type="button" class="rwl-tool rwl-tool-danger" data-group-tool="delete" title="' + esc(t('Delete for everyone')) + '">' + icon('trash', 16) + '</button>' : '') +
         '</div>';
         var head = grouped ? '<span class="rwl-msg-time-gutter"></span>' : '<div class="rwl-msg-avatar-wrap">' + social().avatarHtml(identity, 'rwl-msg-avatar', true, false) + '</div>';
         return '<div class="rwl-msg' + (grouped ? '' : ' rwl-msg-start') + (message.pinned ? ' rwl-msg-pinned' : '') + '" data-message-id="' + esc(message.id) + '">' + head +
             '<div class="rwl-msg-content">' +
-                (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(authorStyle) + '">' + esc(author) + '</span>' + social().petHtml(identity, 18, false, false) + '<span class="rwl-msg-time">' + esc(social().formatStamp(message.created_at)) + '</span>' + (message.pinned ? '<span class="rwl-msg-pin" title="' + esc(t('Pinned message')) + '">📌</span>' : '') + '</div>') +
+                (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(authorStyle) + '">' + esc(author) + '</span>' + social().petHtml(identity, 18, false, true) + '<span class="rwl-msg-time">' + esc(social().formatStamp(message.created_at)) + '</span>' + (message.pinned ? '<span class="rwl-msg-pin" title="' + esc(t('Pinned message')) + '">' + icon('pin', 13) + '</span>' : '') + '</div>') +
                 replyQuoteHtml(message) +
                 '<div class="rwl-msg-body' + (message.plain.ok ? '' : ' rwl-msg-locked') + '" translate="no">' + body + (message.edited_at ? '<span class="rwl-msg-edited">(' + esc(t('edited')) + ')</span>' : '') + '</div>' +
                 reactionsHtml(message) +
@@ -350,11 +351,13 @@
                 '<span class="rwl-group-icon">' + esc(detail.name.slice(0, 2).toUpperCase()) + '</span>' +
                 '<div class="rwl-chat-title" data-group-action="members" title="' + esc(t('Show the members')) + '" translate="no"><div class="rwl-chat-title-main"><strong>' + esc(detail.name) + '</strong><b class="rwl-group-channel-name"># ' + esc(channelName) + '</b></div><span class="rwl-chat-lock">' + detail.members.length + ' ' + esc(t('members')) + ' · ' + esc(t('End to end encrypted')) + '</span></div>' +
                 channelPicker +
+                '<button type="button" class="rwl-icon-btn" data-group-action="filter" title="' + esc(t('Search the loaded messages')) + '">' + icon('search', 15) + '</button>' +
+                '<button type="button" class="rwl-icon-btn" data-group-action="pins" title="' + esc(t('Pinned messages')) + '">' + icon('pin', 15) + '</button>' +
                 '<button type="button" class="rwl-icon-btn rwl-labcord-btn" data-group-action="labcord" title="' + esc(t('Open Labcord in a new tab')) + '">' + LABCORD_ICON + '</button>' +
                 (detail.permissions.can_invite ? '<button type="button" class="rwl-icon-btn" data-group-action="invite" title="' + esc(t('Invite members')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></button>' : '') +
                 (detail.permissions.can_clear ? '<button type="button" class="rwl-icon-btn" data-group-action="clear" title="' + esc(t('Clear the chat history')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>' : '') +
                 '<button type="button" class="rwl-icon-btn" data-group-action="minimize" title="' + esc(t('Minimize the chat')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
-                '<button type="button" class="rwl-icon-btn" data-group-action="close" title="' + esc(t('Close the conversation')) + '">✕</button>' +
+                '<button type="button" class="rwl-icon-btn" data-group-action="close" title="' + esc(t('Close the conversation')) + '">' + icon('close', 14) + '</button>' +
             '</div>' +
             '<div class="rwl-chat-list" hidden></div>' +
             '<div class="rwl-chat-banner"' + (banner ? '' : ' hidden') + '><span>' + esc(banner) + '</span></div>' +
@@ -442,7 +445,7 @@
             return;
         }
         bar.hidden = false;
-        bar.innerHTML = '<span translate="no">' + esc(t('Replying to')) + ' <strong>' + esc(group.replyTo.author) + '</strong>: ' + esc(group.replyTo.text) + '</span><button type="button" class="rwl-icon-btn" data-group-tool="cancel_reply" title="' + esc(t('Cancel reply')) + '">✕</button>';
+        bar.innerHTML = '<span translate="no">' + esc(t('Replying to')) + ' <strong>' + esc(group.replyTo.author) + '</strong>: ' + esc(group.replyTo.text) + '</span><button type="button" class="rwl-icon-btn" data-group-tool="cancel_reply" title="' + esc(t('Cancel reply')) + '">' + icon('close', 14) + '</button>';
         var input = social().chatElement().querySelector('.rwl-composer-input');
         if (input) input.focus();
     }
@@ -580,6 +583,30 @@
         return social().chatElement().querySelector('.rwl-chat-list');
     }
 
+    function togglePins() {
+        var group = state.current;
+        var element = social().chatElement();
+        if (!group || !element) return;
+        var panel = element.querySelector('.rwl-pins-panel');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.className = 'rwl-pins-panel';
+            panel.hidden = true;
+            element.appendChild(panel);
+            panel.addEventListener('click', function (event) { if (event.target.closest('[data-reply-jump]')) panel.hidden = true; });
+        }
+        if (!panel.hidden) {
+            panel.hidden = true;
+            return;
+        }
+        var pinned = group.messages.filter(function (message) { return message.pinned && message.kind !== 'system'; });
+        panel.innerHTML = '<div class="rwl-center-section">' + esc(t('Pinned Messages')) + '</div>' + (pinned.length ? pinned.map(function (message) {
+            var text = message.plain && message.plain.ok ? message.plain.text.replace(/\s+/g, ' ').slice(0, 120) : '';
+            return '<div class="rwl-pin-row" data-reply-jump="' + esc(message.id) + '" translate="no"><strong>' + esc(message.mine ? (myName() || t('You')) : (message.sender || t('Former member'))) + '</strong> · ' + esc(text || t('Attachment')) + '</div>';
+        }).join('') : '<div class="rwl-center-empty">' + esc(t('No pinned messages in the loaded history.')) + '</div>');
+        panel.hidden = false;
+    }
+
     function showMembers() {
         var detail = state.current.detail;
         var panel = panelElement();
@@ -695,6 +722,8 @@
             else if (action === 'send') send();
             else if (action === 'labcord') openLabcord(group.id, group.channelId);
             else if (action === 'members') showMembers();
+            else if (action === 'filter') social().toggleMessageFilter();
+            else if (action === 'pins') togglePins();
             else if (action === 'invite') showInvites();
             else if (action === 'invite_create') {
                 var panel = panelElement();
@@ -796,7 +825,7 @@
                 await addMessage(entry.message);
                 markRead();
             } else if (entry.from && global.RWLSocialNotify && global.RWLSocialNotify.popup) {
-                global.RWLSocialNotify.popup({ title: entry.from.username, body: t('Sent an encrypted message in a server'), picture: entry.from.profile_picture, icon: '👥', onOpen: function () { open(entry.group_id); } });
+                global.RWLSocialNotify.popup({ title: entry.from.username, body: t('Sent an encrypted message in a server'), picture: entry.from.profile_picture, icon: icon('users', 18), onOpen: function () { open(entry.group_id); } });
             }
         } else if (entry.type === 'group_message_delete' || entry.type === 'group_message_hidden') {
             if (viewing) removeMessage(entry.message_id);

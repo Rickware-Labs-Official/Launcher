@@ -2,6 +2,7 @@
     if (global.RWLSocial || !global.RWL) return;
 
     var esc = RWL.escapeHtml;
+    var icon = RWL.uiIcon || function () { return ''; };
     var HOVER_DELAY_MS = 320;
     var PROFILE_CACHE_MS = 20000;
     var PENDING_KEY_ID = 0;
@@ -12,7 +13,7 @@
     var URL_PATTERN = /\bhttps?:\/\/[^\s<]+[^\s<.,:;"')\]]/gi;
     var LOOSE_LINK_PATTERN = /\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|net|org|gg|io|de|co|xyz|me|tv|ru|link|app|dev)\b/i;
     var EMOJI_SET = ['😀','😂','🤣','😊','😍','😘','😎','🤔','😅','😭','😡','🥳','😇','🙃','😴','🤯','👍','👎','👏','🙌','🙏','💪','🤝','👀','❤️','💜','💔','🔥','✨','⭐','🎉','💯','✅','❌','⚡','🚀','🎮','🍕','☕','💀','👻','🤖','🎁','🏆','💎','🧪','🔒','💬'];
-    var KIND_ICONS = { image: '🖼️', video: '🎬', file: '📄' };
+    var KIND_ICONS = { image: icon('image', 14), video: icon('video', 14), file: icon('file', 14) };
     var state = {
         overview: null,
         profiles: {},
@@ -184,7 +185,7 @@
         ensurePetStyles();
         var level = petLevel(pet).toLocaleString('en-US');
         var label = (pet.name || 'Pet') + ' · ' + t('Level') + ' ' + level;
-        var figure = global.RWLPets.svg(Object.assign({}, pet, { still: !animated }), size || 20);
+        var figure = global.RWLPets.svg(Object.assign({}, pet, { still: !animated || !!global.RWL_REDUCED_EFFECTS }), size || 20);
         return '<span class="rwl-user-pet" translate="no" title="' + esc(label) + '">' + figure + (withLevel ? '<small class="rwl-user-pet-level">' + esc(t('Level')) + ' ' + esc(level) + '</small>' : '') + '</span>';
     }
 
@@ -337,7 +338,7 @@
         else if (rel.friend_status === 'incoming') buttons.push('<button type="button" class="rwl-btn rwl-btn-success" data-social-action="accept" title="' + esc(t('Accept the friend request')) + '">' + esc(t('Accept Request')) + '</button>');
         else if (rel.friend_status === 'friends' && !compact) buttons.push('<button type="button" class="rwl-btn rwl-btn-secondary" data-social-action="remove" title="' + esc(t('Remove this friend')) + '">' + esc(t('Remove Friend')) + '</button>');
         if (!buttons.length) buttons.push('<button type="button" class="rwl-btn rwl-btn-secondary" disabled title="' + esc(t('This member does not accept messages or friend requests')) + '">' + esc(t('Not Available')) + '</button>');
-        if (!compact && !rel.blocked_me) buttons.push('<button type="button" class="rwl-btn rwl-btn-gift" data-social-action="gift" title="' + esc(t('Send an item from your inventory as a gift')) + '">🎁 ' + esc(t('Send Gift')) + '</button>');
+        if (!compact && !rel.blocked_me) buttons.push('<button type="button" class="rwl-btn rwl-btn-gift" data-social-action="gift" title="' + esc(t('Send an item from your inventory as a gift')) + '">' + icon('gift', 15) + ' ' + esc(t('Send Gift')) + '</button>');
         return buttons.join('');
     }
 
@@ -452,7 +453,7 @@
         try {
             var profile = await loadProfile(username, true);
             stopMedia(modal);
-            modal.innerHTML = '<button type="button" class="rwl-icon-btn rwl-profile-close" data-social-close title="' + esc(t('Close')) + '">✕</button>' + profileBody(profile, true);
+            modal.innerHTML = '<button type="button" class="rwl-icon-btn rwl-profile-close" data-social-close title="' + esc(t('Close')) + '">' + icon('close', 14) + '</button>' + profileBody(profile, true);
             modal.setAttribute('data-username', profile.username);
             var bannerImage = modal.querySelector('.rwl-profile-banner-img');
             if (bannerImage) bannerImage.addEventListener('error', function () {
@@ -583,7 +584,7 @@
         center.className = 'rwl-social-center';
         center.hidden = true;
         center.innerHTML =
-            '<div class="rwl-center-head"><span>' + esc(t('Notification Center')) + '</span><button type="button" class="rwl-icon-btn" data-center-close title="' + esc(t('Close')) + '">✕</button></div>' +
+            '<div class="rwl-center-head"><span>' + esc(t('Notification Center')) + '</span><button type="button" class="rwl-icon-btn" data-center-close title="' + esc(t('Close')) + '">' + icon('close', 14) + '</button></div>' +
             '<div class="rwl-center-tabs">' +
                 '<button type="button" class="rwl-center-tab" data-center-tab="messages" title="' + esc(t('Your direct messages')) + '">' + esc(t('Messages')) + '</button>' +
                 '<button type="button" class="rwl-center-tab" data-center-tab="requests" title="' + esc(t('Friend and message requests')) + '">' + esc(t('Requests')) + '</button>' +
@@ -1292,12 +1293,13 @@
             '<div class="rwl-chat-head" data-username="' + esc(partner.username) + '" title="' + esc(t('Drag to move the chat')) + '">' + plateVideo(partner, '') +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="list" title="' + esc(t('All chats')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>' +
                 '<div class="rwl-center-avatar">' + avatarHtml(partner, 'rwl-center-img', true, true) + '</div>' +
-                '<div class="rwl-chat-title" data-chat-action="profile" title="' + esc(t('Open the profile')) + '" translate="no"><span class="rwl-chat-title-main"><strong style="' + esc(nameStyle(partner)) + '">' + esc(partner.username) + '</strong>' + petHtml(partner, 20, false, false) + compactBadgesHtml(partner) + '</span><span class="rwl-chat-lock"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' + esc(t('End to end encrypted')) + '</span></div>' +
+                '<div class="rwl-chat-title" data-chat-action="profile" title="' + esc(t('Open the profile')) + '" translate="no"><span class="rwl-chat-title-main"><strong style="' + esc(nameStyle(partner)) + '">' + esc(partner.username) + '</strong>' + petHtml(partner, 20, false, true) + compactBadgesHtml(partner) + '</span><span class="rwl-chat-lock"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' + esc(t('End to end encrypted')) + '</span></div>' +
                 '<button type="button" class="rwl-icon-btn rwl-labcord-btn" data-chat-action="labcord" title="' + esc(t('Open Labcord in a new tab')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>' +
+                '<button type="button" class="rwl-icon-btn" data-chat-action="filter" title="' + esc(t('Search the loaded messages')) + '">' + icon('search', 15) + '</button>' +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="pins" title="' + esc(t('Pinned messages')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5"/><path d="M5 17h14l-2-5V5h1V3H6v2h1v7z"/></svg></button>' +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="clear" title="' + esc(t('Clear the chat history')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>' +
                 '<button type="button" class="rwl-icon-btn" data-chat-action="minimize" title="' + esc(t('Minimize the chat')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
-                '<button type="button" class="rwl-icon-btn" data-chat-action="close" title="' + esc(t('Close the conversation')) + '">✕</button>' +
+                '<button type="button" class="rwl-icon-btn" data-chat-action="close" title="' + esc(t('Close the conversation')) + '">' + icon('close', 14) + '</button>' +
             '</div>' +
             '<div class="rwl-chat-list" hidden></div>' +
             '<div class="rwl-chat-banner"' + (banner ? '' : ' hidden') + '>' + banner + '</div>' +
@@ -1307,12 +1309,12 @@
             '<div class="rwl-chat-typing"></div>' +
             '<div class="rwl-emoji-panel" hidden>' + EMOJI_SET.map(function (emoji) { return '<button type="button" class="rwl-emoji" data-emoji="' + emoji + '">' + emoji + '</button>'; }).join('') + '</div>' +
             '<div class="rwl-composer">' +
-                '<div class="rwl-composer-context" hidden><span data-context-text></span><button type="button" class="rwl-icon-btn" data-chat-action="cancel_context" title="' + esc(t('Cancel')) + '">✕</button></div>' +
+                '<div class="rwl-composer-context" hidden><span data-context-text></span><button type="button" class="rwl-icon-btn" data-chat-action="cancel_context" title="' + esc(t('Cancel')) + '">' + icon('close', 14) + '</button></div>' +
                 '<div class="rwl-composer-files" hidden></div>' +
                 '<div class="rwl-composer-box' + (locked ? ' rwl-composer-locked' : '') + '">' +
                     (canAttach && !locked ? '<button type="button" class="rwl-icon-btn" data-chat-action="attach" title="' + esc(t('Attach a file')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><input type="file" hidden multiple data-file-input accept="' + esc(accept) + '">' : '') +
                     '<textarea class="rwl-composer-input" rows="1" maxlength="' + MAX_TEXT + '" placeholder="' + esc(locked ? lockText : t('Message') + ' @' + partner.username) + '"' + lockAttribute + '></textarea>' +
-                    '<button type="button" class="rwl-icon-btn" data-chat-action="emoji" title="' + esc(t('Emoji')) + '"' + lockAttribute + '>😊</button>' +
+                    '<button type="button" class="rwl-icon-btn" data-chat-action="emoji" title="' + esc(t('Emoji')) + '"' + lockAttribute + '>' + icon('emoji', 17) + '</button>' +
                     '<button type="button" class="rwl-icon-btn" data-chat-action="send" title="' + esc(t('Send')) + '"' + lockAttribute + '><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>' +
                 '</div>' +
                 '<div class="rwl-composer-hint">' + esc(detail.can_send.links ? t('Enter to send, Shift + Enter for a new line. **bold** *italic* __underline__ ~~strike~~ `code` ||spoiler||') : t('Links are not allowed for your account. Enter to send, Shift + Enter for a new line.')) + '</div>' +
@@ -1619,7 +1621,7 @@
         if (!holder || !state.chat) return;
         holder.hidden = !state.chat.files.length;
         holder.innerHTML = state.chat.files.map(function (file, index) {
-            return '<span class="rwl-file-chip" translate="no">' + KIND_ICONS[fileKind(file)] + ' ' + esc(file.name.slice(0, 40)) + ' <button type="button" class="rwl-tool" data-remove-file="' + index + '" title="' + esc(t('Remove')) + '">✕</button></span>';
+            return '<span class="rwl-file-chip" translate="no">' + KIND_ICONS[fileKind(file)] + ' ' + esc(file.name.slice(0, 40)) + ' <button type="button" class="rwl-tool" data-remove-file="' + index + '" title="' + esc(t('Remove')) + '">' + icon('close', 14) + '</button></span>';
         }).join('');
     }
 
@@ -1898,6 +1900,18 @@
         });
         var html = esc(source);
         html = linkify(html, allowLinks, linksHidden);
+        var markdownLines = html.split('\n');
+        html = markdownLines.map(function (line, index) {
+            var heading = /^(#{1,3}) (.+)$/.exec(line);
+            var subtext = /^-# (.+)$/.exec(line);
+            var bullet = /^[-*] (.+)$/.exec(line);
+            var ordered = /^(\d{1,3})\. (.+)$/.exec(line);
+            if (heading) return '<span class="rwl-md-h rwl-md-h' + heading[1].length + '">' + heading[2] + '</span>';
+            if (subtext) return '<small class="rwl-md-sub">' + subtext[1] + '</small>';
+            if (bullet) return '<span class="rwl-md-li">• ' + bullet[1] + '</span>';
+            if (ordered) return '<span class="rwl-md-li">' + ordered[1] + '. ' + ordered[2] + '</span>';
+            return line + (index < markdownLines.length - 1 ? '\n' : '');
+        }).join('');
         html = html.replace(/\|\|(.+?)\|\|/g, '<span class="rwl-spoiler" data-spoiler>$1</span>');
         html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         html = html.replace(/__(.+?)__/g, '<u>$1</u>');
@@ -1936,15 +1950,15 @@
             return '<button type="button" class="rwl-reaction' + (reaction.me ? ' mine' : '') + '" data-react="' + esc(reaction.emoji) + '" title="' + esc(t('React')) + '">' + esc(reaction.emoji) + ' <span>' + reaction.count + '</span></button>';
         }).join('');
         var tools = '<div class="rwl-msg-tools">' +
-            '<button type="button" class="rwl-tool" data-tool="react" title="' + esc(t('Add reaction')) + '">😊</button>' +
-            '<button type="button" class="rwl-tool" data-tool="reply" title="' + esc(t('Reply')) + '">↩</button>' +
-            '<button type="button" class="rwl-tool" data-tool="pin" title="' + esc(message.pinned ? t('Unpin') : t('Pin')) + '">📌</button>' +
-            (plain.ok ? '<button type="button" class="rwl-tool" data-tool="copy" title="' + esc(t('Copy text')) + '">⧉</button>' : '') +
-            (mine && plain.ok ? '<button type="button" class="rwl-tool" data-tool="edit" title="' + esc(t('Edit')) + '">✎</button>' : '') +
-            '<button type="button" class="rwl-tool" data-tool="delete_me" title="' + esc(t('Delete for me')) + '">🙈</button>' +
-            (canDeleteForEveryone(message) ? '<button type="button" class="rwl-tool rwl-tool-danger" data-tool="delete" title="' + esc(t('Delete for everyone')) + '">🗑</button>' : '') +
+            '<button type="button" class="rwl-tool" data-tool="react" title="' + esc(t('Add reaction')) + '">' + icon('emoji_add', 16) + '</button>' +
+            '<button type="button" class="rwl-tool" data-tool="reply" title="' + esc(t('Reply')) + '">' + icon('reply', 16) + '</button>' +
+            '<button type="button" class="rwl-tool" data-tool="pin" title="' + esc(message.pinned ? t('Unpin') : t('Pin')) + '">' + icon('pin', 16) + '</button>' +
+            (plain.ok ? '<button type="button" class="rwl-tool" data-tool="copy" title="' + esc(t('Copy text')) + '">' + icon('copy', 16) + '</button>' : '') +
+            (mine && plain.ok ? '<button type="button" class="rwl-tool" data-tool="edit" title="' + esc(t('Edit')) + '">' + icon('edit', 16) + '</button>' : '') +
+            '<button type="button" class="rwl-tool" data-tool="delete_me" title="' + esc(t('Delete for me')) + '">' + icon('eye_off', 16) + '</button>' +
+            (canDeleteForEveryone(message) ? '<button type="button" class="rwl-tool rwl-tool-danger" data-tool="delete" title="' + esc(t('Delete for everyone')) + '">' + icon('trash', 16) + '</button>' : '') +
         '</div>';
-        var waitingNote = mine && isPending(message) ? '<span class="rwl-msg-pending-note" title="' + esc(t('Delivered automatically as soon as this member activates encrypted messages')) + '">⏳ ' + esc(t('Waiting for delivery')) + '</span>' : '';
+        var waitingNote = mine && isPending(message) ? '<span class="rwl-msg-pending-note" title="' + esc(t('Delivered automatically as soon as this member activates encrypted messages')) + '">' + icon('hourglass', 13) + ' ' + esc(t('Waiting for delivery')) + '</span>' : '';
         var bodyState = plain.ok ? '' : (plain.waiting ? ' rwl-msg-waiting' : ' rwl-msg-locked');
         var head = grouped
             ? '<span class="rwl-msg-time-gutter">' + esc(formatTime(message.created_at)) + '</span>'
@@ -1952,7 +1966,7 @@
         return '<div class="rwl-msg' + (grouped ? '' : ' rwl-msg-start') + (message.pinned ? ' rwl-msg-pinned' : '') + '" data-message-id="' + esc(message.id) + '">' +
             reply + head +
             '<div class="rwl-msg-content">' +
-                (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(nameStyle(authorUser)) + '" data-chat-action="profile_author" data-author="' + (mine ? 'me' : 'partner') + '">' + esc(author) + '</span>' + petHtml(authorUser, 18, false, false) + '<span class="rwl-msg-time">' + esc(formatStamp(message.created_at)) + '</span></div>') +
+                (grouped ? '' : '<div class="rwl-msg-head" translate="no"><span class="rwl-msg-author" style="' + esc(nameStyle(authorUser)) + '" data-chat-action="profile_author" data-author="' + (mine ? 'me' : 'partner') + '">' + esc(author) + '</span>' + petHtml(authorUser, 18, false, true) + '<span class="rwl-msg-time">' + esc(formatStamp(message.created_at)) + '</span></div>') +
                 '<div class="rwl-msg-body' + bodyState + '" translate="no">' + body + (message.edited_at ? '<span class="rwl-msg-edited">(' + esc(t('edited')) + ')</span>' : '') + waitingNote + '</div>' +
                 (attachments ? '<div class="rwl-attachments">' + attachments + '</div>' : '') +
                 (reactions ? '<div class="rwl-reactions">' + reactions + '</div>' : '') +
@@ -1993,7 +2007,7 @@
             var file = message && (message.plain.files || []).filter(function (entry) { return entry.id === holder.getAttribute('data-attachment'); })[0];
             if (!file) continue;
             if (file.kind === 'file') {
-                holder.innerHTML = '<button type="button" class="rwl-attachment-file" data-download="' + esc(file.id) + '" data-message="' + esc(message.id) + '" translate="no">📄 ' + esc(file.name) + ' · ' + esc(Math.max(1, Math.round(file.size / 1024)) + ' KB') + '</button>';
+                holder.innerHTML = '<button type="button" class="rwl-attachment-file" data-download="' + esc(file.id) + '" data-message="' + esc(message.id) + '" translate="no">' + icon('file', 14) + ' ' + esc(file.name) + ' · ' + esc(Math.max(1, Math.round(file.size / 1024)) + ' KB') + '</button>';
                 continue;
             }
             decryptAttachment(chat, file).then((function (target, entry) {
@@ -2098,6 +2112,70 @@
         setTimeout(function () { row.classList.remove('rwl-msg-flash'); }, 1600);
     }
 
+    function closeMessageFilter(bar) {
+        var input = bar.querySelector('input');
+        input.value = '';
+        bar.hidden = true;
+        if (bar.rwlApply) bar.rwlApply();
+    }
+
+    function messageFilterBar() {
+        var element = document.getElementById('rwlChat');
+        if (!element) return null;
+        var existing = element.querySelector('.rwl-chat-filter');
+        if (existing) return existing;
+        var scroller = element.querySelector('.rwl-chat-scroll');
+        if (!scroller) return null;
+        var bar = document.createElement('div');
+        bar.className = 'rwl-chat-filter';
+        bar.hidden = true;
+        bar.innerHTML = '<input type="text" class="rwl-input rwl-chat-filter-input" maxlength="60" autocomplete="off" spellcheck="false" placeholder="' + esc(t('Search the loaded messages')) + '"><span class="rwl-chat-filter-count" aria-live="polite"></span><button type="button" class="rwl-icon-btn rwl-chat-filter-close" title="' + esc(t('Close')) + '">' + icon('close', 14) + '</button>';
+        scroller.parentNode.insertBefore(bar, scroller);
+        var input = bar.querySelector('input');
+        var count = bar.querySelector('.rwl-chat-filter-count');
+        var apply = function () {
+            var term = input.value.trim().toLowerCase();
+            var matches = 0;
+            Array.prototype.forEach.call(scroller.querySelectorAll('.rwl-msg'), function (row) {
+                var body = row.querySelector('.rwl-msg-body');
+                var author = row.querySelector('.rwl-msg-author');
+                var haystack = ((body ? body.textContent : '') + ' ' + (author ? author.textContent : '')).toLowerCase();
+                var hit = !term || haystack.indexOf(term) >= 0;
+                row.classList.toggle('rwl-msg-filtered', !hit);
+                if (term && hit) matches++;
+            });
+            count.textContent = term ? matches + ' ' + (matches === 1 ? t('message found') : t('messages found')) : '';
+        };
+        input.addEventListener('input', apply);
+        input.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') return;
+            event.stopPropagation();
+            closeMessageFilter(bar);
+        });
+        bar.querySelector('.rwl-chat-filter-close').addEventListener('click', function () { closeMessageFilter(bar); });
+        if (global.MutationObserver) {
+            var pending = false;
+            new MutationObserver(function () {
+                if (bar.hidden || pending) return;
+                pending = true;
+                global.requestAnimationFrame(function () { pending = false; apply(); });
+            }).observe(scroller, { childList: true });
+        }
+        bar.rwlApply = apply;
+        return bar;
+    }
+
+    function toggleMessageFilter() {
+        var bar = messageFilterBar();
+        if (!bar) return;
+        if (bar.hidden) {
+            bar.hidden = false;
+            bar.querySelector('input').focus();
+        } else {
+            closeMessageFilter(bar);
+        }
+    }
+
     async function onChatClick(event) {
         var chat = state.chat;
         if (!chat) return;
@@ -2183,6 +2261,7 @@
         else if (action === 'attach') document.querySelector('#rwlChat [data-file-input]').click();
         else if (action === 'cancel_context') cancelContext();
         else if (action === 'pins') renderPins();
+        else if (action === 'filter') toggleMessageFilter();
         else if (action === 'jump') {
             var scroller = document.querySelector('#rwlChat .rwl-chat-scroll');
             scroller.scrollTop = scroller.scrollHeight;
@@ -2264,7 +2343,7 @@
         } else if (entry.type === 'partner_keys_ready') {
             if (forChat) openChat(chat.id);
             else if (vaultReady()) deliverAllPending();
-            else if (global.RWLSocialNotify && global.RWLSocialNotify.popup) global.RWLSocialNotify.popup({ title: entry.username || t('Messages'), body: t('Activated encrypted messages. Open the chat to deliver your messages.'), icon: '🔐', onOpen: function () { openChat(entry.channel_id); } });
+            else if (global.RWLSocialNotify && global.RWLSocialNotify.popup) global.RWLSocialNotify.popup({ title: entry.username || t('Messages'), body: t('Activated encrypted messages. Open the chat to deliver your messages.'), icon: icon('lock', 18), onOpen: function () { openChat(entry.channel_id); } });
         } else if (entry.type === 'message_delete' && forChat) {
             delete chat.byId[entry.message_id];
             chat.messages = chat.messages.filter(function (message) { return message.id !== entry.message_id; });
@@ -2384,6 +2463,7 @@
         plateVideo: plateVideo,
         badgesHtml: compactBadgesHtml,
         petHtml: petHtml,
+        toggleMessageFilter: toggleMessageFilter,
         renderMarkdown: renderMarkdown,
         formatStamp: formatStamp,
         confirmDialog: confirmDialog,

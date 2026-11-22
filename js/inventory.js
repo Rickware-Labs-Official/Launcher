@@ -1287,7 +1287,7 @@
         bar.hidden = false;
         bar.setAttribute('data-item-id', itemId);
         var soundSlot = bar.querySelector('.rwl-sound-slot');
-        if (soundSlot && window.RWLThemeSound) window.RWLThemeSound.mountField(soundSlot);
+        if (soundSlot && window.RWLThemeSound) window.RWLThemeSound.mountField(soundSlot, itemId);
         var speedInput = bar.querySelector('#invConfigSpeed');
         speedInput.addEventListener('input', function() {
             bar.querySelector('#invConfigSpeedValue').textContent = parseFloat(speedInput.value).toFixed(2) + 'x';

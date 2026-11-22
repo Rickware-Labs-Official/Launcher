@@ -134,7 +134,7 @@
         element.innerHTML = STATUSES.map(function (status) {
             return '<button type="button" class="rwl-presence-option' + (state.selected === status ? ' active' : '') + '" role="menuitemradio" aria-checked="' + (state.selected === status) + '" data-status="' + status + '">' +
                 dotHtml(status) + '<span>' + esc(label(status)) + '<small>' + esc(t(HINTS[status])) + '</small></span></button>';
-        }).join('') + '<div class="rwl-presence-note">' + esc(t('Your status applies to Labcord, the chat popup and the dashboard. You switch to Away automatically when you are idle.')) + (state.forced ? ' ' + esc(t('Always online is active, everyone sees you as online.')) : '') + '</div>';
+        }).join('') + '<div class="rwl-presence-note">' + esc(t('Your status applies to Labcord, the chat popup and the dashboard. You switch to Away automatically when you are idle.')) + (state.forced ? ' ' + esc(t('Always online is active, everyone always sees the status you picked.')) : '') + '</div>';
         Array.prototype.forEach.call(element.querySelectorAll('.rwl-presence-option'), function (button) {
             button.addEventListener('click', async function () {
                 var status = button.getAttribute('data-status');

@@ -3,6 +3,7 @@
     global.RWL_SURFACE = 'labcord';
 
     var esc = RWL.escapeHtml;
+    var icon = RWL.uiIcon || function () { return ''; };
     var HEX_PATTERN = /^#[0-9A-Fa-f]{6}$/;
     var USERNAME_PATTERN = /^[A-Za-z0-9_.\-]{3,32}$/;
     var CHANNEL_NAME_PATTERN = /^[a-z0-9][a-z0-9_-]{0,31}$/;
@@ -168,7 +169,7 @@
             (channels.length ? channels.map(function (row) {
                 var rowPlate = social() && social().plateVideo ? social().plateVideo(row.partner, 'lc-plate-bg') : '';
                 var rowBadges = social() && social().badgesHtml ? social().badgesHtml(row.partner) : '';
-                var rowPet = social() && social().petHtml ? social().petHtml(row.partner, 16, false, false) : '';
+                var rowPet = social() && social().petHtml ? social().petHtml(row.partner, 16, false, true) : '';
                 return '<button type="button" class="lc-side-row lc-dm-row" data-dm="' + esc(row.channel_id) + '" title="' + esc(row.partner.username) + '">' + rowPlate + '<span class="lc-dm-avatar">' + avatar(row.partner, 'lc-avatar-img') + '</span><span class="lc-dm-text"><span class="lc-dm-nameline"><span class="lc-dm-name" translate="no" style="' + esc(nameStyle(row.partner)) + '">' + esc(row.partner.username) + '</span>' + rowPet + '</span>' + rowBadges + '</span>' + (row.unread ? '<span class="lc-pill">' + (row.unread > 99 ? '99+' : row.unread) + '</span>' : '') + '</button>';
             }).join('') : '<div class="lc-empty">' + esc(t('No direct messages yet.')) + '</div>');
         if (social() && social().observeCard) social().observeCard(byId('lcSideBody'));
@@ -317,7 +318,7 @@
 
     function memberRow(member) {
         var style = member.role_style ? RWL.nameColorStyle(member.role_style, '#e0aaff') : nameStyle(member);
-        return '<button type="button" class="lc-member' + (member.online ? '' : ' offline') + '" data-member="' + esc(member.username) + '" title="' + esc(member.username) + '"><span class="lc-member-avatar">' + avatar(member, 'lc-avatar-img') + '</span><span class="lc-member-text"><strong translate="no" style="' + esc(style) + '">' + esc(member.nickname || member.username) + '</strong>' + (member.owner ? '<small class="lc-owner-tag" title="' + esc(t('Server Owner')) + '">👑</small>' : '') + '</span></button>';
+        return '<button type="button" class="lc-member' + (member.online ? '' : ' offline') + '" data-member="' + esc(member.username) + '" title="' + esc(member.username) + '"><span class="lc-member-avatar">' + avatar(member, 'lc-avatar-img') + '</span><span class="lc-member-text"><strong translate="no" style="' + esc(style) + '">' + esc(member.nickname || member.username) + '</strong>' + (member.owner ? '<small class="lc-owner-tag" title="' + esc(t('Server Owner')) + '">' + icon('crown', 13) + '</small>' : '') + '</span></button>';
     }
 
     function renderMembers() {
@@ -648,7 +649,7 @@
         var panels = { overview: overviewPanel, roles: rolesPanel, channels: channelsPanel, members: membersPanel };
         openModal('<div class="lc-settings"><nav class="lc-settings-nav"><div class="lc-list-label" translate="no">' + esc(state.server.name) + '</div>' + tabs.map(function (tab) {
             return '<button type="button" class="lc-settings-tab' + (tab[0] === state.settingsTab ? ' active' : '') + '" data-settings-tab="' + tab[0] + '" title="' + esc(t(tab[1])) + '">' + esc(t(tab[1])) + '</button>';
-        }).join('') + (state.server.is_owner ? '<button type="button" class="lc-settings-tab lc-menu-danger" data-server-delete title="' + esc(t('Delete Server')) + '">' + esc(t('Delete Server')) + '</button>' : '') + '</nav><section class="lc-settings-body">' + panels[state.settingsTab]() + '</section><button type="button" class="lc-icon-btn lc-settings-close" data-modal-close title="' + esc(t('Close')) + '">✕</button></div>', 'settings', true);
+        }).join('') + (state.server.is_owner ? '<button type="button" class="lc-settings-tab lc-menu-danger" data-server-delete title="' + esc(t('Delete Server')) + '">' + esc(t('Delete Server')) + '</button>' : '') + '</nav><section class="lc-settings-body">' + panels[state.settingsTab]() + '</section><button type="button" class="lc-icon-btn lc-settings-close" data-modal-close title="' + esc(t('Close')) + '">' + icon('close', 14) + '</button></div>', 'settings', true);
         bindSettings();
     }
 
@@ -1358,7 +1359,31 @@
         }, REFRESH_MS);
     }
 
-    global.Labcord = { openServer: openServer, openDm: openDm, showHome: showHome };
+    function switcherEntries() {
+        var entries = [];
+        state.servers.forEach(function (server) { entries.push({ kind: 'server', label: server.name, hint: t('Server'), serverId: server.group_id }); });
+        if (state.server && Array.isArray(state.server.channels)) {
+            state.server.channels.forEach(function (channel) { entries.push({ kind: 'channel', label: '#' + channel.name, hint: state.server.name, serverId: state.serverId, channelId: channel.id }); });
+        }
+        var dms = (state.notifications && state.notifications.channels) || [];
+        dms.forEach(function (row) {
+            if (row && row.partner && row.channel_id) entries.push({ kind: 'dm', label: row.partner.username, hint: t('Direct Message'), channelId: row.channel_id });
+        });
+        entries.push({ kind: 'home', label: t('Friends'), hint: t('Direct Messages') });
+        return entries;
+    }
+
+    function switchTo(entry) {
+        if (!entry) return;
+        if (entry.kind === 'server') openServer(entry.serverId, 'general');
+        else if (entry.kind === 'channel') {
+            if (state.serverId === entry.serverId) openChannel(entry.channelId);
+            else openServer(entry.serverId, entry.channelId);
+        } else if (entry.kind === 'dm') openDm(entry.channelId);
+        else showHome();
+    }
+
+    global.Labcord = { openServer: openServer, openDm: openDm, showHome: showHome, switcherEntries: switcherEntries, switchTo: switchTo };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
     else init();
 })(window);

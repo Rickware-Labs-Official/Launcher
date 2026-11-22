@@ -107,11 +107,12 @@
 
     function renderLink(data) {
         var suspended = data.status !== 'active';
+        var frozen = data.status === 'frozen' || !!data.frozen;
         return '<div class="settings-section af-hero">' +
             '<h3>Your Affiliate Link</h3>' +
             '<div class="af-link-row"><input type="text" class="form-control af-link" id="afLink" readonly value="' + esc(linkFor(data.code)) + '" translate="no"><button type="button" class="btn-primary af-copy" id="afCopy" title="Copy your affiliate link">Copy Link</button></div>' +
-            '<div class="af-meta"><span>Code</span><b translate="no">' + esc(data.code) + '</b>' + (suspended ? '<span class="af-badge af-badge-rejected">Suspended</span>' : '<span class="af-badge af-badge-available">Active</span>') + '</div>' +
-            (suspended ? '<div class="af-warning">Your affiliate account is suspended. New commissions and payouts are paused. Please contact the support.</div>' : '') +
+            '<div class="af-meta"><span>Code</span><b translate="no">' + esc(data.code) + '</b>' + (frozen ? '<span class="af-badge af-badge-rejected">Frozen</span>' : (suspended ? '<span class="af-badge af-badge-rejected">Suspended</span>' : '<span class="af-badge af-badge-available">Active</span>')) + '</div>' +
+            (frozen ? '<div class="af-warning">Your affiliate program is frozen. Nothing works until it is unfrozen. Please contact the support.</div>' : (suspended ? '<div class="af-warning">Your affiliate account is suspended. New commissions and payouts are paused. Please contact the support.</div>' : '')) +
         '</div>';
     }
 
@@ -147,7 +148,7 @@
         var settings = data.settings || {};
         var coins = settings.payout_coins || [];
         var blocked = data.status !== 'active' || openPayout(data) || !coins.length;
-        var reason = data.status !== 'active' ? 'Payouts are paused while your affiliate account is suspended.' : (openPayout(data) ? 'You already have an open payout request. You can request a new payout once it was handled.' : (!coins.length ? 'Crypto payouts are not available right now.' : ''));
+        var reason = data.status === 'frozen' ? 'Payouts are not possible while your affiliate program is frozen.' : data.status !== 'active' ? 'Payouts are paused while your affiliate account is suspended.' : (openPayout(data) ? 'You already have an open payout request. You can request a new payout once it was handled.' : (!coins.length ? 'Crypto payouts are not available right now.' : ''));
         return '<div class="settings-section">' +
             '<h3>Withdraw In Crypto</h3>' +
             '<p class="af-hint">Every payout is checked by hand before it is sent. Only one request can be open at a time.</p>' +

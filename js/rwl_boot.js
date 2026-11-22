@@ -21,6 +21,7 @@
     if (extraPacks.indexOf('nova') < 0) extraPacks.push('nova');
     if (extraPacks.indexOf('orbit') < 0) extraPacks.push('orbit');
     if (extraPacks.indexOf('atlas') < 0) extraPacks.push('atlas');
+    if (extraPacks.indexOf('apex') < 0) extraPacks.push('apex');
 
     function readStorage(key) {
         try { return global.localStorage.getItem(key); } catch (error) { return null; }

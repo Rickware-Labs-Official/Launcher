@@ -21,6 +21,8 @@
         return global.RWLI18n && global.RWLI18n.t ? global.RWLI18n.t(text) : text;
     }
 
+    var icon = RWL.uiIcon || function () { return ''; };
+
     function esc(value) {
         return String(value === undefined || value === null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
@@ -96,7 +98,7 @@
         var tabs = [];
         if (Array.isArray(settings.quick) && settings.quick.length) {
             sections.push('<div class="rwl-emoji-group" data-group="quick"><div class="rwl-emoji-group-title">' + esc(t('Quick Reactions')) + '</div><div class="rwl-emoji-grid">' + settings.quick.map(button).join('') + '</div></div>');
-            tabs.push('<button type="button" class="rwl-emoji-tab" data-emoji-tab="quick" title="' + esc(t('Quick Reactions')) + '">⚡</button>');
+            tabs.push('<button type="button" class="rwl-emoji-tab" data-emoji-tab="quick" title="' + esc(t('Quick Reactions')) + '">' + icon('bolt', 16) + '</button>');
         }
         data.groups.forEach(function (group) {
             var glyphs = String(group.emoji || '').split(' ').filter(Boolean);

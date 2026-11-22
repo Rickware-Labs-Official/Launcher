@@ -178,6 +178,15 @@ body.labcord * {
     color: var(--lc-green);
 }
 
+.lc-rail-add svg {
+    display: block;
+}
+
+.lc-owner-tag .rwl-ui-icon {
+    color: #f0b232;
+    vertical-align: -2px;
+}
+
 .lc-rail-add:hover {
     background: #16803c;
 }
@@ -453,6 +462,23 @@ body.labcord .lc-avatar-img {
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
+}
+
+.lc-dm-avatar .rwl-plate-decoration,
+.lc-member-avatar .rwl-plate-decoration,
+.lc-user-avatar .rwl-plate-decoration {
+    width: 40px;
+    height: 40px;
+}
+
+.lc-friend-avatar .rwl-plate-decoration {
+    width: 41px;
+    height: 41px;
+}
+
+.lc-profile-avatar .rwl-plate-decoration {
+    width: 76px;
+    height: 76px;
 }
 
 .lc-user {

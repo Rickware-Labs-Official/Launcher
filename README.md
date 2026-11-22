@@ -234,3 +234,11 @@ Every page was checked at 390 px without horizontal scrolling. The top bar compa
 
 ## Images
 - Every image exists exactly once. New: `images/main/labs_coin.webp` and the six locker images in `images/assets/inventory/`. Removed: the four old coin images, `images/main/rickware-labs_chest.webp` (the chest lives in `images/assets/lab_pass/`), `images/partner/r_l_logo_1.webp` and every image that no page or config references.
+
+## Presence, Icons And Labcord Tools (round 2026-11-22)
+- `js/rwl_presence.js` and the account setting *Display Always Online (Admin Only)* now describe the new rule: other members see the status the member picked, the real status stays untouched.
+- `RWL.uiIcon(name, size)` in `js/api_client.js` returns built in SVG icons (`emoji`, `emoji_add`, `reply`, `edit`, `pin`, `eye_off`, `trash`, `close`, `plus`, `crown`, `users`, `gift`, `lock`, `search`, ...). The chat, the groups, Labcord, the gifts dialog and the notification popups use them instead of emoji, no image files are needed. They follow the text colour and therefore every theme.
+- Labcord: centered *Add Server* button, Quick Switcher (`js/labcord_switcher.js`, Ctrl or Cmd + K or the search button in the rail), search in the loaded messages and a pinned messages list in server channels (`js/rwl_social.js`, `js/rwl_groups.js`), headings, lists and subtext in `renderMarkdown()`. Personal Pets next to usernames are animated unless reduced effects or low end mode is on.
+- Avatar decorations are a few pixels smaller everywhere (`css/main.css`, `css/rwl_upgrade.css`, `css/rwl_social.css`, `css/labcord.css`).
+- Theme sound: `js/rwl_theme_sound.js` keeps volume and mute per theme (`mountField(container, themeId)` in the locker theme settings, title *Sound Settings*) and resumes the position after a page change (`sessionStorage`, only theme id and seconds).
+- Languages: `rwl_boot.js` also loads `js/i18n/<lang>_apex.js`.

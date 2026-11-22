@@ -26,6 +26,8 @@
         return RWL.escapeHtml(value);
     }
 
+    var icon = RWL.uiIcon || function () { return ''; };
+
     function indexUrl(query) {
         var inSites = global.location.pathname.indexOf('/sites/') >= 0;
         return (inSites ? '../index.html' : './index.html') + (query || '');
@@ -63,9 +65,9 @@
         element.className = 'rwl-pop';
         element.setAttribute('role', 'status');
         var picture = pictureUrl(options.picture);
-        element.innerHTML = (picture ? '<img class="rwl-pop-icon" src="' + esc(picture) + '" alt="">' : '<div class="rwl-pop-icon">' + (options.icon || '💬') + '</div>') +
+        element.innerHTML = (picture ? '<img class="rwl-pop-icon" src="' + esc(picture) + '" alt="">' : '<div class="rwl-pop-icon">' + (options.icon || icon('chat', 20)) + '</div>') +
             '<div class="rwl-pop-text"><span class="rwl-pop-title" translate="no">' + esc(options.title) + '</span><span class="rwl-pop-body">' + esc(options.body) + '</span></div>' +
-            '<button type="button" class="rwl-pop-close" title="' + esc(t('Close')) + '">✕</button>';
+            '<button type="button" class="rwl-pop-close" title="' + esc(t('Close')) + '">' + icon('close', 14) + '</button>';
         element.addEventListener('click', function (event) {
             element.remove();
             if (event.target.closest('.rwl-pop-close')) return;
@@ -98,12 +100,12 @@
             var from = entry.from || {};
             popup({ title: from.username || t('New message'), body: entry.request ? t('Sent you a message request') : t('Sent you an encrypted message'), picture: from.profile_picture, onOpen: function () { openChannel(entry.channel_id); } });
         } else if (entry.type === 'friend_request' && entry.from) {
-            popup({ title: entry.from.username, body: t('Sent you a friend request'), picture: entry.from.profile_picture, icon: '🤝', onOpen: openDashboard });
+            popup({ title: entry.from.username, body: t('Sent you a friend request'), picture: entry.from.profile_picture, icon: icon('user_plus', 20), onOpen: openDashboard });
         } else if (entry.type === 'friend_update' && entry.by && entry.friend_status === 'friends') {
-            popup({ title: entry.by.username, body: t('Accepted your friend request'), picture: entry.by.profile_picture, icon: '🤝', onOpen: openDashboard });
+            popup({ title: entry.by.username, body: t('Accepted your friend request'), picture: entry.by.profile_picture, icon: icon('user_plus', 20), onOpen: openDashboard });
         } else if (entry.type === 'bazaar' && BAZAAR_TEXT[entry.action]) {
             if (global.location.pathname.indexOf('bazaar') >= 0 && (entry.action === 'listed' || entry.action === 'bid')) return;
-            popup({ title: 'Lab Bazaar', body: t(BAZAAR_TEXT[entry.action]), icon: '🏪', onOpen: function () { global.location.href = bazaarUrl(); } });
+            popup({ title: 'Lab Bazaar', body: t(BAZAAR_TEXT[entry.action]), icon: icon('store', 20), onOpen: function () { global.location.href = bazaarUrl(); } });
         }
     }
 

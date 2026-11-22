@@ -430,34 +430,34 @@ body {
 }
 
 .avatar-decoration {
-    width: 34px !important;
-    height: 34px !important;
+    width: 32px !important;
+    height: 32px !important;
 }
 
 .avatar-decoration-large {
-    width: 68px !important;
-    height: 68px !important;
+    width: 64px !important;
+    height: 64px !important;
 }
 
 .mini-avatar-decoration {
-    width: 120% !important;
-    height: 120% !important;
+    width: 114% !important;
+    height: 114% !important;
 }
 
 .review-avatar-decoration {
-    width: 38px !important;
-    height: 38px !important;
+    width: 35px !important;
+    height: 35px !important;
 }
 
 .forum-post-avatar-decoration {
-    width: 43px !important;
-    height: 43px !important;
+    width: 40px !important;
+    height: 40px !important;
 }
 
 .dashboard-avatar-decoration {
-    inset: -4px !important;
-    width: 54px !important;
-    height: 54px !important;
+    inset: -2.5px !important;
+    width: 51px !important;
+    height: 51px !important;
 }
 
 .review-user-row {

@@ -448,8 +448,8 @@ body {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     transform: translate(-50%, -50%);
     object-fit: contain;
     pointer-events: none;
@@ -731,8 +731,8 @@ body {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 72px;
-    height: 72px;
+    width: 68px;
+    height: 68px;
     transform: translate(-50%, -50%);
     object-fit: contain;
     pointer-events: none;
@@ -3992,8 +3992,8 @@ body {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 44px;
-    height: 44px;
+    width: 41px;
+    height: 41px;
     transform: translate(-50%, -50%);
     object-fit: contain;
     pointer-events: none;
@@ -5203,8 +5203,8 @@ html.rwl-user-reduced-fx *::after {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 50px;
-    height: 50px;
+    width: 47px;
+    height: 47px;
     transform: translate(-50%, -50%);
     object-fit: contain;
     pointer-events: none;
@@ -5665,9 +5665,9 @@ html.rwl-user-reduced-fx *::after {
 
 .dashboard-avatar-decoration {
     position: absolute;
-    inset: -6px;
-    width: 58px;
-    height: 58px;
+    inset: -4.5px;
+    width: 55px;
+    height: 55px;
     pointer-events: none;
 }
 

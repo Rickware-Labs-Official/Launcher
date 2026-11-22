@@ -375,7 +375,7 @@
                 return '<button type="button" class="lc-cosmetic' + (setting.preset === key ? ' active' : '') + '" data-typing-preset="' + esc(key) + '" title="' + esc(t(presets[key].text)) + '"><span class="lc-cosmetic-none">' + esc(presets[key].emoji) + '</span><span>' + esc(t(presets[key].text)) + '</span></button>';
             }).join('') + '</div>' +
             '<div class="lc-typing-custom"' + (setting.mode === 'custom' ? '' : ' hidden') + '><label class="lc-field"><span>' + esc(t('Text')) + '</span><input type="text" class="lc-input" data-typing-text maxlength="32" value="' + esc(setting.text) + '" placeholder="' + esc(t('plotting something')) + '"></label>' +
-            '<label class="lc-field"><span>' + esc(t('Emoji')) + '</span><input type="text" class="lc-input" data-typing-emoji maxlength="8" value="' + esc(setting.emoji) + '" placeholder="🧪"></label></div>' +
+            '<label class="lc-field"><span>' + esc(t('Emoji')) + '</span><input type="text" class="lc-input" data-typing-emoji maxlength="8" value="' + esc(setting.emoji) + '" placeholder="' + esc(t('Optional emoji')) + '"></label></div>' +
             '<div class="lc-typing-preview"><span class="rwl-typing-dots"><i></i><i></i><i></i></span><span translate="no" data-typing-preview></span></div>' +
             '<div class="lc-form-error" data-typing-error></div></div>';
     }

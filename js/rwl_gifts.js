@@ -2,6 +2,7 @@
     if (global.RWLGifts || !global.RWL) return;
 
     var esc = RWL.escapeHtml;
+    var icon = RWL.uiIcon || function () { return ''; };
     var PAGE = 120;
     var CATEGORY_LABELS = {
         name_colors: 'Name Colors',
@@ -37,7 +38,7 @@
         }
         var src = item.thumb_url || item.asset_url || item.preview || '';
         if (src && !/^https?:\/\//.test(src)) src = RWL.apiUrl(src);
-        return src ? '<img class="rwl-gift-thumb" src="' + esc(src) + '" alt="" loading="lazy" decoding="async">' : '<span class="rwl-gift-swatch rwl-gift-swatch-empty">🎁</span>';
+        return src ? '<img class="rwl-gift-thumb" src="' + esc(src) + '" alt="" loading="lazy" decoding="async">' : '<span class="rwl-gift-swatch rwl-gift-swatch-empty">' + icon('gift', 22) + '</span>';
     }
 
     function filtered() {
@@ -76,7 +77,7 @@
             '<div class="rwl-gift-grid">' + grid + '</div>' + more +
             '<div class="rwl-gift-footer"><span class="rwl-gift-selected" translate="no">' + esc(selectedText) + '</span>' +
             '<input type="text" class="rwl-input rwl-gift-message" data-gift-note maxlength="200" placeholder="' + esc(t('Add a note (optional)')) + '">' +
-            '<button type="button" class="rwl-btn rwl-btn-gift" data-gift-send' + (state.selected && !state.sending ? '' : ' disabled') + '>🎁 ' + esc(t('Send Gift')) + '</button></div>';
+            '<button type="button" class="rwl-btn rwl-btn-gift" data-gift-send' + (state.selected && !state.sending ? '' : ' disabled') + '>' + icon('gift', 15) + ' ' + esc(t('Send Gift')) + '</button></div>';
         var search = overlay.querySelector('[data-gift-search]');
         if (search && document.activeElement !== search && state.focusSearch) {
             search.focus();
@@ -158,7 +159,7 @@
         state.sending = false;
         var overlay = document.createElement('div');
         overlay.className = 'rwl-gift-overlay';
-        overlay.innerHTML = '<div class="rwl-gift-card" role="dialog" aria-modal="true"><div class="rwl-gift-head"><h3>🎁 ' + esc(t('Send a Gift to')) + ' <span translate="no">' + esc(username) + '</span></h3><button type="button" class="rwl-icon-btn" data-gift-close title="' + esc(t('Close')) + '">✕</button></div><div data-gift-body><div class="rwl-gift-empty">' + esc(t('Loading your inventory...')) + '</div></div></div>';
+        overlay.innerHTML = '<div class="rwl-gift-card" role="dialog" aria-modal="true"><div class="rwl-gift-head"><h3>' + icon('gift', 18) + ' ' + esc(t('Send a Gift to')) + ' <span translate="no">' + esc(username) + '</span></h3><button type="button" class="rwl-icon-btn" data-gift-close title="' + esc(t('Close')) + '">' + icon('close', 14) + '</button></div><div data-gift-body><div class="rwl-gift-empty">' + esc(t('Loading your inventory...')) + '</div></div></div>';
         overlay.addEventListener('click', onClick);
         overlay.addEventListener('input', function (event) {
             if (event.target.matches('[data-gift-search]')) {

@@ -166,8 +166,8 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     transform: translate(-50%, -50%);
     object-fit: contain;
     pointer-events: none;
@@ -592,8 +592,8 @@
 }
 
 .rwl-profile-avatar .rwl-plate-decoration {
-    width: 96px;
-    height: 96px;
+    width: 92px;
+    height: 92px;
 }
 
 .rwl-profile-avatar .rwl-plate-presence {
@@ -729,8 +729,8 @@
 }
 
 .rwl-profile-modal .rwl-profile-avatar .rwl-plate-decoration {
-    width: 140px;
-    height: 140px;
+    width: 134px;
+    height: 134px;
 }
 
 .rwl-profile-modal .rwl-profile-quick {
@@ -1151,6 +1151,26 @@
     color: #ffffff;
 }
 
+.rwl-ui-icon {
+    display: inline-block;
+    flex-shrink: 0;
+    vertical-align: -0.18em;
+    pointer-events: none;
+}
+
+.rwl-tool .rwl-ui-icon,
+.rwl-icon-btn .rwl-ui-icon,
+.rwl-pop-close .rwl-ui-icon,
+.rwl-emoji-tab .rwl-ui-icon {
+    display: block;
+    vertical-align: middle;
+}
+
+.rwl-pop-icon .rwl-ui-icon {
+    display: block;
+    margin: auto;
+}
+
 .rwl-tool.rwl-tool-danger:hover {
     background: rgba(239, 68, 68, 0.3);
 }
@@ -1402,6 +1422,35 @@ body.rwl-chat-open .rwl-pop-stack {
 
 .rwl-pins-panel[hidden] {
     display: none;
+}
+
+.rwl-chat-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid rgba(155, 0, 204, 0.3);
+    background: #14041f;
+}
+
+.rwl-chat-filter[hidden] {
+    display: none;
+}
+
+.rwl-chat-filter-input {
+    flex: 1;
+    min-width: 0;
+    height: 30px;
+}
+
+.rwl-chat-filter-count {
+    font-size: 11px;
+    color: #c9a8ee;
+    white-space: nowrap;
+}
+
+.rwl-msg-filtered {
+    display: none !important;
 }
 
 .rwl-pin-row {
@@ -1759,8 +1808,8 @@ html.rwl-low-fx .rwl-social-bell {
 }
 
 .rwl-chat-bubble-avatar .rwl-plate-decoration {
-    width: 64px;
-    height: 64px;
+    width: 60px;
+    height: 60px;
 }
 
 .rwl-chat-bubble-badge {
@@ -1903,8 +1952,8 @@ html.rwl-low-fx .rwl-social-bell {
 }
 
 .rwl-msg-avatar-wrap .rwl-plate-decoration {
-    width: 52px;
-    height: 52px;
+    width: 49px;
+    height: 49px;
 }
 
 .rwl-btn-gift {
@@ -1994,6 +2043,11 @@ html.rwl-low-fx .rwl-social-bell {
 .rwl-user-pet svg {
     display: block;
     filter: drop-shadow(0 0 4px rgba(157, 78, 221, 0.45));
+}
+
+html.rwl-low-fx .rwl-user-pet .rwl-pet,
+html.rwl-low-fx .rwl-user-pet .rwl-pet * {
+    animation: none !important;
 }
 
 .rwl-user-pet-level {
@@ -2224,4 +2278,35 @@ html.rwl-low-fx .rwl-social-bell {
     height: auto;
     font-size: 20px;
     padding: 4px;
+}
+
+.rwl-msg-body .rwl-md-h {
+    display: block;
+    font-weight: 800;
+    line-height: 1.25;
+    margin: 4px 0 2px;
+}
+
+.rwl-msg-body .rwl-md-h1 {
+    font-size: 1.4em;
+}
+
+.rwl-msg-body .rwl-md-h2 {
+    font-size: 1.22em;
+}
+
+.rwl-msg-body .rwl-md-h3 {
+    font-size: 1.08em;
+}
+
+.rwl-msg-body .rwl-md-sub {
+    display: block;
+    opacity: 0.7;
+    font-size: 0.8em;
+}
+
+.rwl-msg-body .rwl-md-li {
+    display: block;
+    padding-left: 16px;
+    text-indent: -12px;
 }
