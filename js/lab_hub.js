@@ -62,6 +62,23 @@
         return Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
     }
 
+    var COMPACT_UNITS = [{ size: 1e3, suffix: 'k' }, { size: 1e6, suffix: 'M' }, { size: 1e9, suffix: 'B' }, { size: 1e12, suffix: 'T' }];
+
+    function formatCompact(value) {
+        var number = Number(value || 0);
+        var absolute = Math.abs(number);
+        if (absolute < 1000) return formatNumber(number);
+        var index = 0;
+        while (index < COMPACT_UNITS.length - 1 && absolute >= COMPACT_UNITS[index + 1].size) index++;
+        var scaled = absolute / COMPACT_UNITS[index].size;
+        var rounded = scaled >= 100 ? Math.round(scaled) : Math.round(scaled * 10) / 10;
+        if (rounded >= 1000 && index < COMPACT_UNITS.length - 1) {
+            index++;
+            rounded = 1;
+        }
+        return (number < 0 ? '-' : '') + rounded + COMPACT_UNITS[index].suffix;
+    }
+
     function formatDate(value) {
         if (!value) return '-';
         var date = new Date(value);
@@ -408,7 +425,7 @@
             return '<button type="button" class="lh-pick-card' + (active ? ' active' : '') + (open ? '' : ' locked') + '" data-pick="' + esc(entry.key) + '" style="' + rarityStyle(entry.rarity) + '" title="' + esc(open ? entry.name + ' · ' + entry.rarity : 'Unlocks at level ' + entry.level) + '">' +
                 (entry.animated ? '<i class="lh-pick-anim" title="Animated">✦</i>' : '') + companionSvg(preview, 62) +
                 '<span class="lh-pick-name" translate="no">' + esc(entry.name) + '</span>' +
-                '<small class="lh-pick-meta">' + (open ? esc(entry.rarity) : '🔒 Level ' + formatNumber(entry.level)) + '</small></button>';
+                '<small class="lh-pick-meta">' + (open ? esc(entry.rarity) : '🔒 Level ' + formatCompact(entry.level)) + '</small></button>';
         }).join('');
         return '<div class="lh-pick-bar"><div class="lh-chip-row">' + chips + '</div><div class="lh-pick-tools">' + slotSelect +
             '<input type="search" class="lh-input lh-pick-search" data-pick-search maxlength="40" placeholder="Search by name" value="' + esc(filter.query) + '">' +
@@ -497,8 +514,8 @@
     function levelRewardHtml(companion, catalog, maxed) {
         if (!catalog.discord_linked) return discordNoticeHtml(catalog);
         if (maxed) return '';
-        return '<div class="lh-row-between"><span>' + esc(t('Reward For Next Level')) + '</span><span>+' + formatNumber(companion.next_level_reward || 0) + ' XP</span></div>' +
-            '<div class="lh-row-between"><span>' + esc(t('Level Rewards Today')) + '</span><span>' + formatNumber(companion.level_xp_today || 0) + ' / ' + formatNumber(catalog.daily_level_xp_cap || 0) + ' XP</span></div>';
+        return '<div class="lh-row-between"><span>' + esc(t('Reward For Next Level')) + '</span><span>+' + formatCompact(companion.next_level_reward || 0) + ' XP</span></div>' +
+            '<div class="lh-row-between"><span>' + esc(t('Level Rewards Today')) + '</span><span>' + formatCompact(companion.level_xp_today || 0) + ' / ' + formatCompact(catalog.daily_level_xp_cap || 0) + ' XP</span></div>';
     }
 
     function renderAdoption(content, catalog) {
@@ -579,9 +596,9 @@
                 '<div class="lh-companion-stage" id="lhCompanionStage">' + stageSvg() + '</div>' +
                 '<div class="lh-companion-info">' +
                     '<div class="lh-row-between lh-wrap"><h2 class="lh-section-title" translate="no">' + esc(companion.name) + '</h2><span class="lh-pet-tags"><span class="lh-badge lh-rarity-badge" style="' + rarityStyle(rarity) + '">' + esc(rarity) + '</span><span class="lh-badge lh-badge-live">' + esc(MOOD_LABELS[companion.mood] || companion.mood) + '</span></span></div>' +
-                    '<div class="lh-metrics">' + metric('Level', formatNumber(companion.level) + ' / ' + formatNumber(catalog.max_level)) + metric('Total XP', formatNumber(companion.xp)) + metric('Tool XP Today', formatNumber(companion.launch_xp_today) + ' / ' + formatNumber(companion.daily_launch_xp_cap), 'Your pet gains XP when you start tools') +
-                        (petState.catalog ? metric('Species', formatNumber(unlockedCount('species', companion.level, everything)) + ' / ' + formatNumber(petState.catalog.species.length), 'Species you unlocked') + metric('Decorations', formatNumber(unlockedCount('decorations', companion.level, everything)) + ' / ' + formatNumber(petState.catalog.decorations.length), 'Decorations you unlocked') : '') + '</div>' +
-                    '<div class="lh-row-between"><span>Next Level</span><span>' + (maxed ? 'Max Level' : formatNumber(companion.level_progress) + ' / ' + formatNumber(perLevel)) + '</span></div>' +
+                    '<div class="lh-metrics">' + metric('Level', formatCompact(companion.level) + ' / ' + formatCompact(catalog.max_level), formatNumber(companion.level) + ' / ' + formatNumber(catalog.max_level)) + metric('Total XP', formatCompact(companion.xp), formatNumber(companion.xp)) + metric('Tool XP Today', formatCompact(companion.launch_xp_today) + ' / ' + formatCompact(companion.daily_launch_xp_cap), 'Your pet gains XP when you start tools') +
+                        (petState.catalog ? metric('Species', formatCompact(unlockedCount('species', companion.level, everything)) + ' / ' + formatCompact(petState.catalog.species.length), 'Species you unlocked') + metric('Decorations', formatCompact(unlockedCount('decorations', companion.level, everything)) + ' / ' + formatCompact(petState.catalog.decorations.length), 'Decorations you unlocked') : '') + '</div>' +
+                    '<div class="lh-row-between"><span>Next Level</span><span>' + (maxed ? 'Max Level' : formatCompact(companion.level_progress) + ' / ' + formatCompact(perLevel)) + '</span></div>' +
                     progressBar(maxed ? perLevel : companion.level_progress, perLevel) +
                     levelRewardHtml(companion, catalog, maxed) +
                     '<div class="lh-care" id="lhCare">' + (catalog.care_actions || []).map(function (action) {

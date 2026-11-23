@@ -214,15 +214,50 @@
         }
     }
 
+    function specialRewardIcon(reward) {
+        if (reward.media === 'image' && reward.image) return '<img class="lp-reward-image" src="' + esc(reward.image) + '" alt="" loading="lazy" decoding="async">';
+        return getRewardIcon(reward);
+    }
+
+    function specialRewardLabel(reward) {
+        if (reward.type === 'cosmetic' && !reward.item_id) return 'Random ' + (reward.category_label || reward.name);
+        return reward.item_name || reward.name;
+    }
+
+    function specialItemHtml(special) {
+        var percent = Math.max(0, Math.min(100, special.progress / special.target * 100));
+        var remaining = special.seconds_left - elapsedSeconds();
+        var timeText = remaining > 0 ? 'Ends in ' + formatDuration(remaining) : 'Ending now';
+        var rewards = (special.rewards || []).map(function(reward) {
+            return '<span class="lp-special-reward" title="' + esc(specialRewardLabel(reward)) + '">' + specialRewardIcon(reward) + '<span class="lp-special-reward-name" translate="no">' + esc(specialRewardLabel(reward)) + '</span></span>';
+        }).join('');
+        return '<div class="lp-challenge-item lp-special-item' + (special.completed ? ' lp-special-done' : '') + '" title="' + esc(special.source === 'client' ? 'Tracked by the Rickware - Labs© Launcher' : 'Tracked automatically') + '">' +
+            '<div class="lp-challenge-info">' +
+                '<div class="lp-challenge-title"><span class="lp-special-tag">Special</span><span class="lp-challenge-name" translate="no">' + esc(special.name) + '</span></div>' +
+                '<div class="lp-challenge-bar-wrap">' +
+                    '<div class="lp-challenge-bar-track"><div class="lp-challenge-bar-fill" style="width:' + percent + '%"></div></div>' +
+                    '<span class="lp-challenge-prog">' + Math.min(special.progress, special.target) + '/' + special.target + '</span>' +
+                '</div>' +
+                '<div class="lp-special-meta"><span class="lp-special-time">' + esc(timeText) + '</span>' + (special.completed ? '<span class="lp-special-state">Completed</span>' : '') + '</div>' +
+                (rewards ? '<div class="lp-special-rewards">' + rewards + '</div>' : '') +
+            '</div>' +
+            (special.completed ? '<div class="lp-challenge-reward"><svg class="lp-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>' : '') +
+        '</div>';
+    }
+
     function renderChallenges() {
         var list = document.getElementById('lpChallengesList');
         if (!list || !passState) return;
+        var specials = passState.daily_challenges.specials || [];
+        var openSpecials = specials.filter(function(special) { return !special.completed; });
+        var doneSpecials = specials.filter(function(special) { return special.completed; });
         var items = passState.daily_challenges.items.filter(function(item) { return showAllChallenges || !item.completed; });
-        list.innerHTML = items.map(function(item) {
+        var dailyHtml = items.map(function(item) {
             var percent = Math.max(0, Math.min(100, item.progress / item.target * 100));
+            var nameHtml = '<span class="lp-challenge-name" translate="no">' + esc(item.name) + '</span>';
             return '<div class="lp-challenge-item" title="' + esc(item.source === 'client' && item.challenge_id !== 'visit_store' && item.challenge_id !== 'browse_tools' && item.challenge_id !== 'share_product' ? 'Tracked by the Rickware - Labs© Launcher' : 'Tracked automatically') + '">' +
                 '<div class="lp-challenge-info">' +
-                    '<span class="lp-challenge-name" translate="no">' + esc(item.name) + '</span>' +
+                    (item.bonus ? '<div class="lp-challenge-title">' + nameHtml + '<span class="lp-bonus-tag">Bonus</span></div>' : nameHtml) +
                     '<div class="lp-challenge-bar-wrap">' +
                         '<div class="lp-challenge-bar-track"><div class="lp-challenge-bar-fill" style="width:' + percent + '%"></div></div>' +
                         '<span class="lp-challenge-prog">' + Math.min(item.progress, item.target) + '/' + item.target + '</span>' +
@@ -235,6 +270,7 @@
                 '</div>' +
             '</div>';
         }).join('') || '<div class="lp-challenge-item"><div class="lp-challenge-info"><span class="lp-challenge-name">All daily challenges completed. Come back tomorrow!</span></div></div>';
+        list.innerHTML = openSpecials.map(specialItemHtml).join('') + dailyHtml + doneSpecials.map(specialItemHtml).join('');
         var allButton = document.getElementById('lpAllChallengesBtn');
         if (allButton) allButton.textContent = showAllChallenges ? 'Hide Completed' : 'All Challenges';
         renderSwapInfo();

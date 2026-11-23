@@ -242,3 +242,16 @@ Every page was checked at 390 px without horizontal scrolling. The top bar compa
 - Avatar decorations are a few pixels smaller everywhere (`css/main.css`, `css/rwl_upgrade.css`, `css/rwl_social.css`, `css/labcord.css`).
 - Theme sound: `js/rwl_theme_sound.js` keeps volume and mute per theme (`mountField(container, themeId)` in the locker theme settings, title *Sound Settings*) and resumes the position after a page change (`sessionStorage`, only theme id and seconds).
 - Languages: `rwl_boot.js` also loads `js/i18n/<lang>_apex.js`.
+
+## Payment Methods, Download Menu And Visual Fixes (November 2026, second round)
+- `sites/payment_methods.html` with `css/payment_methods.css` and `js/payment_methods.js`: the payment methods of the store in the account page design, stacked layout with a two column navigation on phones.
+- `downloadLauncher()` in `js/main.js` opens a platform menu (`.launcher-platform-*` in `css/main.css`): Windows is selectable, macOS and Linux stay disabled until `GET /api/launcher/installer/info` reports them as available.
+- `js/lab_hub.js`: `formatCompact()` shortens numbers in the Personal Pet area.
+- `js/inventory.js`: the theme settings button also shows for themes that only have a sound (`item.sound_url`).
+- `sites/Discord Asset Archiv/css/main.css`: the color channel variables were replaced by literal values so the theme engine can recolor the page, the frame overlay variables were adjusted.
+- Language packs: `js/i18n/<lang>_apex.js`.
+
+
+## Lab Pass Special Quests (November 2026, third round)
+- `js/lab-pass.js`: the Daily Challenges card shows the special quests of the payload (`daily_challenges.specials`) on top (gold card with the tag *Special*, progress, remaining time and reward chips with pictures). Completed special quests move to the bottom and stay there until their days are over, also when *Hide Completed* is used. Extra quests of the day carry a *Bonus* tag. Styles: `css/lab-pass.css` (`.lp-special-*`, `.lp-bonus-tag`).
+- Language packs: `js/i18n/<lang>_apex.js`.

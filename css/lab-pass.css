@@ -1158,6 +1158,98 @@
     font-size: 12px;
 }
 
+.lp-challenge-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.lp-special-tag,
+.lp-bonus-tag {
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.lp-special-tag {
+    background: rgba(251, 191, 36, 0.18);
+    border: 1px solid rgba(251, 191, 36, 0.55);
+    color: #fbbf24;
+}
+
+.lp-bonus-tag {
+    background: rgba(74, 222, 128, 0.14);
+    border: 1px solid rgba(74, 222, 128, 0.45);
+    color: #4ade80;
+}
+
+.lp-special-item {
+    border-color: rgba(251, 191, 36, 0.35);
+    background: linear-gradient(150deg, rgba(251, 191, 36, 0.09), rgba(255, 255, 255, 0.03));
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.12);
+}
+
+.lp-special-item:hover {
+    background: linear-gradient(150deg, rgba(251, 191, 36, 0.14), rgba(255, 255, 255, 0.05));
+    border-color: rgba(251, 191, 36, 0.6);
+}
+
+.lp-special-done {
+    opacity: 0.8;
+    box-shadow: none;
+}
+
+.lp-special-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.lp-special-state {
+    color: #4caf50;
+    font-weight: 700;
+}
+
+.lp-special-rewards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.lp-special-reward {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 3px 9px 3px 5px;
+    border-radius: 999px;
+    border: 1px solid rgba(201, 126, 255, 0.25);
+    background: rgba(50, 0, 100, 0.35);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.lp-special-reward .lp-reward-image,
+.lp-special-reward svg {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.lp-special-reward-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .lp-reveal-overlay {
     position: fixed;
     inset: 0;

@@ -4255,27 +4255,157 @@ function renderGithubProfileStats(container, udata, username, profileEntry) {
     container.appendChild(card);
 }
 
-async function downloadLauncher() {
-    var button = document.getElementById('downloadLauncherBtn');
-    if (button && button.dataset.busy === '1') return;
-    if (button) button.dataset.busy = '1';
+var LAUNCHER_PLATFORMS = [
+    { id: 'windows', label: 'Windows', icon: '<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="8.5" height="8.5" rx="1.2"/><rect x="12.5" y="3" width="8.5" height="8.5" rx="1.2"/><rect x="3" y="12.5" width="8.5" height="8.5" rx="1.2"/><rect x="12.5" y="12.5" width="8.5" height="8.5" rx="1.2"/></svg>' },
+    { id: 'macos', label: 'macOS', icon: '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 19h20"/></svg>' },
+    { id: 'linux', label: 'Linux', icon: '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M12 15h5"/></svg>' }
+];
+var launcherPlatformMenu = null;
+
+function closeLauncherPlatformMenu() {
+    if (!launcherPlatformMenu) return;
+    var menu = launcherPlatformMenu;
+    launcherPlatformMenu = null;
+    document.removeEventListener('keydown', menu.onKey, true);
+    menu.overlay.remove();
+    if (menu.previousFocus && menu.previousFocus.focus) {
+        try { menu.previousFocus.focus(); } catch (error) {}
+    }
+}
+
+function setLauncherPlatformEnabled(option, enabled) {
+    option.disabled = !enabled;
+    option.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+    option.classList.toggle('is-disabled', !enabled);
+    option.title = enabled ? 'Download the installer for this platform' : 'This platform is not available yet';
+    option.querySelector('.launcher-platform-note').textContent = enabled ? '' : 'Not available yet';
+}
+
+function buildLauncherPlatformOption(platform) {
+    var option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'launcher-platform-option';
+    option.setAttribute('data-platform', platform.id);
+    var icon = document.createElement('span');
+    icon.className = 'launcher-platform-icon';
+    icon.innerHTML = platform.icon;
+    var name = document.createElement('span');
+    name.className = 'launcher-platform-name';
+    name.setAttribute('translate', 'no');
+    name.textContent = platform.label;
+    var note = document.createElement('span');
+    note.className = 'launcher-platform-note';
+    option.appendChild(icon);
+    option.appendChild(name);
+    option.appendChild(note);
+    setLauncherPlatformEnabled(option, platform.id === 'windows');
+    return option;
+}
+
+async function refreshLauncherPlatformAvailability(options) {
     try {
-        var response = await fetch(apiUrl('/api/launcher/installer/info'), { cache: 'no-store' });
+        var response = await fetch(apiUrl('/api/launcher/installer/info?platform=windows'), { cache: 'no-store' });
+        var info = await response.json();
+        var available = info && info.platforms ? info.platforms : {};
+        options.forEach(function(option) {
+            var id = option.getAttribute('data-platform');
+            if (id !== 'windows' && option.isConnected) setLauncherPlatformEnabled(option, available[id] === true);
+        });
+    } catch (error) {
+        return;
+    }
+}
+
+async function startLauncherDownload(platformId) {
+    var menu = launcherPlatformMenu;
+    if (!menu || menu.busy) return;
+    menu.busy = true;
+    try {
+        var response = await fetch(apiUrl('/api/launcher/installer/info?platform=' + encodeURIComponent(platformId)), { cache: 'no-store' });
         var info = await response.json();
         var installer = info && info.installer;
+        closeLauncherPlatformMenu();
         if (!response.ok || !info || !info.available || !installer || !installer.download_url) {
-            var message = info && info.platform
-                ? 'The installer file for your platform is currently not available.'
-                : 'The launcher is available for Windows, macOS and Linux computers only.';
-            window.RWLDialog.alert({ title: 'Download Launcher', message: message });
+            window.RWLDialog.alert({ title: 'Download Launcher', message: 'The installer file for your platform is currently not available.' });
             return;
         }
         window.location.assign(installer.download_url);
     } catch (error) {
+        closeLauncherPlatformMenu();
         showBanner('The launcher download could not be started. Please try again later.', 'error');
-    } finally {
-        if (button) setTimeout(function() { button.dataset.busy = ''; }, 1500);
     }
+}
+
+function downloadLauncher() {
+    if (launcherPlatformMenu) {
+        var open = launcherPlatformMenu.overlay.querySelector('.launcher-platform-option:not(:disabled)');
+        if (open) open.focus();
+        return;
+    }
+    var overlay = document.createElement('div');
+    overlay.className = 'launcher-platform-overlay';
+    var card = document.createElement('div');
+    card.className = 'launcher-platform-card';
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-modal', 'true');
+    card.setAttribute('aria-labelledby', 'launcherPlatformTitle');
+    var title = document.createElement('h2');
+    title.id = 'launcherPlatformTitle';
+    title.className = 'launcher-platform-title';
+    title.textContent = 'Download Launcher';
+    var hint = document.createElement('p');
+    hint.className = 'launcher-platform-hint';
+    hint.textContent = 'Choose your platform.';
+    var list = document.createElement('div');
+    list.className = 'launcher-platform-list';
+    var options = LAUNCHER_PLATFORMS.map(function(platform) {
+        var option = buildLauncherPlatformOption(platform);
+        option.addEventListener('click', function() { startLauncherDownload(platform.id); });
+        list.appendChild(option);
+        return option;
+    });
+    var cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'launcher-platform-cancel';
+    cancel.title = 'Close this window';
+    cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', closeLauncherPlatformMenu);
+    card.appendChild(title);
+    card.appendChild(hint);
+    card.appendChild(list);
+    card.appendChild(cancel);
+    overlay.appendChild(card);
+    overlay.addEventListener('mousedown', function(event) {
+        if (event.target === overlay) closeLauncherPlatformMenu();
+    });
+    function usableButtons() {
+        return Array.prototype.filter.call(card.querySelectorAll('button'), function(button) { return !button.disabled; });
+    }
+    function onKey(event) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            closeLauncherPlatformMenu();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+        var buttons = usableButtons();
+        if (!buttons.length) return;
+        var first = buttons[0];
+        var last = buttons[buttons.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    }
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(overlay);
+    launcherPlatformMenu = { overlay: overlay, previousFocus: document.activeElement, onKey: onKey, busy: false };
+    usableButtons()[0].focus();
+    refreshLauncherPlatformAvailability(options);
 }
 
 document.addEventListener('DOMContentLoaded', async function() {

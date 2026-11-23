@@ -378,7 +378,7 @@
             (item.exclusive ? '<div class="rwl-exclusive-banner">Exclusive</div>' : '') +
             '<div class="inv-item-visual">' + visual + '</div>' +
             '<div class="inv-item-name" translate="no">' + esc(item.name) + '</div>' +
-            (owned && (item.animated || FILTER_CATALOGS[catalogKey]) && CONFIGURABLE_CATALOGS[catalogKey] && !item.is_default ? '<button type="button" class="inv-item-config" data-config-item="' + esc(item.item_id) + '" title="' + (COLOR_CATALOGS[catalogKey] || FILTER_CATALOGS[catalogKey] ? 'Change the speed and colors' : 'Change the playback speed' + (catalogKey === 'name_colors' ? ' and direction' : '')) + '" aria-label="Item settings">⚙</button>' : '') +
+            (owned && (item.animated || item.sound_url || FILTER_CATALOGS[catalogKey]) && CONFIGURABLE_CATALOGS[catalogKey] && !item.is_default ? '<button type="button" class="inv-item-config" data-config-item="' + esc(item.item_id) + '" title="' + (COLOR_CATALOGS[catalogKey] || FILTER_CATALOGS[catalogKey] ? 'Change the speed and colors' : 'Change the playback speed' + (catalogKey === 'name_colors' ? ' and direction' : '')) + '" aria-label="Item settings">⚙</button>' : '') +
             (equipped ? '<div class="inv-item-badge">Equipped</div>' : '') +
             (fresh ? '<div class="inv-item-new">NEW</div>' : '') +
             (owned ? '' : '<div class="inv-item-lock">' + LOCK_SVG + '</div>') +
