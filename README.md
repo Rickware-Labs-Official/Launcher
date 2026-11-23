@@ -255,3 +255,9 @@ Every page was checked at 390 px without horizontal scrolling. The top bar compa
 ## Lab Pass Special Quests (November 2026, third round)
 - `js/lab-pass.js`: the Daily Challenges card shows the special quests of the payload (`daily_challenges.specials`) on top (gold card with the tag *Special*, progress, remaining time and reward chips with pictures). Completed special quests move to the bottom and stay there until their days are over, also when *Hide Completed* is used. Extra quests of the day carry a *Bonus* tag. Styles: `css/lab-pass.css` (`.lp-special-*`, `.lp-bonus-tag`).
 - Language packs: `js/i18n/<lang>_apex.js`.
+
+## Discord Linking, Discord Account Card And Idle Status (November 2026, fourth round)
+- `sites/account_settings.html`: the card `Link Your Discord Account` sits right below the title (hidden until the server says that no account is linked), the read only Discord card sits inside `Account Information`. `js/discord_link.js` runs the flow (digits only input, `Link Account`, timer `Resend in m:ss`, `Resend`, error text from the server, status polling every 4 seconds) and renders the card. Only images from the badge repository and the Discord CDN are accepted, every value is escaped, real Discord colors carry `--rwl-keep` so the theme engine leaves them alone. `css/discord_link.css` follows the theme engine, no inline script, no stored data in the browser.
+- `css/sessions.css`: the values of a session stay on one line and scroll with a thin bar.
+- `js/main.js`: the dashboard members refresh their status every 30 seconds (`refreshDashboardPresence`), `js/rwl_presence.js`: `effectiveSelf()` (own status with automatic idle), `js/labcord.js`: own status and friend rows show idle and do not disturb, `js/bazaar.js` and `css/bazaar.css`: seller dot for away and do not disturb.
+- Language packs: `js/i18n/<lang>_apex.js`.

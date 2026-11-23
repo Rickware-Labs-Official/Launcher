@@ -6,6 +6,7 @@
     <title>Rickware - Labs© - Account Settings</title>
     <link rel="stylesheet" href="../css/account_settings.css">
     <link rel="stylesheet" href="../css/rwl_social.css">
+    <link rel="stylesheet" href="../css/discord_link.css">
     <link rel="icon" type="image/png" href="../images/main/logo.webp">
     <link rel="preconnect" href="https://rickware-labs-api.apps.bot-hosting.cloud" crossorigin>
     <script src="../js/rwl_boot.js" data-i18n-extra="community"></script>
@@ -74,6 +75,30 @@
             <div class="settings-header">
                 <h1>Account Settings</h1>
                 <p>Manage your account information and preferences</p>
+            </div>
+
+            <div class="settings-section discord-link-section" id="discordLinkSection" hidden>
+                <div class="discord-link-card">
+                    <div class="discord-link-head">
+                        <span class="discord-link-icon" aria-hidden="true">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                        </span>
+                        <div class="discord-link-title">
+                            <h3>Link Your Discord Account</h3>
+                            <p>Enter your Discord user ID and confirm the message our bot sends you. No permissions and no app are needed.</p>
+                        </div>
+                    </div>
+                    <div class="discord-link-form">
+                        <input type="text" id="discordLinkId" class="form-control" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="22" placeholder="Your Discord user ID" aria-label="Your Discord user ID">
+                        <button type="button" class="btn-primary discord-link-button" id="discordLinkBtn" title="Send the confirmation message to your Discord account">Link Account</button>
+                    </div>
+                    <p class="discord-link-hint">You find your ID in Discord: turn on Developer Mode under Settings, Advanced, then right-click your name and choose Copy User ID.</p>
+                    <div class="discord-link-status" id="discordLinkStatus" role="status" aria-live="polite" hidden></div>
+                    <p class="discord-link-note">You can link a Discord account only once. To change it later, open a support ticket on our Discord server.</p>
+                </div>
             </div>
 
             <div class="settings-section">
@@ -245,6 +270,10 @@
                         <p id="devicesConnected">1</p>
                     </div>
                 </div>
+                <div class="discord-account" id="discordAccountBlock" hidden>
+                    <h4 class="discord-account-title">Discord Account</h4>
+                    <div id="discordAccountCard"></div>
+                </div>
             </div>
 
             <div class="settings-actions">
@@ -259,6 +288,7 @@
     <script src="../js/rwl_fx.js"></script>
     <script src="../js/main.js"></script>
     <script src="../js/account_settings.js"></script>
+    <script src="../js/discord_link.js"></script>
     <script src="../js/rwl_social.js"></script>
     <script src="../js/rwl_social_settings.js"></script>
 </body>

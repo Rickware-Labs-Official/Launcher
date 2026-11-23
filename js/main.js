@@ -1399,6 +1399,46 @@ function dashboardRankBadge(member) {
     return '<span class="dashboard-type-badge" style="' + getAccountTypeBadgeStyle(type) + '">' + escHtml(type) + '</span>';
 }
 
+function dashboardPresenceView(member) {
+    var lastOnline = member.last_online ? new Date(member.last_online) : null;
+    var key = window.RWLPresence ? window.RWLPresence.statusOf(member) : (member.online ? 'online' : 'offline');
+    var texts = { online: 'Online now', dnd: 'Do Not Disturb', away: 'Away' };
+    var text = texts[key] ? texts[key] : (lastOnline && !isNaN(lastOnline.getTime()) ? 'Last online: ' + lastOnline.toLocaleDateString() : (member.member_since ? 'Member since ' + member.member_since : ''));
+    return { key: key, text: text };
+}
+
+function paintDashboardPresence(card, member) {
+    var view = dashboardPresenceView(member);
+    card.classList.toggle('online', !!member.online);
+    var dot = card.querySelector('.rwl-plate-presence');
+    if (dot) {
+        dot.className = 'rwl-plate-presence' + (view.key !== 'offline' ? ' ' + view.key : '');
+        dot.setAttribute('data-presence', view.key);
+    }
+    var line = card.querySelector('.rwl-plate-status');
+    if (line) {
+        line.className = 'rwl-plate-status' + (view.key !== 'offline' ? ' online' : '');
+        if (line.textContent !== view.text) line.textContent = view.text;
+    }
+}
+
+var dashboardPresenceTimer = null;
+
+function refreshDashboardPresence() {
+    var grid = document.getElementById('dashboardGrid');
+    if (!grid || document.hidden || !grid.offsetParent || dashboardState.query || dashboardState.loading) return;
+    if (!grid.querySelector('.dashboard-member-card')) return;
+    RWL.apiRequest('/api/community/members?offset=0&limit=100').then(function(data) {
+        var countEl = document.getElementById('dashboardOnlineCount');
+        if (countEl && typeof data.online === 'number') countEl.innerHTML = '<span class="dashboard-online-dot"></span>' + data.online + ' online · ' + data.total + ' members';
+        var cards = {};
+        Array.prototype.forEach.call(grid.querySelectorAll('.dashboard-member-card'), function(card) { cards[card.getAttribute('data-username')] = card; });
+        (data.members || []).forEach(function(member) {
+            if (cards[member.username]) paintDashboardPresence(cards[member.username], member);
+        });
+    }).catch(function() {});
+}
+
 function buildDashboardCard(member) {
     var initials = (member.username || '?').split('_').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2) || (member.username || '?')[0].toUpperCase();
     var avatar = member.profile_picture
@@ -1410,10 +1450,9 @@ function buildDashboardCard(member) {
         ? '<span class="dashboard-perms-badge">' + escHtml(Array.isArray(member.account_permissions) ? member.account_permissions.join(', ') : member.account_permissions) + '</span>' : '';
     var speed = member.nameplate_speed ? parseFloat(member.nameplate_speed) : 1;
     var plateFilter = RWL.mediaFilterStyle(member.nameplate_filter);
-    var lastOnline = member.last_online ? new Date(member.last_online) : null;
-    var presenceKey = window.RWLPresence ? window.RWLPresence.statusOf(member) : (member.online ? 'online' : 'offline');
-    var presenceTexts = { online: 'Online now', dnd: 'Do Not Disturb', away: 'Away' };
-    var statusText = presenceTexts[presenceKey] ? presenceTexts[presenceKey] : (lastOnline && !isNaN(lastOnline.getTime()) ? 'Last online: ' + lastOnline.toLocaleDateString() : (member.member_since ? 'Member since ' + member.member_since : ''));
+    var presenceView = dashboardPresenceView(member);
+    var presenceKey = presenceView.key;
+    var statusText = presenceView.text;
     var card = document.createElement('div');
     card.className = 'dashboard-member-card rwl-plate-card' + (member.online ? ' online' : '');
     card.setAttribute('data-username', member.username || '');
@@ -1477,6 +1516,7 @@ async function loadDashboard(reset) {
 }
 
 function setupDashboard() {
+    if (!dashboardPresenceTimer) dashboardPresenceTimer = setInterval(refreshDashboardPresence, 30000);
     var search = document.getElementById('dashboardSearch');
     if (search) {
         var debounce = null;

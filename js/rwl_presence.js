@@ -44,8 +44,14 @@
         return state.idle;
     }
 
+    function effectiveSelf() {
+        if (!signedIn()) return 'offline';
+        if (state.forced) return state.selected;
+        return state.selected === 'online' && state.idle ? 'away' : state.selected;
+    }
+
     function current() {
-        return { selected: state.selected, effective: state.effective, forced: state.forced, idle: state.idle };
+        return { selected: state.selected, effective: effectiveSelf(), forced: state.forced, idle: state.idle };
     }
 
     function announce() {
@@ -206,6 +212,7 @@
         dotHtml: dotHtml,
         statusOf: statusOf,
         isIdle: isIdle,
+        effectiveSelf: effectiveSelf,
         idleAfter: function () { return state.idleAfter; },
         current: current,
         refresh: refresh,

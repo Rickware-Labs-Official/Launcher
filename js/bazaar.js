@@ -92,6 +92,12 @@
         return '<span class="bz-price">' + esc((listing.slots || []).length + ' ' + t('trade slots')) + '</span>';
     }
 
+    function sellerPresenceClass(seller) {
+        if (!seller) return '';
+        var status = window.RWLPresence ? window.RWLPresence.statusOf(seller) : (seller.online ? 'online' : 'offline');
+        return status === 'offline' ? '' : ' ' + status;
+    }
+
     function statusPill(listing) {
         if (listing.status === 'active') {
             if (listing.top_bidder_is_me) return '<span class="bz-pill bz-pill-good">' + esc(t('Highest bid')) + '</span>';
@@ -118,7 +124,7 @@
                 '<div class="bz-item-name" translate="no">' + esc(item.name || '') + '</div>' +
                 '<div class="bz-item-cat">' + esc(t(CATEGORY_LABELS[item.category] || '')) + (item.exclusive ? ' · <span class="bz-exclusive">' + esc(t('Exclusive')) + '</span>' : '') + '</div>' +
                 '<div class="bz-price-row">' + priceLine(listing) + '</div>' +
-                '<div class="bz-seller" translate="no"><span class="bz-seller-dot' + (listing.seller && listing.seller.online ? ' online' : '') + '"></span>' + personHtml(listing.seller) + statusPill(listing) + '</div>' +
+                '<div class="bz-seller" translate="no"><span class="bz-seller-dot' + sellerPresenceClass(listing.seller) + '"></span>' + personHtml(listing.seller) + statusPill(listing) + '</div>' +
             '</div>' +
         '</article>';
     }

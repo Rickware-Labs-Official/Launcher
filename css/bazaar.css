@@ -517,6 +517,16 @@ body.bz-guest #bzHistoryBtn {
     box-shadow: 0 0 6px rgba(34, 197, 94, 0.7);
 }
 
+.bz-seller-dot.away {
+    background: #f0b232;
+    box-shadow: 0 0 6px rgba(240, 178, 50, 0.7);
+}
+
+.bz-seller-dot.dnd {
+    background: #f23f43;
+    box-shadow: 0 0 6px rgba(242, 63, 67, 0.7);
+}
+
 .bz-pill {
     margin-left: auto;
     padding: 2px 7px;

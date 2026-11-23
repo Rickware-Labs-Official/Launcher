@@ -149,10 +149,14 @@
         badge.textContent = total > 99 ? '99+' : String(total);
     }
 
+    function presenceText(user) {
+        return global.RWLPresence ? global.RWLPresence.label(global.RWLPresence.statusOf(user)) : (user.online ? t('Online') : t('Offline'));
+    }
+
     function renderUser() {
         var identity = state.boot && state.boot.identity;
         if (!identity) return;
-        var presence = global.RWLPresence ? global.RWLPresence.current().selected : 'online';
+        var presence = global.RWLPresence ? global.RWLPresence.current().effective : 'online';
         var presenceDot = global.RWLPresence ? global.RWLPresence.dotHtml(presence) : '';
         var plate = social() && social().plateVideo ? social().plateVideo(identity, 'lc-plate-bg') : '';
         byId('lcUser').innerHTML = plate + '<button type="button" class="lc-user-main" data-user-action="profile" title="' + esc(t('Open your profile')) + '"><span class="lc-user-avatar">' + avatar(Object.assign({}, identity, { presence_status: presence }), 'lc-avatar-img') + '</span><span class="lc-user-text"><strong translate="no" style="' + esc(nameStyle(identity)) + '">' + esc(identity.username) + '</strong><small>' + esc(identity.account_type || 'User') + '</small></span></button>' +
@@ -205,7 +209,7 @@
         } else {
             var visible = state.homeTab === 'online' ? friends.filter(function (user) { return user.online; }) : friends;
             body = '<div class="lc-list-label">' + esc(state.homeTab === 'online' ? t('Online') : t('All Friends')) + ' — ' + visible.length + '</div>' +
-                (visible.length ? visible.map(function (user) { return friendRow(user, esc(user.online ? t('Online') : t('Offline')), actionButton('message', t('Message'), '') + actionButton('profile', t('Profile'), '') + actionButton('remove', t('Remove'), 'lc-btn-danger')); }).join('') : '<div class="lc-empty lc-empty-big">' + esc(state.homeTab === 'online' ? t('Nobody is online right now.') : t('You have no friends yet. Add one with the Add Friend tab.')) + '</div>');
+                (visible.length ? visible.map(function (user) { return friendRow(user, esc(presenceText(user)), actionButton('message', t('Message'), '') + actionButton('profile', t('Profile'), '') + actionButton('remove', t('Remove'), 'lc-btn-danger')); }).join('') : '<div class="lc-empty lc-empty-big">' + esc(state.homeTab === 'online' ? t('Nobody is online right now.') : t('You have no friends yet. Add one with the Add Friend tab.')) + '</div>');
         }
         view.innerHTML = '<header class="lc-view-head">' + ICONS.users + '<strong>' + esc(t('Friends')) + '</strong><span class="lc-head-line"></span><div class="lc-tabs">' + tabs.map(function (tab) {
             return '<button type="button" class="lc-tab' + (state.homeTab === tab[0] ? ' active' : '') + (tab[0] === 'add' ? ' lc-tab-add' : '') + '" data-home-tab="' + tab[0] + '" title="' + esc(t(tab[1])) + '">' + esc(t(tab[1])) + (tab[0] === 'pending' && pending ? '<span class="lc-pill">' + pending + '</span>' : '') + '</button>';

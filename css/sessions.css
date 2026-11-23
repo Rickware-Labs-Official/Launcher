@@ -240,8 +240,27 @@
 .session-field strong {
     font-size: 13px;
     color: var(--text-primary);
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 3px;
+    scrollbar-width: thin;
+    scrollbar-color: #9d4edd rgba(155, 0, 204, 0.12);
     transition: filter 0.25s;
+}
+
+.session-field strong::-webkit-scrollbar {
+    height: 5px;
+}
+
+.session-field strong::-webkit-scrollbar-track {
+    background: rgba(155, 0, 204, 0.12);
+    border-radius: 5px;
+}
+
+.session-field strong::-webkit-scrollbar-thumb {
+    background: #9d4edd;
+    border-radius: 5px;
 }
 
 .session-card.session-masked .session-field strong {
