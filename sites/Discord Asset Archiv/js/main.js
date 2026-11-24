@@ -241,8 +241,8 @@
         layout.parts.forEach((partItem) => {
             const partImage = createLazyImage(api.mediaUrl(assetItem.id, partItem.part, "original"), "frame-layer-part", assetItem.name);
             partImage.style.left = partItem.left_percent + "%";
-            partImage.style.top = !partItem.is_static && partItem.top_percent >= 50
-                ? "calc(" + partItem.top_percent + "% + var(--frame-bottom-offset, 0%))"
+            partImage.style.top = !partItem.is_static
+                ? "calc(" + partItem.top_percent + "% + var(" + (partItem.top_percent >= 50 ? "--frame-bottom-offset" : "--frame-top-offset") + ", 0%))"
                 : partItem.top_percent + "%";
             partImage.style.width = partItem.width_percent + "%";
             partImage.style.height = partItem.height_percent + "%";

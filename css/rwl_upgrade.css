@@ -822,6 +822,13 @@ body {
     margin-top: 2px;
 }
 
+.rwl-toggle-row .rwl-granted-by {
+    font-style: normal;
+    font-size: 11px;
+    color: #c97eff;
+    margin-left: 8px;
+}
+
 .rwl-toggle-row input {
     width: 18px;
     height: 18px;

@@ -19,6 +19,10 @@
     };
     var nativeFetch = global.fetch.bind(global);
     var refreshPromise = null;
+    var REFRESH_LOCK_NAME = 'rwl_refresh_token';
+    var TOKEN_CHANNEL_NAME = 'rwl_tokens';
+    var LOCK_SETTLE_MS = 250;
+    var ADOPT_MIN_SECONDS = 30;
     var SIGNING_KEY = 'rickware_signing_key';
     var TURNSTILE_ACTIONS = [[/\/api\/login$/, 'login'], [/\/api\/register$/, 'register'], [/\/api\/forgot_password$/, 'password_reset']];
     var UNSIGNED_BODY_MARKER = 'unsigned-multipart';
@@ -84,8 +88,53 @@
         } catch (error) {}
     }
 
+    function tokenExpiry(token) {
+        try {
+            var payload = String(token || '').split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            return Number(JSON.parse(atob(payload)).exp) || 0;
+        } catch (error) {
+            return 0;
+        }
+    }
+
+    function sharedTokens() {
+        if (!isRemembered()) return null;
+        var token = localStorage.getItem(TOKEN_KEY);
+        var refresh = localStorage.getItem(REFRESH_KEY);
+        if (!token || !refresh) return null;
+        var current = sessionStorage.getItem(TOKEN_KEY);
+        if (current && tokenSessionId(current) !== tokenSessionId(token)) return null;
+        return { token: token, refresh: refresh };
+    }
+
     function storedRefreshToken() {
-        return sessionStorage.getItem(REFRESH_KEY) || (isRemembered() ? localStorage.getItem(REFRESH_KEY) : null);
+        var shared = sharedTokens();
+        return shared ? shared.refresh : sessionStorage.getItem(REFRESH_KEY);
+    }
+
+    function adoptSharedTokens() {
+        var shared = sharedTokens();
+        if (!shared || shared.token === sessionStorage.getItem(TOKEN_KEY) || tokenExpiry(shared.token) - Date.now() / 1000 < ADOPT_MIN_SECONDS) return null;
+        sessionStorage.setItem(TOKEN_KEY, shared.token);
+        sessionStorage.setItem(REFRESH_KEY, shared.refresh);
+        return shared.token;
+    }
+
+    function adoptBroadcastTokens(message) {
+        var current = sessionStorage.getItem(TOKEN_KEY);
+        if (!message || typeof message.token !== 'string' || typeof message.refresh !== 'string' || !current) return;
+        var currentSession = tokenSessionId(current);
+        if (!currentSession || currentSession !== tokenSessionId(message.token) || message.token === current || tokenExpiry(message.token) < tokenExpiry(current)) return;
+        sessionStorage.setItem(TOKEN_KEY, message.token);
+        sessionStorage.setItem(REFRESH_KEY, message.refresh);
+    }
+
+    var tokenChannel = typeof global.BroadcastChannel === 'function' ? new global.BroadcastChannel(TOKEN_CHANNEL_NAME) : null;
+    if (tokenChannel) tokenChannel.onmessage = function (event) { adoptBroadcastTokens(event.data); };
+
+    function announceTokens(token, refreshToken) {
+        if (!tokenChannel || !token || !refreshToken) return;
+        try { tokenChannel.postMessage({ token: token, refresh: refreshToken }); } catch (error) {}
     }
 
     function storeTokens(token, refreshToken) {
@@ -108,33 +157,79 @@
         if (global.RWLI18n && global.RWLI18n.useVisitorLanguage) global.RWLI18n.useVisitorLanguage();
     }
 
-    function refreshAccessToken() {
-        if (refreshPromise) return refreshPromise;
-        var refreshToken = storedRefreshToken();
-        if (!refreshToken) return Promise.resolve(null);
-        refreshPromise = (async function () {
+    function exchangeRefreshToken(refreshToken) {
+        return nativeFetch(apiUrl('/api/refresh'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+            keepalive: true
+        });
+    }
+
+    async function performRefresh() {
+        var adopted = adoptSharedTokens();
+        if (adopted) return { token: adopted, transient: false };
+        var attempted = [];
+        var candidate = storedRefreshToken();
+        while (candidate && attempted.indexOf(candidate) < 0) {
+            attempted.push(candidate);
+            var response;
             try {
-                var response = await nativeFetch(apiUrl('/api/refresh'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ refresh_token: refreshToken })
-                });
-                if (!response.ok) {
-                    if (response.status === 401) clearSession();
-                    return null;
-                }
-                var data = await response.json();
-                if (!data || !data.token) return null;
+                response = await exchangeRefreshToken(candidate);
+            } catch (error) {
+                return { token: null, transient: true };
+            }
+            if (response.ok) {
+                var data = null;
+                try { data = await response.json(); } catch (error) { data = null; }
+                if (!data || !data.token) return { token: null, transient: true };
                 storeTokens(data.token, data.refresh_token);
                 if (data.session) applySession(data.session);
-                return data.token;
-            } catch (error) {
-                return null;
-            } finally {
-                setTimeout(function () { refreshPromise = null; }, 0);
+                announceTokens(data.token, data.refresh_token);
+                return { token: data.token, transient: false };
             }
-        })();
+            if (response.status !== 401) return { token: null, transient: true };
+            adopted = adoptSharedTokens();
+            if (adopted) return { token: adopted, transient: false };
+            candidate = storedRefreshToken();
+        }
+        clearSession();
+        return { token: null, transient: false };
+    }
+
+    function refreshOutcome() {
+        if (refreshPromise) return refreshPromise;
+        if (!storedRefreshToken()) return Promise.resolve({ token: null, transient: false });
+        refreshPromise = new Promise(function (resolve) {
+            var finish = function (outcome) {
+                resolve(outcome);
+                setTimeout(function () { refreshPromise = null; }, 0);
+            };
+            var task = async function () {
+                var outcome;
+                try {
+                    outcome = await performRefresh();
+                } catch (error) {
+                    outcome = { token: null, transient: true };
+                }
+                finish(outcome);
+                if (outcome.token) await new Promise(function (done) { setTimeout(done, LOCK_SETTLE_MS); });
+            };
+            if (global.navigator && global.navigator.locks && typeof global.navigator.locks.request === 'function') {
+                global.navigator.locks.request(REFRESH_LOCK_NAME, task).catch(function () { finish({ token: null, transient: true }); });
+            } else {
+                task();
+            }
+        });
         return refreshPromise;
+    }
+
+    function refreshAccessToken() {
+        return refreshOutcome().then(function (outcome) { return outcome.token; });
+    }
+
+    function sessionRenewalFailure() {
+        return new Response(JSON.stringify({ detail: 'Your session could not be renewed right now. Please try again in a moment.' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
     }
 
     function tokenSessionId(token) {
@@ -289,12 +384,16 @@
         if (response.status !== 401 || url.indexOf(RWL_API_BASE + '/api/') !== 0 || AUTH_ENDPOINT_PATTERN.test(url) || !token) {
             return response;
         }
-        var newToken = await refreshAccessToken();
-        if (!newToken) return response;
+        var retryToken = getToken();
+        if (!retryToken || retryToken === token) {
+            var outcome = await refreshOutcome();
+            if (!outcome.token) return outcome.transient ? sessionRenewalFailure() : response;
+            retryToken = outcome.token;
+        }
         var headers = new Headers((init && init.headers) || (input && input.headers) || undefined);
-        headers.set('Authorization', 'Bearer ' + newToken);
+        headers.set('Authorization', 'Bearer ' + retryToken);
         var retryInit = Object.assign({}, init || {}, { headers: headers });
-        return nativeFetch(url, await signedInit(url, retryInit, newToken));
+        return nativeFetch(url, await signedInit(url, retryInit, retryToken));
     };
 
     var fingerprintPromise = null;
@@ -608,6 +707,10 @@
     }
 
     restoreRememberedSession();
+
+    global.addEventListener('storage', function (event) {
+        if (event.key === TOKEN_KEY && event.newValue && sessionStorage.getItem(TOKEN_KEY)) adoptSharedTokens();
+    });
 
     function loadCompanion(fileName) {
         var current = document.currentScript || document.querySelector('script[src*="api_client.js"]');

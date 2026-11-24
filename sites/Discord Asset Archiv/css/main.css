@@ -781,6 +781,7 @@ html, body {
     min-height: 0;
     --frame-overlay-scale-x: 1.09;
     --frame-overlay-scale: 1.065;
+    --frame-top-offset: 1.5%;
     --frame-bottom-offset: 8%;
 }
 

@@ -35,6 +35,7 @@
     <link rel="preconnect" href="https://rickware-labs-api.apps.bot-hosting.cloud" crossorigin>
     <link rel="stylesheet" href="./css/main.css">
     <link rel="stylesheet" href="./css/rwl_social.css">
+    <link rel="stylesheet" href="./css/rwl_notification_center.css">
     <link rel="icon" type="image/webp" href="./images/main/logo.webp">
     <link rel="apple-touch-icon" href="./images/main/logo.webp">
 
@@ -273,6 +274,17 @@
                                 <button class="dropdown-checkout-btn" id="dropdownCheckoutBtn">Checkout</button>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="dropdown-wrapper rwl-nc-wrapper" id="notificationWrapper" style="display:none;">
+                        <button class="icon-action-btn rwl-nc-button" id="notificationBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Notifications" title="Notifications">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.7 21a2 2 0 0 1-3.4 0"></path>
+                            </svg>
+                            <span class="badge" id="notificationBadge" style="display:none;">0</span>
+                        </button>
+                        <div class="rwl-nc-panel" id="notificationPanel" role="region" aria-label="Notifications" hidden></div>
                     </div>
 
                     <div id="authButtons" style="display:flex;gap:10px;">
@@ -555,6 +567,7 @@
     <script src="./js/rwl_social.js"></script>
     <script src="./js/rwl_groups.js"></script>
     <script src="./js/rwl_gifts.js"></script>
+    <script src="./js/rwl_notification_center.js"></script>
 
     <script>
     (function() {
