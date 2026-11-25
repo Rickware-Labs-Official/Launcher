@@ -23,6 +23,7 @@
     if (extraPacks.indexOf('atlas') < 0) extraPacks.push('atlas');
     if (extraPacks.indexOf('apex') < 0) extraPacks.push('apex');
     if (extraPacks.indexOf('zenith') < 0) extraPacks.push('zenith');
+    if (extraPacks.indexOf('meridian') < 0) extraPacks.push('meridian');
 
     function readStorage(key) {
         try { return global.localStorage.getItem(key); } catch (error) { return null; }
@@ -486,6 +487,7 @@
     var PROTECTED_COLORS = { '184,184,200': true, '76,175,80': true, '59,130,246': true, '168,85,247': true, '245,158,11': true, '239,68,68': true, '255,0,255': true };
 
     var activeTheme = null;
+    var cssDrivenHue = false;
     var colorCache = new Map();
     var themedDeclarations = [];
     var processedSheets = typeof WeakSet === 'function' ? new WeakSet() : null;
@@ -599,7 +601,13 @@
         return 'rgba(' + rgb.join(', ') + ', ' + (Math.round(alpha * 1000) / 1000) + ')';
     }
 
-    function themedColor(token, theme) {
+    function dynamicColor(variable, offset, saturation, lightness, alpha) {
+        var hue = 'calc(var(' + variable + ') + ' + (Math.round(offset * 100) / 100) + 'deg)';
+        var body = hue + ' ' + (Math.round(saturation * 1000) / 10) + '% ' + (Math.round(lightness * 1000) / 10) + '%';
+        return 'hsl(' + body + (alpha === null ? '' : ' / ' + (Math.round(alpha * 1000) / 1000)) + ')';
+    }
+
+    function themedColor(token, theme, dynamic) {
         var parsed = parseColor(token);
         if (parsed.rgb.length !== 3 || parsed.rgb.some(isNaN) || PROTECTED_COLORS[parsed.rgb.join(',')]) return token;
         var hsl = rgbToHsl(parsed.rgb[0], parsed.rgb[1], parsed.rgb[2]);
@@ -609,13 +617,14 @@
         var targetHue = (dark ? theme.background_hue : theme.hue) + offset;
         var saturation = Math.max(0, Math.min(1, hsl[1] * theme.saturation / 100));
         var lightness = dark ? hsl[2] : Math.max(0, Math.min(1, hsl[2] + theme.lightness / 100));
+        if (dynamic) return dynamicColor(dark ? '--rwl-bg-hue' : '--rwl-fg-hue', offset, saturation, lightness, parsed.alpha);
         return formatColor(hslToRgb(targetHue, saturation, lightness), parsed.alpha, parsed.hex);
     }
 
     function transformColorToken(token) {
         var cached = colorCache.get(token);
         if (cached !== undefined) return cached;
-        var result = themedColor(token, activeTheme);
+        var result = themedColor(token, activeTheme, cssDrivenHue);
         colorCache.set(token, result);
         return result;
     }
@@ -916,6 +925,75 @@
         animationTimer = null;
     }
 
+    var HUE_PROPERTY_NAMES = ['--rwl-fg-hue', '--rwl-bg-hue'];
+    var HUE_ANIMATION_STYLE_ID = 'rwlThemeHueAnimation';
+    var HUE_EASING = 'cubic-bezier(0.37, 0, 0.63, 1)';
+    var HUE_LOW_FX_STEPS_PER_SECOND = 20;
+    var SCROLL_PAUSE_MS = 220;
+    var scrollPauseTimer = null;
+
+    function registerHueProperties() {
+        if (!global.CSS || typeof global.CSS.registerProperty !== 'function') return false;
+        for (var index = 0; index < HUE_PROPERTY_NAMES.length; index++) {
+            try {
+                global.CSS.registerProperty({ name: HUE_PROPERTY_NAMES[index], syntax: '<angle>', inherits: true, initialValue: '0deg' });
+            } catch (error) {
+                if (!error || error.name !== 'InvalidModificationError') return false;
+            }
+        }
+        return true;
+    }
+
+    function removeHueAnimation() {
+        var style = document.getElementById(HUE_ANIMATION_STYLE_ID);
+        if (style && style.parentNode) style.parentNode.removeChild(style);
+        document.documentElement.classList.remove('rwl-hue-driven');
+    }
+
+    function hueAnimationCss(theme) {
+        var animation = theme.animation;
+        var cycle = animation.mode === 'cycle';
+        var foreground = theme.hue;
+        var background = theme.background_hue;
+        var foregroundEnd = cycle ? foreground + 360 : animation.hue_to;
+        var backgroundEnd = cycle ? background + 360 : background + (animation.hue_to - foreground) * 0.6;
+        var duration = cycle ? animation.period_seconds : animation.period_seconds / 2;
+        var steps = Math.max(8, Math.round(duration * HUE_LOW_FX_STEPS_PER_SECOND));
+        var direction = cycle ? '' : ' alternate';
+        var timing = cycle ? 'linear' : HUE_EASING;
+        var base = 'html{--rwl-fg-hue:' + foreground + 'deg;--rwl-bg-hue:' + background + 'deg}';
+        var keyframes = '@keyframes rwlThemeHueShift{from{--rwl-fg-hue:' + foreground + 'deg;--rwl-bg-hue:' + background + 'deg}to{--rwl-fg-hue:' + foregroundEnd + 'deg;--rwl-bg-hue:' + backgroundEnd + 'deg}}';
+        var run = 'html.rwl-hue-driven{animation:rwlThemeHueShift ' + duration + 's ' + timing + ' infinite' + direction + '}';
+        var lowEffects = 'html.rwl-hue-driven.rwl-low-fx{animation-timing-function:steps(' + steps + ',end)}';
+        var scrolling = 'html.rwl-hue-driven.rwl-low-fx.rwl-hue-paused{animation-play-state:paused}';
+        var calm = 'html.rwl-hue-driven.rwl-user-reduced-fx{animation:none}';
+        return base + keyframes + run + lowEffects + scrolling + calm;
+    }
+
+    function installHueAnimation(theme) {
+        removeHueAnimation();
+        var style = document.createElement('style');
+        style.id = HUE_ANIMATION_STYLE_ID;
+        style.textContent = hueAnimationCss(theme);
+        (document.head || document.documentElement).appendChild(style);
+        document.documentElement.classList.add('rwl-hue-driven');
+    }
+
+    function pauseHueWhileScrolling() {
+        var root = document.documentElement;
+        if (!cssDrivenHue || !root.classList.contains('rwl-low-fx')) return;
+        root.classList.add('rwl-hue-paused');
+        if (scrollPauseTimer) clearTimeout(scrollPauseTimer);
+        scrollPauseTimer = setTimeout(function () {
+            root.classList.remove('rwl-hue-paused');
+            scrollPauseTimer = null;
+        }, SCROLL_PAUSE_MS);
+    }
+
+    ['scroll', 'wheel', 'touchmove'].forEach(function (eventName) {
+        global.addEventListener(eventName, pauseHueWhileScrolling, { passive: true, capture: true });
+    });
+
     function startThemeAnimation() {
         stopThemeAnimation();
         if (!activeTheme || !activeTheme.animation || reducedMotion()) return;
@@ -927,10 +1005,12 @@
         if (activeTheme && theme && activeTheme.item_id === theme.item_id && animationBase && JSON.stringify(animationBase) === JSON.stringify(theme)) return;
         if (activeTheme && theme && activeTheme.item_id === theme.item_id && !theme.animation && JSON.stringify(activeTheme) === JSON.stringify(theme)) return;
         stopThemeAnimation();
+        removeHueAnimation();
         animationBase = theme ? JSON.parse(JSON.stringify(theme)) : null;
         syncScene(theme);
         restoreDeclarations();
         colorCache = new Map();
+        cssDrivenHue = !!(theme && theme.animation && !reducedMotion() && registerHueProperties());
         activeTheme = theme;
         try { global.dispatchEvent(new CustomEvent('rwl-theme-applied', { detail: { theme: theme, persist: persist !== false } })); } catch (error) {}
         if (persist !== false) writeStorage(THEME_STORAGE_KEY, theme ? JSON.stringify(theme) : null);
@@ -944,7 +1024,9 @@
         themeAllSheets();
         themeTree(document.documentElement);
         startThemeObserver();
-        if (theme.animation) {
+        if (cssDrivenHue) {
+            installHueAnimation(theme);
+        } else if (theme.animation) {
             animationStep = ANIMATION_STEP_MS;
             startThemeAnimation();
         }

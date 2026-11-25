@@ -284,6 +284,40 @@ body {
     opacity: 0.85;
 }
 
+.lh-xp-note {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 209, 102, 0.4);
+    border-radius: 14px;
+    background: rgba(255, 209, 102, 0.06);
+    font-size: 13px;
+    opacity: 1;
+}
+
+.lh-xp-note p {
+    margin: 0;
+}
+
+.lh-xp-steps {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.lh-reveal-expired {
+    opacity: 0.7;
+    border-color: rgba(255, 107, 107, 0.55);
+}
+
+.lh-reveal-expired .lh-reveal-amount {
+    color: #ff8a8a;
+    text-decoration: line-through;
+}
+
 .lh-muted {
     color: var(--lh-text-3);
 }

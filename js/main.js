@@ -2261,7 +2261,7 @@ async function downloadSourceProduct(productId, button) {
         return;
     }
     if (button) button.disabled = true;
-    await RWLLauncher.runAction(productId);
+    await RWLLauncher.runAction(productId, 'source');
     if (button) button.disabled = false;
 }
 
@@ -5679,7 +5679,7 @@ function launchOwnedProduct(p, button) {
         return;
     }
     if (button) button.disabled = true;
-    RWLLauncher.runAction(p.product_id).then(function() {
+    RWLLauncher.runAction(p.product_id, ownedDownloadOnly(p) ? 'source' : 'program').then(function() {
         if (button) button.disabled = false;
         try { window.dispatchEvent(new CustomEvent('rwl-tool-launched', { detail: { product_id: p.product_id } })); } catch (error) {}
         if (typeof refreshToolState === 'function') setTimeout(refreshToolState, 2500);

@@ -552,7 +552,7 @@
         prism: ['rwlFxPrism', 1, 'ease-in-out']
     };
     var EFFECT_SIZES = { shimmer: 200, chrome: 160, plasma: 400, aurora: 500, lava: 500, matrix: 400, tide: 240 };
-    var EFFECT_TIMINGS = { plasma: 'ease-in-out', aurora: 'ease-in-out', lava: 'ease-in-out', tide: 'ease-in-out', matrix: 'steps(14)' };
+    var EFFECT_TIMINGS = { plasma: 'linear', aurora: 'linear', lava: 'linear', tide: 'linear', matrix: 'linear' };
     var EFFECT_DIRECTIONS = { plasma: 'alternate', aurora: 'alternate', lava: 'alternate', tide: 'alternate' };
     var EFFECT_SPEEDS = { shimmer: 0.7, chrome: 0.8, matrix: 0.9, lava: 2.2, aurora: 2, plasma: 1.5, tide: 1.4 };
 
@@ -564,6 +564,11 @@
         if (effect === 'fire') return ['#fff3b0', '#ffb703', '#fb5607', '#d00000'].concat(colors.slice(0, 1));
         if (effect === 'ice') return ['#ffffff', '#caf0f8', '#48cae4'].concat(colors.slice(0, 1));
         return colors;
+    }
+
+    function seamlessStops(stops, effect) {
+        if (EFFECT_DIRECTIONS[effect] || stops.length < 2) return stops;
+        return stops[0].toLowerCase() === stops[stops.length - 1].toLowerCase() ? stops : stops.concat([stops[0]]);
     }
 
     function directedAnimation(direction) {
@@ -597,7 +602,7 @@
         } else {
             var vertical = chosen === 'ttb' || chosen === 'btt';
             var angle = effect === 'plasma' ? 45 : DIRECTION_ANGLES[chosen];
-            background = 'background-image:linear-gradient(' + angle + 'deg,' + stops.join(',') + ');background-size:' + (vertical ? '100% ' + size + '%' : size + '% 100%') + ';';
+            background = 'background-image:linear-gradient(' + angle + 'deg,' + seamlessStops(stops, effect).join(',') + ');background-size:' + (vertical ? '100% ' + size + '%' : size + '% 100%') + ';';
         }
         var animations = [directedAnimation(chosen) + ' ' + duration + 's ' + timing + ' infinite' + iteration];
         var overlay = EFFECT_OVERLAYS[effect];

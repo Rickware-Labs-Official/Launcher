@@ -1250,7 +1250,12 @@
         } else if (part !== 'name_color') {
             html += rangeField('Hue', part + '.hue', value.hue, filters.hue || [-180, 180], 1, '°') + rangeField('Saturation', part + '.saturation', value.saturation, filters.saturation || [0, 300], 1, '%') + rangeField('Brightness', part + '.brightness', value.brightness, filters.brightness || [50, 150], 1, '%');
         }
-        return html + rangeField('Speed', part + '.speed', value.speed, filters.speed || [0.5, 2], 0.25, 'x') + '</div>';
+        var speedRange = filters.speed || [0.5, 2];
+        if (part === 'name_color') {
+            var chosen = findOwned('name_color', value.item_id) || {};
+            if (chosen.animated && chosen.gradient) speedRange = [Math.max(1, speedRange[0]), speedRange[1]];
+        }
+        return html + rangeField('Speed', part + '.speed', value.speed, speedRange, 0.25, 'x') + '</div>';
     }
 
     function socialsHtml() {
@@ -1306,7 +1311,7 @@
                     '<button type="button" class="lh-btn" id="lhCardAnimate" title="Render the animated version of your current design">Preview Animation</button>' +
                     '<button type="button" class="lh-btn" id="lhCardDownload" title="Save the card as an image file" disabled>Download</button>' +
                     '<button type="button" class="lh-btn" id="lhCardCopy" title="Copy the image to your clipboard" disabled>Copy Image</button>' +
-                    '<button type="button" class="lh-btn" id="lhCardShare" title="Post your saved card in the showcase channel of our Discord server">Post To Discord</button>' +
+                    '<button type="button" class="lh-btn" id="lhCardShare" title="Our Discord bot sends your saved card to you as a private message. Needs a linked Discord account and a seat in our server.">Share To Discord</button>' +
                     '<button type="button" class="lh-btn" id="lhCardReset" title="Go back to the default card design">Reset Design</button>' +
                 '</div></div>' +
             '<div class="lh-card-side"><h2 class="lh-section-title">Profile Card</h2><p class="lh-section-hint">Design your own card. Cards with animated parts are created as a looping GIF, everything else as a PNG.</p><div id="lhCardEditor">' + empty('Loading...') + '</div></div></section>';
@@ -1641,27 +1646,44 @@
     }
 
     async function shareCard(button) {
-        if (cardState.dirty) {
-            toast(t('Save your card first. Only the saved design is posted.'), 'error');
+        if (state.hub && state.hub.discord_linked === false) {
+            toast(t('Link your Discord account in your account settings to share your card.'), 'error');
             return;
         }
-        var confirmed = await confirmDialog(t('Post To Discord'), t('Your profile card will be posted publicly in our Discord server. Continue?'));
+        if (cardState.dirty) {
+            toast(t('Save your card first. Only the saved design is shared.'), 'error');
+            return;
+        }
+        var confirmed = await confirmDialog(t('Share To Discord'), t('Our Discord bot will send your saved profile card to you as a private message. Continue?'));
         if (!confirmed) return;
         button.disabled = true;
         try {
             await api('/card/share', { method: 'POST' });
-            toast(t('Your card was posted on Discord!'));
+            toast(t('Your card was sent to your Discord direct messages!'));
         } catch (error) {
-            failure(error, t('The card could not be posted.'));
+            failure(error, t('The card could not be shared.'));
         } finally {
             button.disabled = false;
         }
+    }
+
+    function codeXpNoteHtml() {
+        if (state.hub.discord_linked !== false) return '';
+        return '<section class="lh-card lh-section"><div class="lh-note lh-discord-note lh-xp-note" role="note">' +
+            '<p><strong>Redeem codes can contain XP.</strong></p>' +
+            '<p>XP in a code expires automatically when you redeem it without a linked Discord account.</p>' +
+            '<p>Link your Discord account manually in your account settings before you redeem:</p>' +
+            '<ol class="lh-xp-steps"><li>Open your account settings and find the card Link Your Discord Account.</li>' +
+            '<li>Enter your Discord user ID. You find it in Discord under Settings, Advanced: turn on Developer Mode, then right-click your name and choose Copy User ID.</li>' +
+            '<li>Press Link Account and confirm the message our bot sends you in your Discord direct messages.</li></ol>' +
+            '<a href="./account_settings.html" class="lh-link">Open Account Settings</a></div></section>';
     }
 
     function renderCodes(content) {
         var history = state.hub.codes || [];
         content.innerHTML =
             section('Redeem A Code', '<form class="lh-code-form" id="lhCodeForm" autocomplete="off"><input type="text" id="lhCodeInput" class="lh-input lh-code-input" maxlength="40" placeholder="XXXX-XXXX-XXXX" spellcheck="false" autocapitalize="characters"><button type="submit" class="lh-btn lh-btn-primary" title="Redeem this code">Redeem</button></form><div class="lh-reward" id="lhCodeResult" hidden></div>', '', 'Codes are handed out during Discord events and giveaways. Every code works once per account.') +
+            codeXpNoteHtml() +
             section('Redeemed Codes', history.length ? '<ul class="lh-list">' + history.map(function (entry) {
                 return '<li class="lh-list-row"><span><b class="lh-mono" translate="no">' + esc(entry.code) + '</b> <span class="lh-muted">' + esc(entry.summary) + '</span></span><small>' + esc(formatDate(entry.redeemed_at)) + '</small></li>';
             }).join('') + '</ul>' : empty('You have not redeemed any codes yet.'));
@@ -1723,10 +1745,11 @@
 
     function revealCurrencyBox(entry, index) {
         var meta = CODE_CURRENCIES[entry.type] || ['🎉', entry.type];
-        return '<div class="lh-reveal-box lh-reveal-currency" style="--lh-reveal-delay:' + revealDelay(index) + 'ms">' +
+        return '<div class="lh-reveal-box lh-reveal-currency' + (entry.expired ? ' lh-reveal-expired' : '') + '" style="--lh-reveal-delay:' + revealDelay(index) + 'ms">' +
             '<span class="lh-reveal-icon">' + meta[0] + '</span>' +
-            '<strong class="lh-reveal-amount">+' + formatNumber(entry.amount) + '</strong>' +
+            '<strong class="lh-reveal-amount">' + (entry.expired ? '' : '+') + formatNumber(entry.amount) + '</strong>' +
             '<span class="lh-reveal-label">' + esc(meta[1]) + '</span>' +
+            (entry.expired ? '<small class="lh-reveal-note">Expired, no linked Discord account</small>' : '') +
         '</div>';
     }
 

@@ -220,7 +220,7 @@
         });
     }
 
-    function runAction(productId) {
+    function runAction(productId, kind) {
         if (!isLauncher()) {
             notify('Open the Rickware - Labs© Launcher to install and start tools.', 'info');
             return Promise.resolve(null);
@@ -229,6 +229,13 @@
             if (!status || !status.connected) throw new Error('Please log in to use the launcher.');
             return refreshTools();
         }).then(function () {
+            if (kind === 'source') {
+                notify('Downloading the source code, please wait...', 'info');
+                return call('installTool', { product_id: productId }).then(function () {
+                    notify('The source code was downloaded and verified.', 'success');
+                    return 'downloaded';
+                });
+            }
             var state = toolState(productId);
             if (state === 'running') {
                 return call('stopTool', { product_id: productId }).then(function () {
@@ -313,7 +320,7 @@
             button.dataset.busy = '1';
             button.disabled = true;
             button.innerHTML = ICONS.busy + ' ' + plain('Working...');
-            runAction(product.product_id).then(function () {
+            runAction(product.product_id, kind === 'source' ? 'source' : 'program').then(function () {
                 button.dataset.busy = '';
                 button.disabled = false;
                 updateModalButton();

@@ -358,7 +358,7 @@
 
     function cosmeticSlotHtml(catalogKey, item, owned, equipped, fresh) {
         var classes = 'inv-slot inv-slot-item inv-slot-visible' + (owned ? '' : ' inv-slot-locked') + (equipped ? ' inv-slot-equipped' : '') + (fresh ? ' inv-slot-new' : '') + ' inv-slot-' + catalogKey.replace(/_/g, '-');
-        var settings = itemSettings(catalogKey, item.item_id);
+        var settings = itemSettings(catalogKey, item.item_id, speedMinimum(item));
         var filterAttribute = FILTER_CATALOGS[catalogKey] ? mediaFilterAttribute(settingsFilter(settings)) : '';
         var visual;
         if (catalogKey === 'name_colors') {
@@ -426,10 +426,16 @@
         }
     }
 
-    function itemSettings(catalogKey, itemId) {
+    function speedMinimum(item) {
+        var minimum = parseFloat(item && item.speed_min);
+        return isNaN(minimum) ? 0.5 : Math.max(0.5, Math.min(1, minimum));
+    }
+
+    function itemSettings(catalogKey, itemId, minimum) {
         var stored = ((state.inventory && state.inventory.cosmetic_settings) || {})[catalogKey + ':' + itemId];
+        var floor = minimum === undefined ? 0.5 : minimum;
         return {
-            speed: stored && stored.speed ? Math.max(0.5, Math.min(2, parseFloat(stored.speed) || 1)) : 1,
+            speed: stored && stored.speed ? Math.max(floor, Math.min(2, parseFloat(stored.speed) || 1)) : 1,
             direction: stored && stored.direction ? stored.direction : 'ltr',
             colors: stored && Array.isArray(stored.colors) ? stored.colors : [],
             hue: settingNumber(stored, 'hue', 0),
@@ -769,11 +775,11 @@
             var color = stack.state === 'active' ? '#22c55e' : '#ef4444';
             var launchable = stack.state === 'active' && stack.product_id && window.RWLLauncher && RWLLauncher.isLauncher();
             var action = launchable
-                ? ' data-launch-product="' + esc(stack.product_id) + '" title="Click to install or start this tool in the launcher"'
+                ? ' data-launch-product="' + esc(stack.product_id) + '"' + (stack.download_only ? ' data-launch-kind="source" title="Click to download the source code in the launcher"' : ' title="Click to install or start this tool in the launcher"')
                 : ' data-copy="' + esc(first.license_key) + '" title="Click to copy the license key"';
             var entries = (stack.keys || []).map(function(entry) { return { value: entry.license_key, until: entry.expires_at }; });
             return '<div class="inv-slot inv-slot-item inv-slot-wide inv-slot-stackable"' + action + ' style="border-color:' + color + ';">' + stackCounter(stack.count) +
-                '<div class="inv-slot-text"><strong>' + esc(stack.product_name) + '</strong><br>' + esc(stack.duration || '') + '<br><span style="color:' + color + ';">' + status + '</span> · ' + esc(expiry) + (launchable ? '<br>▶ Install / Launch' : '') + '</div>' +
+                '<div class="inv-slot-text"><strong>' + esc(stack.product_name) + '</strong><br>' + esc(stack.duration || '') + '<br><span style="color:' + color + ';">' + status + '</span> · ' + esc(expiry) + (launchable ? (stack.download_only ? '<br>Download' : '<br>▶ Install / Launch') : '') + '</div>' +
                 stackKeyList(entries, 'license key') +
             '</div>';
         }).join('');
@@ -1296,7 +1302,7 @@
         var item = selectedConfigItem(itemId);
         if (!bar || !cosmetic || !item) return;
         releaseMedia(bar);
-        var settings = itemSettings(cosmetic.catalog, itemId);
+        var settings = itemSettings(cosmetic.catalog, itemId, speedMinimum(item));
         var directionHtml = '';
         if (cosmetic.catalog === 'name_colors') {
             directionHtml = '<label class="inv-config-field"><span>Direction</span><select id="invConfigDirection" title="Choose the direction of the animation">' + Object.keys(DIRECTION_LABELS).map(function(key) {
@@ -1306,7 +1312,7 @@
         var editable = COLOR_CATALOGS[cosmetic.catalog] || FILTER_CATALOGS[cosmetic.catalog];
         bar.innerHTML = '<div class="inv-config-name" translate="no">' + esc(item.name) + '</div>' +
             configPreviewHtml(cosmetic.catalog, item, settings) +
-            '<label class="inv-config-field"><span>Speed <strong id="invConfigSpeedValue">' + settings.speed.toFixed(2) + 'x</strong></span><input type="range" id="invConfigSpeed" min="0.5" max="2" step="0.25" value="' + settings.speed + '" title="Change the animation speed"></label>' +
+            '<label class="inv-config-field"><span>Speed <strong id="invConfigSpeedValue">' + settings.speed.toFixed(2) + 'x</strong></span><input type="range" id="invConfigSpeed" min="' + speedMinimum(item) + '" max="2" step="0.25" value="' + settings.speed + '" title="' + (speedMinimum(item) >= 1 ? 'Make the color fade faster, the normal speed keeps it smooth' : 'Change the animation speed') + '"></label>' +
             directionHtml +
             (cosmetic.catalog === 'launcher_themes' && item.sound_url ? '<div class="rwl-sound-slot"></div>' : '') +
             (COLOR_CATALOGS[cosmetic.catalog] ? configColorsHtml(item, settings) : '') +
@@ -1504,7 +1510,7 @@
 
     function previewCosmetics(catalogKey, item) {
         var equipped = Object.assign({}, (state.inventory && state.inventory.equipped_cosmetics) || {});
-        var settings = itemSettings(catalogKey, item.item_id);
+        var settings = itemSettings(catalogKey, item.item_id, speedMinimum(item));
         if (catalogKey === 'nameplates') {
             equipped.nameplate_url = item.asset_url;
             equipped.nameplate_speed = settings.speed;
@@ -1744,7 +1750,7 @@
             if (launchSlot) {
                 if (launchSlot.classList.contains('inv-slot-busy')) return;
                 launchSlot.classList.add('inv-slot-busy');
-                RWLLauncher.runAction(launchSlot.getAttribute('data-launch-product')).then(function() {
+                RWLLauncher.runAction(launchSlot.getAttribute('data-launch-product'), launchSlot.getAttribute('data-launch-kind') === 'source' ? 'source' : 'program').then(function() {
                     launchSlot.classList.remove('inv-slot-busy');
                 });
                 return;

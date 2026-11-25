@@ -6047,6 +6047,11 @@ html.rwl-user-reduced-fx .launcher-platform-card {
     transition: transform 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.product-img-count-badge ~ .tool-fav-btn,
+.product-image-area:has(.product-img-count-badge) .tool-fav-btn {
+    top: 42px;
+}
+
 .tool-fav-btn:hover {
     transform: scale(1.12);
     color: #ffd166;
