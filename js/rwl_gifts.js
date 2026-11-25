@@ -62,6 +62,7 @@
             var selected = state.selected && state.selected.item_id === item.item_id && state.selected.category === state.category;
             return '<button type="button" class="rwl-gift-item' + (item.giftable ? '' : ' rwl-gift-locked') + (selected ? ' selected' : '') + '" data-gift-item="' + esc(item.item_id) + '"' + (item.giftable ? '' : ' aria-disabled="true"') + ' title="' + esc(item.giftable ? (item.source_label ? t('Origin') + ': ' + t(item.source_label) : '') : reason) + '">' +
                 itemPreview(item) +
+                (item.owned_count > 1 ? '<span class="rwl-gift-count" title="' + esc(t('You own this item several times')) + '">×' + item.owned_count + '</span>' : '') +
                 '<span class="rwl-gift-name" translate="no">' + esc(item.name || item.item_id) + '</span>' +
                 '<span class="rwl-gift-rarity" style="color:' + esc(RWL.rarityColor ? RWL.rarityColor(item.rarity) : '#e0aaff') + '">' + esc(t(item.rarity || 'Common')) + '</span>' +
                 (item.giftable ? '' : '<span class="rwl-gift-lock">' + esc(item.recipient_owns ? t('Owned') : t('Bound')) + '</span>') +
@@ -69,13 +70,14 @@
         }).join('') : '<div class="rwl-gift-empty">' + esc(t('No items in this category.')) + '</div>';
         var more = items.length > state.limit ? '<button type="button" class="rwl-btn rwl-btn-secondary rwl-gift-more" data-gift-more>' + esc(t('Show more')) + ' (' + (items.length - state.limit) + ')</button>' : '';
         var selectedText = state.selected ? t('Selected') + ': ' + (state.selected.name || state.selected.item_id) : t('Choose an item to gift.');
+        var leftText = state.selected ? t('Left after sending: ' + leftAfter(state.selected)) : '';
         overlay.querySelector('[data-gift-body]').innerHTML =
             (state.data.staff_mode ? '<div class="rwl-gift-note">' + esc(t('As a team member you gift without losing the item. Team gifts arrive bound to the account.')) + '</div>' : '<div class="rwl-gift-note">' + esc(t('Only items from the Lab-Pass, Mystery Chests, Experiment Crates, the Lab Bazaar or gifts from members can be gifted. Grey items are bound to your account.')) + '</div>') +
             (state.data.recipient.owns_everything ? '<div class="rwl-gift-note rwl-gift-warning">' + esc(t('This member already owns every item.')) + '</div>' : '') +
             '<div class="rwl-gift-tabs">' + tabs + '</div>' +
             '<input type="search" class="rwl-input rwl-gift-search" data-gift-search maxlength="60" placeholder="' + esc(t('Search items')) + '" value="' + esc(state.query) + '">' +
             '<div class="rwl-gift-grid">' + grid + '</div>' + more +
-            '<div class="rwl-gift-footer"><span class="rwl-gift-selected" translate="no">' + esc(selectedText) + '</span>' +
+            '<div class="rwl-gift-footer"><span class="rwl-gift-selected" translate="no">' + esc(selectedText) + '</span>' + (leftText ? '<span class="rwl-gift-left">' + esc(leftText) + '</span>' : '') +
             '<input type="text" class="rwl-input rwl-gift-message" data-gift-note maxlength="200" placeholder="' + esc(t('Add a note (optional)')) + '">' +
             '<button type="button" class="rwl-btn rwl-btn-gift" data-gift-send' + (state.selected && !state.sending ? '' : ' disabled') + '>' + icon('gift', 15) + ' ' + esc(t('Send Gift')) + '</button></div>';
         var search = overlay.querySelector('[data-gift-search]');
@@ -83,6 +85,11 @@
             search.focus();
             search.setSelectionRange(search.value.length, search.value.length);
         }
+    }
+
+    function leftAfter(item) {
+        var owned = Math.max(1, parseInt(item && item.owned_count, 10) || 1);
+        return state.data && state.data.staff_mode ? owned : Math.max(0, owned - 1);
     }
 
     function close() {
@@ -96,14 +103,14 @@
         if (!state.selected || state.sending) return;
         var note = state.overlay.querySelector('[data-gift-note]');
         var noteText = note ? note.value.trim() : '';
-        var question = t('Send') + ' "' + (state.selected.name || state.selected.item_id) + '" ' + t('to') + ' ' + state.username + '?' + (state.data.staff_mode ? '' : ' ' + t('The item leaves your inventory.'));
+        var question = t('Send') + ' "' + (state.selected.name || state.selected.item_id) + '" ' + t('to') + ' ' + state.username + '?' + (state.data.staff_mode ? '' : ' ' + t('The item leaves your inventory.')) + ' ' + t('Left after sending: ' + leftAfter(state.selected));
         var confirmed = global.RWLDialog && global.RWLDialog.confirm ? await global.RWLDialog.confirm({ title: t('Send Gift'), message: question, confirmText: t('Send Gift') }) : global.confirm(question);
         if (!confirmed) return;
         state.sending = true;
         render();
         try {
-            await RWL.apiRequest('/api/gifts/send', { method: 'POST', body: { username: state.username, category: state.selected.category, item_id: state.selected.item_id, note: noteText || null } });
-            notify(t('Gift sent to') + ' ' + state.username + '.', 'success');
+            var sent = await RWL.apiRequest('/api/gifts/send', { method: 'POST', body: { username: state.username, category: state.selected.category, item_id: state.selected.item_id, note: noteText || null } });
+            notify(t('Gift sent to') + ' ' + state.username + '. ' + (sent && typeof sent.remaining === 'number' ? t('Left in your inventory: ' + sent.remaining) : ''), 'success');
             close();
         } catch (error) {
             state.sending = false;

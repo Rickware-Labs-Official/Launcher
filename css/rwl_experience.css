@@ -201,6 +201,12 @@ html.rwl-low-fx .dashboard-online-dot {
 
 .rwl-sound-field input[type="range"] { width: 100%; }
 
+.rwl-sound-status {
+    font-size: 11px;
+    line-height: 1.4;
+    color: #b79be0;
+}
+
 .rwl-sound-mute {
     display: inline-flex;
     align-items: center;

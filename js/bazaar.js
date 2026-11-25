@@ -370,6 +370,7 @@
 
     function itemTile(item, selected, attribute) {
         return '<button type="button" class="bz-pick' + (selected ? ' bz-pick-selected' : '') + '" ' + attribute + ' title="' + esc(item.name + ' · ' + item.rarity) + '" style="--rwl-keep:1;border-color:' + esc(RWL.rarityColor(item.rarity)) + '88;">' +
+            (item.owned_count > 1 ? '<span class="bz-count" title="' + esc(t('You own this item several times')) + '">×' + item.owned_count + '</span>' : '') +
             '<div class="bz-mini-visual">' + itemVisual(item) + '</div><span translate="no">' + esc(item.name) + '</span></button>';
     }
 
@@ -458,7 +459,8 @@
         var data = state.sellable;
         var item = draft.item;
         var xpAllowed = data.discord_linked;
-        var form = '<div class="bz-sell-kinds">' +
+        var ownedCount = Math.max(1, parseInt(item && item.owned_count, 10) || 1);
+        var form = '<p class="bz-note bz-owned-note">' + esc(t('You own ' + ownedCount + ' · ' + (data.staff_mode ? ownedCount : ownedCount - 1) + ' left after listing')) + '</p><div class="bz-sell-kinds">' +
             ['fixed', 'auction', 'trade'].map(function (kind) { return '<button type="button" class="bz-chip' + (draft.kind === kind ? ' active' : '') + '" data-kind="' + kind + '">' + esc({ fixed: t('Fixed Price'), auction: t('Auction'), trade: t('Trade') }[kind]) + '</button>'; }).join('') + '</div>';
         if (draft.kind !== 'trade') {
             form += '<div class="bz-form-grid">' +
@@ -617,8 +619,8 @@
         var button = event.currentTarget;
         button.disabled = true;
         try {
-            await api('/listings', { method: 'POST', body: payload });
-            toast(t('Your listing is live.'), 'success');
+            var created = await api('/listings', { method: 'POST', body: payload });
+            toast(t('Your listing is live.') + (created && typeof created.remaining === 'number' ? ' ' + t('Left in your inventory: ' + created.remaining) : ''), 'success');
             closeModal();
             state.tab = 'mine';
             syncTabs();

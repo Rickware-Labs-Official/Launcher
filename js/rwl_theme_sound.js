@@ -9,22 +9,39 @@
     var CHANNEL_NAME = 'rwl_theme_sound';
     var CACHE_NAME = 'rwl-theme-sound-v1';
     var TIMELINE_STALE_MS = 1800000;
-    var HEARTBEAT_MS = 3000;
-    var OWNER_STALE_MS = 9000;
-    var RESYNC_TOLERANCE_SECONDS = 1.2;
-    var RETRY_DELAYS_MS = [800, 2000, 5000, 12000];
+    var HEARTBEAT_MS = 2000;
+    var OWNER_STALE_MS = 7000;
+    var RECONCILE_MS = 1500;
+    var SETTINGS_WAIT_MS = 2500;
+    var METADATA_WAIT_MS = 4000;
+    var RESYNC_TOLERANCE_SECONDS = 0.4;
+    var RETRY_DELAYS_MS = [1000, 2500, 6000, 15000];
+    var DENIED_RETRY_MS = 30000;
     var GESTURES = ['pointerdown', 'keydown', 'touchend', 'click'];
+    var STATUS_TEXT = {
+        loading: 'Loading the theme sound',
+        playing: 'Playing',
+        standby: 'Playing in another window',
+        blocked: 'Click anywhere on the page to start the theme sound',
+        failed: 'The theme sound could not be loaded, trying again'
+    };
     var tabId = Math.random().toString(36).slice(2) + Date.now().toString(36);
     var channel = typeof global.BroadcastChannel === 'function' ? new global.BroadcastChannel(CHANNEL_NAME) : null;
     var audio = null;
     var activeUrl = null;
     var activeThemeId = null;
     var objectUrl = null;
-    var sourceToken = 0;
+    var loadedUrl = null;
+    var loadEntry = null;
+    var failureCount = 0;
+    var retryAt = 0;
     var themeSettings = {};
     var loaded = false;
+    var settingsRequest = null;
     var waitingForGesture = false;
+    var playBusy = false;
     var isOwner = false;
+    var status = 'idle';
     var heartbeatTimer = null;
     var saveTimers = {};
 
@@ -50,11 +67,13 @@
 
     function announce() {
         var current = settingsFor(activeThemeId);
-        try { global.dispatchEvent(new CustomEvent('rwl-theme-sound-change', { detail: { theme_id: activeThemeId, volume: current.volume, muted: current.muted, active: !!activeUrl } })); } catch (error) {}
+        try { global.dispatchEvent(new CustomEvent('rwl-theme-sound-change', { detail: { theme_id: activeThemeId, volume: current.volume, muted: current.muted, active: !!activeUrl, status: status } })); } catch (error) {}
     }
 
-    function dndActive() {
-        return global.RWLPresence && global.RWLPresence.current().selected === 'dnd';
+    function setStatus(next) {
+        if (status === next) return;
+        status = next;
+        announce();
     }
 
     function readJson(key) {
@@ -87,9 +106,8 @@
         return entry;
     }
 
-    function touchTimeline(anchor) {
-        var entry = readTimeline();
-        writeJson(TIMELINE_KEY, { id: activeThemeId, anchor: anchor !== undefined ? anchor : (entry ? entry.anchor : Date.now()), seen: Date.now() });
+    function writeTimeline(anchor) {
+        writeJson(TIMELINE_KEY, { id: activeThemeId, anchor: anchor, seen: Date.now() });
     }
 
     function timelinePosition(duration) {
@@ -99,15 +117,16 @@
         return isFinite(duration) && duration > 0 ? seconds % duration : seconds;
     }
 
-    function syncToTimeline(element) {
+    function syncToTimeline(element, tolerance) {
         if (!isFinite(element.duration) || element.duration <= 0) return;
         var wanted = timelinePosition(element.duration);
-        if (wanted === null || Math.abs(element.currentTime - wanted) <= RESYNC_TOLERANCE_SECONDS) return;
+        if (wanted === null || Math.abs(element.currentTime - wanted) <= tolerance) return;
         try { element.currentTime = wanted; } catch (error) {}
     }
 
-    function onAudioPlaying() {
-        if (!readTimeline()) touchTimeline(Date.now() - audio.currentTime * 1000);
+    function refreshAnchor() {
+        if (!audio || audio.paused || audio.seeking || audio.readyState < 3 || !isFinite(audio.currentTime)) return;
+        writeTimeline(Date.now() - audio.currentTime * 1000);
     }
 
     function ensureAudio() {
@@ -118,17 +137,31 @@
         audio.controls = false;
         audio.disableRemotePlayback = true;
         if (audio.controlsList) audio.controlsList.add('nodownload');
-        audio.addEventListener('loadedmetadata', function () { syncToTimeline(audio); });
         audio.addEventListener('playing', onAudioPlaying);
         audio.addEventListener('error', onAudioError);
         return audio;
     }
 
+    function onAudioPlaying() {
+        failureCount = 0;
+        retryAt = 0;
+        refreshAnchor();
+        setStatus('playing');
+    }
+
     function onAudioError() {
-        if (!activeUrl || !audio || !audio.getAttribute('data-source')) return;
-        audio.removeAttribute('data-source');
+        if (!activeUrl || !audio || !audio.getAttribute('src')) return;
+        loadedUrl = null;
         releaseObjectUrl();
-        setTimeout(function () { if (isOwner && activeUrl) play(); }, 2000);
+        purgeCachedSounds();
+        registerFailure(0);
+    }
+
+    function registerFailure(httpStatus) {
+        failureCount += 1;
+        var denied = httpStatus === 403 || httpStatus === 404;
+        retryAt = Date.now() + (denied ? DENIED_RETRY_MS : RETRY_DELAYS_MS[Math.min(failureCount - 1, RETRY_DELAYS_MS.length - 1)]);
+        setStatus('failed');
     }
 
     function removeGestureListeners() {
@@ -181,56 +214,95 @@
         try { await global.caches.delete(CACHE_NAME); } catch (error) {}
     }
 
-    async function obtainSound(url) {
+    async function downloadSound(url) {
         var cached = await readCachedSound(url);
         if (cached) return cached;
-        for (var attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
-            try {
-                var response = await global.fetch(url, { method: 'GET', headers: RWL.authHeaders(), cache: 'no-store', credentials: 'omit' });
-                if (response.ok) {
-                    var copy = response.clone();
-                    var blob = await response.blob();
-                    writeCachedSound(url, copy);
-                    return blob;
-                }
-                if (response.status === 401 || response.status === 403 || response.status === 404) return null;
-            } catch (error) {}
-            if (url !== activeUrl || attempt === RETRY_DELAYS_MS.length) return null;
-            await pause(RETRY_DELAYS_MS[attempt]);
-            if (url !== activeUrl) return null;
+        var response = await global.fetch(url, { method: 'GET', headers: RWL.authHeaders(), cache: 'no-store', credentials: 'omit' });
+        if (!response.ok) {
+            var failure = new Error('The theme sound request failed');
+            failure.status = response.status;
+            throw failure;
         }
-        return null;
+        var copy = response.clone();
+        var blob = await response.blob();
+        writeCachedSound(url, copy);
+        return blob;
     }
 
-    async function ensureSource(element) {
-        if (element.getAttribute('data-source') === activeUrl && objectUrl) return true;
-        var token = ++sourceToken;
+    function ensureSource(element) {
         var wanted = activeUrl;
-        var blob = await obtainSound(wanted);
-        if (!blob || token !== sourceToken || wanted !== activeUrl) return false;
-        releaseObjectUrl();
-        objectUrl = URL.createObjectURL(blob);
-        element.src = objectUrl;
-        element.setAttribute('data-source', wanted);
-        return true;
+        if (!wanted) return Promise.resolve(false);
+        if (loadedUrl === wanted && objectUrl) return Promise.resolve(true);
+        if (loadEntry && loadEntry.url === wanted) return loadEntry.promise;
+        var entry = { url: wanted, promise: null };
+        entry.promise = downloadSound(wanted).then(function (blob) {
+            if (wanted !== activeUrl) return false;
+            releaseObjectUrl();
+            objectUrl = URL.createObjectURL(blob);
+            element.src = objectUrl;
+            loadedUrl = wanted;
+            return true;
+        }).catch(function (error) {
+            if (wanted === activeUrl) registerFailure(error && error.status ? error.status : 0);
+            return false;
+        }).then(function (ready) {
+            if (loadEntry === entry) loadEntry = null;
+            return ready;
+        });
+        loadEntry = entry;
+        return entry.promise;
+    }
+
+    function waitForMetadata(element) {
+        if (element.readyState >= 1) return Promise.resolve();
+        return new Promise(function (resolve) {
+            var finish = function () {
+                element.removeEventListener('loadedmetadata', finish);
+                element.removeEventListener('error', finish);
+                resolve();
+            };
+            element.addEventListener('loadedmetadata', finish);
+            element.addEventListener('error', finish);
+            setTimeout(finish, METADATA_WAIT_MS);
+        });
     }
 
     function applyVolumeTo(element) {
         var current = settingsFor(activeThemeId);
         element.volume = effectiveVolume();
-        element.muted = current.muted || dndActive();
+        element.muted = current.muted;
     }
 
     async function play() {
-        if (!activeUrl || !isOwner) return;
-        var element = ensureAudio();
-        var ready = await Promise.all([loadSettings(), ensureSource(element)]);
-        if (!ready[1] || !activeUrl || !isOwner) return;
-        applyVolumeTo(element);
-        syncToTimeline(element);
-        var attempt = element.play();
-        if (attempt && attempt.catch) attempt.catch(function () { awaitGesture(); });
-        startHeartbeat();
+        if (!activeUrl || !isOwner || playBusy) return;
+        playBusy = true;
+        try {
+            var element = ensureAudio();
+            if (loadedUrl !== activeUrl) setStatus('loading');
+            var ready = await Promise.all([Promise.race([loadSettings(), pause(SETTINGS_WAIT_MS)]), ensureSource(element)]);
+            if (!ready[1] || !activeUrl || !isOwner) return;
+            await waitForMetadata(element);
+            if (!activeUrl || !isOwner) return;
+            applyVolumeTo(element);
+            syncToTimeline(element, 0);
+            startHeartbeat();
+            try {
+                await element.play();
+                removeGestureListeners();
+            } catch (error) {
+                if (error && error.name === 'NotAllowedError') {
+                    setStatus('blocked');
+                    awaitGesture();
+                } else if (error && error.name !== 'AbortError') {
+                    loadedUrl = null;
+                    releaseObjectUrl();
+                    purgeCachedSounds();
+                    registerFailure(0);
+                }
+            }
+        } finally {
+            playBusy = false;
+        }
     }
 
     function pauseOutput() {
@@ -238,16 +310,17 @@
     }
 
     function stop() {
-        sourceToken++;
+        loadEntry = null;
+        loadedUrl = null;
         removeGestureListeners();
         releaseOwnership();
         if (audio) {
             audio.pause();
             audio.removeAttribute('src');
-            audio.removeAttribute('data-source');
             audio.load();
         }
         releaseObjectUrl();
+        setStatus('idle');
     }
 
     function applyVolume() {
@@ -273,7 +346,7 @@
         heartbeatTimer = setInterval(function () {
             if (!isOwner) return;
             writeOwner();
-            if (audio && !audio.paused) touchTimeline();
+            refreshAnchor();
         }, HEARTBEAT_MS);
     }
 
@@ -289,7 +362,7 @@
         writeOwner();
         if (!wasOwner) post({ type: 'claim' });
         startHeartbeat();
-        if (!wasOwner || (audio && audio.paused)) play();
+        if (!wasOwner || !audio || audio.paused) play();
     }
 
     function releaseOwnership() {
@@ -301,9 +374,11 @@
 
     function yieldOwnership() {
         if (!isOwner) return;
+        refreshAnchor();
         isOwner = false;
         stopHeartbeat();
         pauseOutput();
+        setStatus('standby');
     }
 
     function onChannelMessage(event) {
@@ -321,7 +396,7 @@
 
     function onPageHide() {
         if (!isOwner) return;
-        if (audio && !audio.paused) touchTimeline();
+        refreshAnchor();
         var record = ownerRecord();
         if (record && record.tab === tabId) writeJson(OWNER_KEY, null);
     }
@@ -338,35 +413,57 @@
         if (activeUrl) claim();
     }
 
-    function onTheme(event) {
-        var detail = event.detail || {};
-        var theme = detail.theme;
-        var url = theme && theme.sound_url ? theme.sound_url : null;
-        if (url === activeUrl) return;
+    function wantedSound() {
+        var theme = global.RWLTheme && global.RWLTheme.current ? global.RWLTheme.current() : null;
+        var url = theme && theme.sound_url ? String(theme.sound_url) : null;
+        return { url: url, id: url && theme.item_id ? String(theme.item_id).toLowerCase() : null };
+    }
+
+    function switchTo(wanted) {
         var previousUrl = activeUrl;
-        activeUrl = url;
-        activeThemeId = url && theme.item_id ? String(theme.item_id).toLowerCase() : null;
-        if (!url) {
+        if (!wanted.url) {
+            activeUrl = null;
+            activeThemeId = null;
             stop();
             if (previousUrl) purgeCachedSounds();
             announce();
             return;
         }
-        if (!signedIn()) {
-            activeUrl = null;
-            activeThemeId = null;
-            return;
-        }
+        if (!signedIn()) return;
+        pauseOutput();
+        activeUrl = wanted.url;
+        activeThemeId = wanted.id;
+        loadEntry = null;
+        loadedUrl = null;
+        failureCount = 0;
+        retryAt = 0;
+        releaseObjectUrl();
+        setStatus('loading');
         if (document.visibilityState === 'visible' || !otherOwnerAlive()) claim();
         loadSettings().then(function () {
-            if (activeUrl === url) announce();
+            if (activeUrl === wanted.url) announce();
         });
     }
 
-    async function loadSettings() {
-        if (loaded || !signedIn()) return themeSettings;
-        try {
-            var data = await RWL.apiRequest('/api/experience/state');
+    function reconcile() {
+        var wanted = wantedSound();
+        if (wanted.url !== activeUrl) {
+            switchTo(wanted);
+            return;
+        }
+        if (!activeUrl) return;
+        if (!isOwner) {
+            if (document.visibilityState === 'visible' && !otherOwnerAlive()) claim();
+            return;
+        }
+        if (waitingForGesture || playBusy || (audio && !audio.paused) || Date.now() < retryAt) return;
+        play();
+    }
+
+    function loadSettings() {
+        if (loaded || !signedIn()) return Promise.resolve(themeSettings);
+        if (settingsRequest) return settingsRequest;
+        settingsRequest = RWL.apiRequest('/api/experience/state').then(function (data) {
             var all = data && data.theme_sounds && typeof data.theme_sounds === 'object' ? data.theme_sounds : {};
             Object.keys(all).forEach(function (key) {
                 var entry = all[key] || {};
@@ -377,10 +474,13 @@
                 themeSettings[activeThemeId] = { volume: clampVolume(equipped.volume), muted: !!equipped.muted };
             }
             loaded = true;
-        } catch (error) {
+        }).catch(function () {
             loaded = false;
-        }
-        return themeSettings;
+        }).then(function () {
+            settingsRequest = null;
+            return themeSettings;
+        });
+        return settingsRequest;
     }
 
     function scheduleSave(themeId) {
@@ -429,15 +529,20 @@
         var tr = function (text) { return global.RWLI18n && global.RWLI18n.t ? global.RWLI18n.t(text) : text; };
         field.innerHTML = '<span><span>' + RWL.escapeHtml(tr('Sound Settings')) + '</span><strong class="rwl-sound-value"></strong></span>' +
             '<input type="range" min="0" max="100" step="1" class="rwl-sound-range" title="' + RWL.escapeHtml(tr('Change the volume of the theme sound')) + '">' +
-            '<label class="rwl-sound-mute"><span class="rwl-switch"><input type="checkbox" role="switch" class="rwl-sound-mutebox"><span class="rwl-switch-track"></span></span><span>' + RWL.escapeHtml(tr('Mute theme sound')) + '</span></label>';
+            '<label class="rwl-sound-mute"><span class="rwl-switch"><input type="checkbox" role="switch" class="rwl-sound-mutebox"><span class="rwl-switch-track"></span></span><span>' + RWL.escapeHtml(tr('Mute theme sound')) + '</span></label>' +
+            '<small class="rwl-sound-status" role="status" hidden></small>';
         var range = field.querySelector('.rwl-sound-range');
         var box = field.querySelector('.rwl-sound-mutebox');
         var value = field.querySelector('.rwl-sound-value');
+        var note = field.querySelector('.rwl-sound-status');
         var paint = function () {
             var current = settingsFor(key);
             range.value = current.volume;
             box.checked = current.muted;
             value.textContent = current.muted ? tr('Muted') : current.volume + '%';
+            var text = activeThemeId === key && STATUS_TEXT[status] ? tr(STATUS_TEXT[status]) : '';
+            note.textContent = text;
+            note.hidden = !text;
         };
         range.addEventListener('input', function () { setVolume(range.value, key); });
         box.addEventListener('change', function () { setMuted(box.checked, key); });
@@ -463,22 +568,23 @@
     }
 
     function start() {
-        global.addEventListener('rwl-theme-applied', onTheme);
+        global.addEventListener('rwl-theme-applied', reconcile);
         global.addEventListener('rickware-launcher-event', onLauncherEvent);
-        global.addEventListener('rwl-presence-change', applyVolume);
         global.addEventListener('pagehide', onPageHide);
         global.addEventListener('pageshow', onPageShow);
         global.addEventListener('focus', onFocus);
+        global.addEventListener('online', reconcile);
         document.addEventListener('visibilitychange', onVisibility);
         if (channel) channel.onmessage = onChannelMessage;
-        if (global.RWLTheme && global.RWLTheme.current && global.RWLTheme.current()) onTheme({ detail: { theme: global.RWLTheme.current() } });
+        setInterval(reconcile, RECONCILE_MS);
+        reconcile();
     }
 
     global.RWLThemeSound = {
         setVolume: setVolume,
         setMuted: setMuted,
         mountField: mountField,
-        state: function () { var current = settingsFor(activeThemeId); return { theme_id: activeThemeId, volume: current.volume, muted: current.muted, active: !!activeUrl }; },
+        state: function () { var current = settingsFor(activeThemeId); return { theme_id: activeThemeId, volume: current.volume, muted: current.muted, active: !!activeUrl, status: status }; },
         active: function () { return !!activeUrl; },
         refresh: function () { loaded = false; return loadSettings(); }
     };

@@ -99,7 +99,9 @@ transform:translateZ(0);
 }
 
 .item{
+width:150px;
 min-width:150px;
+max-width:150px;
 height:130px;
 border-radius:14px;
 overflow:hidden;
@@ -654,13 +656,37 @@ let animationDone=null
 let focusedCards=[]
 let lastTickIndex=-1
 let burstFrame=null
+let centers=[]
 
 function motionAllowed(){
 return !document.documentElement.classList.contains("rwl-low-fx")&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)
 }
 
+function measureCenters(){
+const cards=track.children
+centers=[]
+for(let index=0;index<cards.length;index++){
+centers.push(cards[index].offsetLeft+cards[index].offsetWidth/2)
+}
+}
+
+function centerOf(index){
+return centers.length>index&&index>=0?centers[index]:TRACK_PADDING+index*(ITEM_WIDTH+ITEM_GAP)+ITEM_WIDTH/2
+}
+
 function centerIndexFloat(){
-return (pos+viewportEl.clientWidth/2-TRACK_PADDING-ITEM_WIDTH/2)/(ITEM_WIDTH+ITEM_GAP)
+const target=pos+viewportEl.clientWidth/2
+if(centers.length<2)return (target-TRACK_PADDING-ITEM_WIDTH/2)/(ITEM_WIDTH+ITEM_GAP)
+if(target<=centers[0])return (target-centers[0])/(ITEM_WIDTH+ITEM_GAP)
+let low=0
+let high=centers.length-1
+if(target>=centers[high])return high+(target-centers[high])/(ITEM_WIDTH+ITEM_GAP)
+while(high-low>1){
+const middle=(low+high)>>1
+if(centers[middle]<=target)low=middle
+else high=middle
+}
+return low+(target-centers[low])/(centers[low+1]-centers[low])
 }
 
 function applyPosition(){
@@ -818,6 +844,7 @@ track.appendChild(d)
 })
 }
 idleWidth=IDLE_ITEMS*(ITEM_WIDTH+ITEM_GAP)
+measureCenters()
 }
 
 function idleLoop(now){
@@ -849,6 +876,7 @@ d.title=entry.label||CATEGORY_LABELS[entry.category]||"Item"
 d.innerHTML='<img src="'+categoryImage(entry.category)+'" alt="'+esc(d.title)+'">'
 track.appendChild(d)
 })
+measureCenters()
 }
 
 function lightVisualHtml(item){
@@ -869,6 +897,7 @@ const nearWinner=index>=winIndex-MEDIA_WINDOW_BEFORE&&index<=winIndex+MEDIA_WIND
 d.innerHTML=nearWinner?itemVisualHtml(item,false):lightVisualHtml(item)
 track.appendChild(d)
 })
+measureCenters()
 }
 
 function preloadReward(reward){
@@ -952,7 +981,7 @@ raf=requestAnimationFrame(step)
 }
 
 function centerFor(winIndex){
-return Math.max(0,TRACK_PADDING+winIndex*(ITEM_WIDTH+ITEM_GAP)+ITEM_WIDTH/2-viewportEl.clientWidth/2)
+return Math.max(0,centerOf(winIndex)-viewportEl.clientWidth/2)
 }
 
 function targetFor(winIndex){

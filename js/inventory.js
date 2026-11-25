@@ -260,6 +260,10 @@
         return ((state.inventory && state.inventory.license_vouchers) || []).filter(function(voucher) { return !voucher.redeemed && !voucher.expired; });
     }
 
+    function stackUnits(name, stateName) {
+        return ((state.inventory && state.inventory[name]) || []).filter(function(stack) { return stack.state === stateName; }).reduce(function(sum, stack) { return sum + (stack.count || 0); }, 0);
+    }
+
     function categoryCount(cat) {
         var inventory = state.inventory;
         if (!inventory) return 0;
@@ -269,9 +273,9 @@
             var chests = chestSummary();
             return chests.unlimited ? '∞' : formatNumber(chests.balance || 0);
         }
-        if (cat.id === 'licenses') return formatNumber((inventory.licenses || []).filter(function(entry) { return entry.is_valid; }).length);
-        if (cat.id === 'coupons') return formatNumber((inventory.coupons || []).filter(function(entry) { return entry.active; }).length);
-        if (cat.id === 'special-items') return formatNumber(activeVouchers().length);
+        if (cat.id === 'licenses') return formatNumber(stackUnits('license_stacks', 'active'));
+        if (cat.id === 'coupons') return formatNumber(stackUnits('coupon_stacks', 'active'));
+        if (cat.id === 'special-items') return formatNumber(stackUnits('voucher_stacks', 'active'));
         return 0;
     }
 
@@ -738,52 +742,80 @@
         return html;
     }
 
+    function stackCounter(count) {
+        return count > 1 ? '<div class="inv-stack-count" title="You own this ' + count + ' times">×' + formatNumber(count) + '</div>' : '';
+    }
+
+    function stackDate(value) {
+        if (!value) return '';
+        return value === 'Lifetime' ? 'Lifetime' : new Date(value).toLocaleDateString();
+    }
+
+    function stackKeyList(entries, label) {
+        if (!entries || entries.length < 2) return '';
+        return '<button type="button" class="inv-stack-keys" data-stack-toggle="1" title="Show every ' + esc(label) + ' of this stack">All</button>' +
+            '<div class="inv-stack-keylist" hidden>' + entries.map(function(entry) {
+                return '<span class="inv-stack-key" data-copy="' + esc(entry.value) + '" title="Click to copy">' + esc(entry.value) + (entry.until ? ' · ' + esc(stackDate(entry.until)) : '') + '</span>';
+            }).join('') + '</div>';
+    }
+
     function licenseSlotsHtml(onlyValid) {
-        var licenses = (state.inventory && state.inventory.licenses) || [];
-        var list = onlyValid ? licenses.filter(function(entry) { return entry.is_valid; }) : licenses;
-        if (!list.length) return emptyNote(onlyValid ? 'No active licenses yet.' : 'No licenses yet.');
-        return list.map(function(entry) {
-            var expiry = entry.expires_at === 'Lifetime' ? 'Lifetime' : new Date(entry.expires_at).toLocaleDateString();
-            var status = entry.is_paused ? 'Paused' : (entry.is_valid ? 'Active' : 'Expired');
-            var color = entry.is_valid ? '#22c55e' : '#ef4444';
-            var launchable = entry.is_valid && entry.product_id && window.RWLLauncher && RWLLauncher.isLauncher();
+        var stacks = ((state.inventory && state.inventory.license_stacks) || []).filter(function(stack) { return !onlyValid || stack.state === 'active'; });
+        if (!stacks.length) return emptyNote(onlyValid ? 'No active licenses yet.' : 'No licenses yet.');
+        return stacks.map(function(stack) {
+            var first = (stack.keys && stack.keys[0]) || {};
+            var expiry = stackDate(stack.next_expires_at || first.expires_at);
+            var status = stack.state === 'paused' ? 'Paused' : (stack.state === 'active' ? 'Active' : 'Expired');
+            var color = stack.state === 'active' ? '#22c55e' : '#ef4444';
+            var launchable = stack.state === 'active' && stack.product_id && window.RWLLauncher && RWLLauncher.isLauncher();
             var action = launchable
-                ? ' data-launch-product="' + esc(entry.product_id) + '" title="Click to install or start this tool in the launcher"'
-                : ' data-copy="' + esc(entry.license_key) + '" title="Click to copy the license key"';
-            return '<div class="inv-slot inv-slot-item inv-slot-wide"' + action + ' style="border-color:' + color + ';">' +
-                '<div class="inv-slot-text"><strong>' + esc(entry.product_name) + '</strong><br>' + esc(entry.duration || '') + '<br><span style="color:' + color + ';">' + status + '</span> · ' + esc(expiry) + (launchable ? '<br>▶ Install / Launch' : '') + '</div>' +
+                ? ' data-launch-product="' + esc(stack.product_id) + '" title="Click to install or start this tool in the launcher"'
+                : ' data-copy="' + esc(first.license_key) + '" title="Click to copy the license key"';
+            var entries = (stack.keys || []).map(function(entry) { return { value: entry.license_key, until: entry.expires_at }; });
+            return '<div class="inv-slot inv-slot-item inv-slot-wide inv-slot-stackable"' + action + ' style="border-color:' + color + ';">' + stackCounter(stack.count) +
+                '<div class="inv-slot-text"><strong>' + esc(stack.product_name) + '</strong><br>' + esc(stack.duration || '') + '<br><span style="color:' + color + ';">' + status + '</span> · ' + esc(expiry) + (launchable ? '<br>▶ Install / Launch' : '') + '</div>' +
+                stackKeyList(entries, 'license key') +
             '</div>';
         }).join('');
     }
 
     function couponSlotsHtml(onlyActive) {
-        var coupons = (state.inventory && state.inventory.coupons) || [];
-        var list = onlyActive ? coupons.filter(function(entry) { return entry.active; }) : coupons;
-        if (!list.length) return emptyNote(onlyActive ? 'No active coupons. Earn coupons through the Lab-Pass.' : 'No coupons yet.');
+        var stacks = ((state.inventory && state.inventory.coupon_stacks) || []).filter(function(stack) { return !onlyActive || stack.state === 'active'; });
+        if (!stacks.length) return emptyNote(onlyActive ? 'No active coupons. Earn coupons through the Lab-Pass.' : 'No coupons yet.');
         var fresh = newSet('reward_coupons');
-        return list.map(function(entry) {
-            var status = entry.active ? 'Active' : (entry.used ? 'Used' : 'Expired');
-            var color = entry.active ? '#22c55e' : '#9ca3af';
-            var isFresh = !!fresh[entry.code];
-            return '<div class="inv-slot inv-slot-item inv-slot-wide' + (entry.active ? '' : ' inv-slot-locked') + (isFresh ? ' inv-slot-new' : '') + '" data-copy="' + esc(entry.code) + '" data-new-key="reward_coupons" data-new-id="' + esc(entry.code) + '" title="Click to copy the coupon code" style="border-color:' + color + ';">' +
-                '<div class="inv-slot-text"><strong>' + esc(String(entry.percent)) + '% OFF</strong><br>' + esc(entry.code) + '<br><span style="color:' + color + ';">' + status + '</span>' + (entry.valid_until ? ' · until ' + esc(new Date(entry.valid_until).toLocaleDateString()) : '') + '</div>' +
+        return stacks.map(function(stack) {
+            var active = stack.state === 'active';
+            var status = active ? 'Active' : (stack.state === 'used' ? 'Used' : 'Expired');
+            var color = active ? '#22c55e' : '#9ca3af';
+            var freshCodes = (stack.codes || []).filter(function(code) { return !!fresh[code]; });
+            var isFresh = freshCodes.length > 0;
+            var first = (stack.codes && stack.codes[0]) || '';
+            var entries = (stack.codes || []).map(function(code) { return { value: code, until: stack.next_valid_until }; });
+            return '<div class="inv-slot inv-slot-item inv-slot-wide inv-slot-stackable' + (active ? '' : ' inv-slot-locked') + (isFresh ? ' inv-slot-new' : '') + '" data-copy="' + esc(first) + '" data-new-key="reward_coupons" data-new-id="' + esc(freshCodes[0] || first) + '" data-new-all="' + esc(freshCodes.join(',')) + '" title="Click to copy the coupon code" style="border-color:' + color + ';">' + stackCounter(stack.count) +
+                '<div class="inv-slot-text"><strong>' + esc(String(stack.percent)) + '% OFF</strong><br>' + esc(first) + '<br><span style="color:' + color + ';">' + status + '</span>' + (stack.next_valid_until ? ' · until ' + esc(stackDate(stack.next_valid_until)) : '') + '</div>' +
                 (isFresh ? '<div class="inv-item-new">NEW</div>' : '') +
+                stackKeyList(entries, 'coupon code') +
             '</div>';
         }).join('');
     }
 
     function voucherSlotsHtml(onlyActive) {
-        var vouchers = (state.inventory && state.inventory.license_vouchers) || [];
-        var list = onlyActive ? activeVouchers() : vouchers;
-        if (!list.length) return emptyNote(onlyActive ? 'No special items yet. License vouchers are earned through the Lab-Pass and Mystery Chests.' : 'No special items yet.');
+        var stacks = ((state.inventory && state.inventory.voucher_stacks) || []).filter(function(stack) { return !onlyActive || stack.state === 'active'; });
+        if (!stacks.length) return emptyNote(onlyActive ? 'No special items yet. License vouchers are earned through the Lab-Pass and Mystery Chests.' : 'No special items yet.');
         var fresh = newSet('license_vouchers');
-        list = list.slice().sort(function(left, right) { return (fresh[right.voucher_id] ? 1 : 0) - (fresh[left.voucher_id] ? 1 : 0); });
-        return list.map(function(voucher) {
-            var redeemable = !voucher.redeemed && !voucher.expired;
-            var status = voucher.redeemed ? 'Redeemed' : (voucher.expired ? 'Expired' : 'Click to redeem');
-            var isFresh = !!fresh[voucher.voucher_id];
-            return '<div class="inv-slot inv-slot-item inv-slot-wide' + (redeemable ? '' : ' inv-slot-locked') + (isFresh ? ' inv-slot-new' : '') + '"' + (redeemable ? ' data-voucher-id="' + esc(voucher.voucher_id) + '"' : '') + ' data-new-key="license_vouchers" data-new-id="' + esc(voucher.voucher_id) + '" title="' + esc(voucher.label) + '" style="border-color:' + (redeemable ? '#c97eff' : '#6b7280') + ';">' +
-                '<div class="inv-slot-text"><strong>' + esc(voucher.label) + '</strong><br>' + esc(status) + (voucher.expires_at && redeemable ? '<br>until ' + esc(new Date(voucher.expires_at).toLocaleDateString()) : '') + '</div>' +
+        stacks = stacks.slice().sort(function(left, right) {
+            var leftFresh = (left.voucher_ids || []).some(function(id) { return !!fresh[id]; });
+            var rightFresh = (right.voucher_ids || []).some(function(id) { return !!fresh[id]; });
+            return (rightFresh ? 1 : 0) - (leftFresh ? 1 : 0);
+        });
+        return stacks.map(function(stack) {
+            var redeemable = stack.state === 'active';
+            var status = stack.state === 'used' ? 'Redeemed' : (stack.state === 'expired' ? 'Expired' : 'Click to redeem');
+            var freshIds = (stack.voucher_ids || []).filter(function(id) { return !!fresh[id]; });
+            var isFresh = freshIds.length > 0;
+            var first = (stack.voucher_ids && stack.voucher_ids[0]) || '';
+            return '<div class="inv-slot inv-slot-item inv-slot-wide inv-slot-stackable' + (redeemable ? '' : ' inv-slot-locked') + (isFresh ? ' inv-slot-new' : '') + '"' + (redeemable ? ' data-voucher-id="' + esc(first) + '"' : '') + ' data-new-key="license_vouchers" data-new-id="' + esc(freshIds[0] || first) + '" data-new-all="' + esc(freshIds.join(',')) + '" title="' + esc(stack.label) + '" style="border-color:' + (redeemable ? '#c97eff' : '#6b7280') + ';">' + stackCounter(stack.count) +
+                '<div class="inv-slot-text"><strong>' + esc(stack.label) + '</strong><br>' + esc(status) + (stack.next_expires_at && redeemable ? '<br>until ' + esc(stackDate(stack.next_expires_at)) : '') + '</div>' +
                 (isFresh ? '<div class="inv-item-new">NEW</div>' : '') +
             '</div>';
         }).join('');
@@ -1063,15 +1095,13 @@
                 }).catch(function() {});
             }
         } else if (categoryId === 'licenses') {
-            var licenses = (state.inventory && state.inventory.licenses) || [];
-            modalHeader(cat, formatNumber(licenses.filter(function(entry) { return entry.is_valid; }).length) + ' active licenses');
+            modalHeader(cat, formatNumber(stackUnits('license_stacks', 'active')) + ' active licenses');
             bodyEl.innerHTML = tabbedBodyHtml(licenseSlotsHtml(true), licenseSlotsHtml(false), 'Active', 'All');
         } else if (categoryId === 'coupons') {
-            var coupons = (state.inventory && state.inventory.coupons) || [];
-            modalHeader(cat, formatNumber(coupons.filter(function(entry) { return entry.active; }).length) + ' active coupons');
+            modalHeader(cat, formatNumber(stackUnits('coupon_stacks', 'active')) + ' active coupons');
             bodyEl.innerHTML = tabbedBodyHtml(couponSlotsHtml(true), couponSlotsHtml(false), 'Active', 'All');
         } else {
-            modalHeader(cat, formatNumber(activeVouchers().length) + ' redeemable Pass Licenses');
+            modalHeader(cat, formatNumber(stackUnits('voucher_stacks', 'active')) + ' redeemable Pass Licenses');
             bodyEl.innerHTML = '<div class="inv-modal-tab-panels"><div class="inv-tab-panel inv-tab-panel-active" data-tab-panel="owned">' + searchRowHtml() + '<div class="inv-slots-viewport"><div class="inv-slots-grid">' + (voucherSlotsHtml(true) || emptyNote('You have no Pass Licenses yet. License rewards from the Lab-Pass and Mystery Chests appear here.')) + '</div></div></div></div>';
         }
         setupModalTabEvents(bodyEl);
@@ -1696,7 +1726,18 @@
                 return;
             }
             var freshSlot = e.target.closest('[data-new-key][data-new-id]');
-            if (freshSlot) markSeen(freshSlot.getAttribute('data-new-key'), freshSlot.getAttribute('data-new-id'));
+            if (freshSlot) {
+                var freshKey = freshSlot.getAttribute('data-new-key');
+                var freshIds = (freshSlot.getAttribute('data-new-all') || freshSlot.getAttribute('data-new-id')).split(',').filter(Boolean);
+                freshIds.forEach(function(freshId) { markSeen(freshKey, freshId); });
+            }
+            var stackToggle = e.target.closest('[data-stack-toggle]');
+            if (stackToggle) {
+                var keyList = stackToggle.parentNode.querySelector('.inv-stack-keylist');
+                if (keyList) keyList.hidden = !keyList.hidden;
+                e.stopPropagation();
+                return;
+            }
             var redeemSlot = e.target.closest('[data-redeem-product]');
             if (redeemSlot) { redeemVoucher(redeemSlot); return; }
             var launchSlot = e.target.closest('[data-launch-product]');

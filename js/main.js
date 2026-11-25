@@ -3645,6 +3645,7 @@ function getProductImageUrl(url) {
     if (!url || !url.trim()) return url;
     var trimmed = url.trim();
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    if (trimmed.indexOf('/api/product_media/') === 0) return RWL.apiUrl(trimmed);
     var ext = trimmed.split('.').pop().toLowerCase();
     if (ext === 'gif') return trimmed;
     if (trimmed === '' || trimmed.endsWith('/')) return trimmed;
@@ -5236,6 +5237,15 @@ function buildProductCard(p, showCategory, mode) {
         }
     }
 
+    var pausedInfo = productPauseInfo(p);
+    if (pausedInfo) {
+        card.classList.add('product-card-paused');
+        var pausedLabel = document.createElement('div');
+        pausedLabel.className = 'product-paused-label';
+        pausedLabel.textContent = 'Paused';
+        imgArea.appendChild(pausedLabel);
+    }
+
     card.appendChild(imgArea);
 
     var body = document.createElement('div');
@@ -5263,6 +5273,19 @@ function buildProductCard(p, showCategory, mode) {
         desc.setAttribute('translate', 'no');
         desc.textContent = p.description;
         body.appendChild(desc);
+    }
+
+    if (pausedInfo) {
+        var pauseNote = document.createElement('div');
+        pauseNote.className = 'product-pause-note';
+        var pauseTitle = document.createElement('strong');
+        pauseTitle.textContent = 'Paused';
+        var pauseReason = document.createElement('span');
+        pauseReason.setAttribute('translate', 'no');
+        pauseReason.textContent = pausedInfo.reason || '';
+        pauseNote.appendChild(pauseTitle);
+        pauseNote.appendChild(pauseReason);
+        body.appendChild(pauseNote);
     }
 
     var togglesDiv = document.createElement('div');
@@ -5340,6 +5363,11 @@ function buildProductCard(p, showCategory, mode) {
             ownedDiscordBtn.addEventListener('click', function(e) { e.stopPropagation(); });
             actions.appendChild(ownedDiscordBtn);
         }
+        if (pausedInfo) {
+            launchBtn.disabled = true;
+            launchBtn.setAttribute('aria-disabled', 'true');
+            launchBtn.title = 'This product is paused right now.';
+        }
         card.appendChild(actions);
         card.addEventListener('click', function() { openProductModal(p, { infoOnly: true }); });
         return card;
@@ -5408,6 +5436,14 @@ function buildProductCard(p, showCategory, mode) {
         actions.appendChild(dcBtn);
     }
 
+    if (pausedInfo) {
+        Array.prototype.forEach.call(actions.querySelectorAll('.product-btn-cart, .product-btn-download'), function(pausedButton) {
+            pausedButton.disabled = true;
+            pausedButton.setAttribute('aria-disabled', 'true');
+            pausedButton.title = 'This product is paused right now.';
+        });
+    }
+
     card.appendChild(actions);
     card.addEventListener('click', function() { openProductModal(p); });
     return card;
@@ -5416,21 +5452,70 @@ function buildProductCard(p, showCategory, mode) {
 var ownedSearchQuery = '';
 var ownedFilter = 'all';
 var toolState = null;
+var productStates = {};
+
+function productPauseInfo(p) {
+    if (!p || !p.product_id) return null;
+    var entry = productStates[String(p.product_id)];
+    return entry && typeof entry === 'object' ? entry : null;
+}
 
 function mergeChannelProducts(list) {
     if (!productsData || !Array.isArray(productsData.products) || !Array.isArray(list)) return 0;
-    var known = {};
+    var positions = {};
     var added = 0;
-    productsData.products.forEach(function(p) { if (p && p.product_id) known[String(p.product_id)] = true; });
+    productsData.products.forEach(function(p, index) { if (p && p.product_id) positions[String(p.product_id)] = index; });
     list.forEach(function(p) {
-        if (!p || !p.product_id || known[String(p.product_id)]) return;
+        if (!p || !p.product_id) return;
         var copy = Object.assign({}, p);
         if (copy.channel === 'beta' && !copy.banner) copy.banner = 'Beta';
-        productsData.products.push(copy);
-        known[String(copy.product_id)] = true;
+        var key = String(copy.product_id);
+        if (positions[key] !== undefined) {
+            productsData.products[positions[key]] = copy;
+        } else {
+            productsData.products.push(copy);
+            positions[key] = productsData.products.length - 1;
+        }
         added++;
     });
     return added;
+}
+
+function applyCatalogOverlay(source) {
+    if (!source) return 0;
+    productStates = source.product_states && typeof source.product_states === 'object' ? source.product_states : {};
+    var overlay = source.catalog_overlay || {};
+    if (!productsData || !Array.isArray(productsData.products)) return 0;
+    var hidden = {};
+    (overlay.hidden_ids || []).forEach(function(id) { hidden[String(id)] = true; });
+    var managed = {};
+    (overlay.managed || []).forEach(function(p) { if (p && p.product_id) managed[String(p.product_id)] = p; });
+    var changed = 0;
+    var result = [];
+    var placed = {};
+    productsData.products.forEach(function(p) {
+        var id = p && p.product_id ? String(p.product_id) : '';
+        if (id && managed[id]) {
+            if (!placed[id]) {
+                result.push(Object.assign({}, managed[id]));
+                placed[id] = true;
+                changed++;
+            }
+            return;
+        }
+        if (id && hidden[id]) {
+            changed++;
+            return;
+        }
+        result.push(p);
+    });
+    Object.keys(managed).forEach(function(id) {
+        if (placed[id] || hidden[id]) return;
+        result.push(Object.assign({}, managed[id]));
+        changed++;
+    });
+    productsData.products = result;
+    return changed;
 }
 
 function toolIsFavorite(p) {
@@ -5451,9 +5536,10 @@ async function refreshToolState(skipRender) {
             added = mergeChannelProducts(toolState.channel_products || []);
         } else {
             var publicData = await RWL.apiRequest('/api/growth/products/public');
-            toolState = { favorites: [], usage: {}, trials: {}, beta_access: false, channel_products: publicData.products || [], tool_of_the_day: publicData.tool_of_the_day ? Object.assign({ owned: false, trial_used: false }, publicData.tool_of_the_day) : null };
+            toolState = { favorites: [], usage: {}, trials: {}, beta_access: false, channel_products: publicData.products || [], catalog_overlay: publicData.catalog_overlay || null, product_states: publicData.product_states || {}, tool_of_the_day: publicData.tool_of_the_day ? Object.assign({ owned: false, trial_used: false }, publicData.tool_of_the_day) : null };
             added = mergeChannelProducts(publicData.products || []);
         }
+        added += applyCatalogOverlay(toolState);
     } catch (error) {
         return;
     }
@@ -5818,6 +5904,10 @@ function singleLicenseKey(p) {
 }
 
 function addToCart(p, licenseKey) {
+    if (productPauseInfo(p)) {
+        showBanner('This product is paused right now.', 'error');
+        return;
+    }
     if (!licenseKey) licenseKey = singleLicenseKey(p);
     var uid = p.category + '_' + p.id + (licenseKey ? '_' + licenseKey : '');
     var existing = cart.find(function(c) { return c._uid === uid; });
@@ -5893,6 +5983,11 @@ function openProductModal(p, options) {
     if (p.version) html += '<span class="modal-version-badge" translate="no">' + escHtml(p.version) + '</span>';
     if (p.category) html += '<span class="modal-category-badge" translate="no">' + escHtml(p.category) + '</span>';
     html += '</div></div>';
+
+    var modalPause = productPauseInfo(p);
+    if (modalPause) {
+        html += '<div class="modal-pause-note"><strong>Paused</strong><span translate="no">' + escHtml(modalPause.reason || '') + '</span><small>Purchases, downloads and launches are on hold until the product is back.</small></div>';
+    }
 
     if (infoOnly) {
         html += '<div class="modal-info-note"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg><span>' + (ownedDownloadOnly(p) ? 'You own this product. Download the source code below.' : 'You own this product. Launch it with the Rickware - Labs© Launcher.') + '</span></div>';

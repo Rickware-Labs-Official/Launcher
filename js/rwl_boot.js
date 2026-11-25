@@ -22,6 +22,7 @@
     if (extraPacks.indexOf('orbit') < 0) extraPacks.push('orbit');
     if (extraPacks.indexOf('atlas') < 0) extraPacks.push('atlas');
     if (extraPacks.indexOf('apex') < 0) extraPacks.push('apex');
+    if (extraPacks.indexOf('zenith') < 0) extraPacks.push('zenith');
 
     function readStorage(key) {
         try { return global.localStorage.getItem(key); } catch (error) { return null; }

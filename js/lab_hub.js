@@ -16,9 +16,13 @@
     var REFERRAL_STATUS = { active: 'Waiting', kept: 'Yours forever', left_early: 'Removed', revoked: 'Revoked' };
     var CODE_PATTERN = /^[A-Za-z0-9-]{3,40}$/;
     var NAME_PATTERN = /^[0-9A-Za-zÀ-ÖØ-öø-ÿ' \-]{2,24}$/;
-    var CLICK_FLUSH_MS = 2500;
+    var CLICK_IDLE_FLUSH_MS = 700;
+    var CLICK_MAX_WAIT_MS = 3000;
+    var CLICK_RETRY_MS = 1500;
+    var DEFAULT_CHUNK_SIZE = 10;
+    var MILESTONE_NAMES = { first_steps: 'First Steps', curious_mind: 'Curious Mind', bench_scientist: 'Bench Scientist', senior_researcher: 'Senior Researcher', lab_director: 'Lab Director', pioneer: 'Pioneer', visionary: 'Visionary', legend: 'Legend' };
     var MAX_CLICK_BATCH = 60;
-    var state = { hub: null, tab: 'overview', board: 'week', boards: {}, lab: null, labTicker: null, cooldownTicker: null, pendingClicks: 0, clickTimer: null, clickBusy: false, cardBlob: null, cardUrl: null, busy: false, companionDraft: null, adoptDraft: null };
+    var state = { hub: null, tab: 'overview', board: 'week', boards: {}, lab: null, labTicker: null, cooldownTicker: null, pendingClicks: 0, inFlightClicks: 0, clickStamps: [], clickTimer: null, clickMaxTimer: null, clickBusy: false, cardBlob: null, cardUrl: null, busy: false, companionDraft: null, adoptDraft: null };
 
     function t(text) {
         return global.RWLI18n && global.RWLI18n.t ? global.RWLI18n.t(text) : text;
@@ -139,7 +143,7 @@
         var activity = (state.hub && state.hub.activity) || {};
         byId('lhWeekPoints').textContent = formatNumber(activity.points_week);
         byId('lhCrateCount').textContent = formatNumber(activity.crates_available);
-        byId('lhResearch').textContent = formatNumber(Math.floor(state.lab ? state.lab.research : 0));
+        byId('lhResearch').textContent = formatNumber(Math.floor(state.lab && !labFrozen(state.lab) ? state.lab.research : 0));
     }
 
     async function loadHub(silent) {
@@ -747,18 +751,26 @@
         return '<svg viewBox="0 0 120 120" width="150" height="150" aria-hidden="true"><defs><radialGradient id="lhReactorGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#e0aaff"/><stop offset="60%" stop-color="#9d4edd"/><stop offset="100%" stop-color="#3c096c"/></radialGradient></defs><circle cx="60" cy="60" r="52" fill="none" stroke="rgba(224,170,255,0.35)" stroke-width="2" stroke-dasharray="6 8" class="lh-reactor-ring"/><path d="M48 18h24v26l20 38a12 12 0 0 1-10.6 17.6H38.6A12 12 0 0 1 28 82l20-38z" fill="rgba(22,15,36,0.9)" stroke="#e0aaff" stroke-width="2.5"/><path d="M36 74h48l6 11a8 8 0 0 1-7 12H37a8 8 0 0 1-7-12z" fill="url(#lhReactorGlow)" class="lh-reactor-liquid"/><circle cx="52" cy="84" r="3" fill="#ffffff" class="lh-reactor-bubble"/><circle cx="66" cy="88" r="2" fill="#ffffff" class="lh-reactor-bubble lh-reactor-bubble-late"/><rect x="44" y="12" width="32" height="8" rx="4" fill="#9d4edd"/></svg>';
     }
 
+    function labFrozen(lab) {
+        return !!(lab && lab.frozen && lab.frozen.active);
+    }
+
+    function pendingResearch() {
+        var lab = state.lab;
+        return (state.pendingClicks + state.inFlightClicks) * ((lab && lab.click_value) || 0);
+    }
+
     function applyLab(result) {
         if (!result) return;
-        var pending = state.pendingClicks * (result.click_value || 0);
         state.lab = result;
-        state.lab.research = (result.research || 0) + pending;
+        if (!labFrozen(result)) state.lab.research = (result.research || 0) + pendingResearch();
         state.hub.lab = state.lab;
         renderStats();
     }
 
     function updateLabNumbers() {
         var lab = state.lab;
-        if (!lab) return;
+        if (!lab || labFrozen(lab)) return;
         var research = byId('lhLabResearch');
         var stored = byId('lhLabStored');
         var bar = byId('lhLabStoredBar');
@@ -770,6 +782,8 @@
         document.querySelectorAll('[data-upgrade-cost]').forEach(function (button) {
             button.disabled = lab.research < parseInt(button.getAttribute('data-upgrade-cost'), 10);
         });
+        var breakthrough = byId('lhBreakthrough');
+        if (breakthrough && lab.breakthrough) breakthrough.disabled = !lab.breakthrough.available;
         renderStats();
     }
 
@@ -781,10 +795,75 @@
         '</div>';
     }
 
+    function milestoneCard(entry, total) {
+        var rewardText = entry.amount > 0 ? formatNumber(entry.amount) + ' ' + t(REWARD_LABELS[entry.type] || entry.type) : t('Achievement only');
+        var action = entry.claimed ? '<span class="lh-badge lh-badge-done">Claimed</span>' : (entry.reached ? '<button type="button" class="lh-btn lh-btn-small lh-btn-primary" data-milestone="' + esc(entry.key) + '" title="Claim the reward of this milestone">Claim</button>' : '<span class="lh-badge">Locked</span>');
+        var shown = Math.min(total, entry.research);
+        return '<article class="lh-milestone' + (entry.claimed ? ' done' : (entry.reached ? ' ready' : '')) + '">' +
+            '<div class="lh-row-between"><strong>' + esc(MILESTONE_NAMES[entry.key] || entry.key) + '</strong>' + action + '</div>' +
+            '<span class="lh-milestone-reward">' + (entry.amount > 0 ? (REWARD_ICONS[entry.type] || '') + ' ' : '') + esc(rewardText) + '</span>' +
+            '<div class="lh-row-between lh-goal-meta"><span>Total research</span><span>' + formatCompact(shown) + ' / ' + formatCompact(entry.research) + '</span></div>' +
+            progressBar(shown, entry.research, entry.reached ? 'lh-progress-done' : '') +
+        '</article>';
+    }
+
+    function breakthroughSection(lab) {
+        var info = lab.breakthrough || {};
+        var gained = Math.round(((info.multiplier || 1) - 1) * 1000) / 10;
+        var inner = '<div class="lh-metrics">' +
+                metric('Breakthroughs', formatNumber(info.count) + ' / ' + formatNumber(info.max)) +
+                metric('Permanent Bonus', '+' + formatNumber(gained) + '%', 'Research bonus from all your breakthroughs') +
+                metric('Next Breakthrough', '+' + formatNumber(info.bonus_percent) + '%', 'Extra bonus you get for the next breakthrough') +
+            '</div>' +
+            '<div class="lh-row-between"><span>Research This Run</span><span>' + formatNumber(info.progress) + ' / ' + formatNumber(info.requirement) + '</span></div>' +
+            progressBar(info.progress || 0, info.requirement || 1, info.available ? 'lh-progress-done' : '') +
+            '<div class="lh-actions"><button type="button" class="lh-btn lh-btn-primary" id="lhBreakthrough" title="Reset your research and upgrades for a permanent bonus"' + (info.available ? '' : ' disabled') + '>Start Breakthrough</button></div>';
+        return section('Breakthrough', inner, '', 'A breakthrough resets your research and upgrades and gives you a permanent research bonus. Your total research, milestones and daily limits stay.');
+    }
+
+    function statisticsSection(lab) {
+        var stats = lab.stats || {};
+        return section('Lab Statistics', '<div class="lh-metrics">' +
+            metric('Total Clicks', formatNumber(stats.total_clicks)) +
+            metric('Clicks Today', formatNumber(stats.clicks_today)) +
+            metric('Critical Discoveries', formatNumber(stats.total_crits)) +
+            metric('Total Research', formatNumber(stats.total_research)) +
+        '</div>');
+    }
+
+    function frozenIcon() {
+        return '<svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M4.2 7l15.6 10M19.8 7 4.2 17"/><path d="M9 4l3 2 3-2M9 20l3-2 3 2M3 10l3.4.4L7 14M21 10l-3.4.4L17 14M3 14l3.4-.4L7 10M21 14l-3.4-.4L17 10"/></svg>';
+    }
+
+    function renderFrozen(content, frozen) {
+        content.innerHTML =
+            '<section class="lh-card lh-section lh-frozen">' +
+                '<div class="lh-frozen-icon">' + frozenIcon() + '</div>' +
+                '<h2 class="lh-section-title">Your lab is frozen</h2>' +
+                '<p class="lh-section-hint">We detected automatic clicking. Nothing works in the idle lab until the cooldown ends. Every new flag doubles the cooldown and from the fifth flag on it grows even faster.</p>' +
+                '<div class="lh-frozen-clock" id="lhFrozenClock" role="timer">' + esc(formatDuration(frozen.seconds_left)) + '</div>' +
+                '<div class="lh-metrics">' + metric('Auto Clicker Flags', formatNumber(frozen.flags)) + '</div>' +
+            '</section>';
+        var until = Date.now() + frozen.seconds_left * 1000;
+        state.labTicker = setInterval(function () {
+            var left = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+            var clock = byId('lhFrozenClock');
+            if (clock) clock.textContent = formatDuration(left);
+            if (left <= 0) {
+                stopTickers();
+                refreshLab();
+            }
+        }, 1000);
+    }
+
     function renderLab(content) {
         var lab = state.lab;
         if (!lab || !lab.enabled) {
             content.innerHTML = '<section class="lh-card lh-section">' + empty('The idle lab is closed right now.') + '</section>';
+            return;
+        }
+        if (labFrozen(lab)) {
+            renderFrozen(content, lab.frozen);
             return;
         }
         var conversion = lab.conversion || {};
@@ -800,6 +879,8 @@
                         '<div class="lh-metric"><span class="lh-metric-value" id="lhLabResearch">' + formatNumber(Math.floor(lab.research)) + '</span><span class="lh-metric-label">Research</span></div>' +
                         metric('Per Hour', formatNumber(lab.rate_per_hour)) +
                         metric('Per Click', formatNumber(lab.click_value)) +
+                        metric('Critical Chance', formatNumber(lab.crit_chance_percent) + '%', 'Chance that a click becomes a critical discovery') +
+                        metric('Critical Bonus', formatNumber(lab.crit_multiplier) + 'x', 'Research a critical discovery is worth compared to a normal click') +
                         metric('Storage Time', formatNumber(lab.cap_hours) + 'h', 'Your lab stores research for this many hours while you are away') +
                     '</div>' +
                     '<div class="lh-row-between"><span>Stored Research</span><span id="lhLabStored">' + formatNumber(Math.floor(lab.stored)) + ' / ' + formatNumber(lab.capacity) + '</span></div>' +
@@ -809,17 +890,29 @@
                 '</div>' +
             '</section>' +
             section('Upgrades', '<div class="lh-upgrades" id="lhUpgrades">' + (lab.upgrades || []).map(upgradeRow).join('') + '</div>') +
+            section('Milestones', '<div class="lh-milestones" id="lhMilestones">' + (lab.milestones || []).map(function (entry) { return milestoneCard(entry, lab.total_research || 0); }).join('') + '</div>', '', 'Reach research milestones over your whole lab career and claim a reward for every one of them.') +
+            breakthroughSection(lab) +
             section('Convert Research', '<div class="lh-convert">' +
                 '<form class="lh-convert-card" data-target="lc"><strong>💰 Lab Coins</strong><span>' + formatNumber(conversion.research_per_lab_coin) + ' research = 1 Lab Coin</span><small>Left today: ' + formatNumber(lcLeft) + ' Lab Coins</small><input type="number" class="lh-input" min="1" step="1" inputmode="numeric" placeholder="Research amount" required><output class="lh-convert-preview">= 0</output><button type="submit" class="lh-btn" title="Convert research into Lab Coins">Convert</button></form>' +
                 '<form class="lh-convert-card' + (conversion.discord_linked ? '' : ' locked') + '" data-target="xp"><strong>⭐ XP</strong><span>1 research = ' + formatNumber(conversion.xp_per_research) + ' XP</span><small>' + (conversion.discord_linked ? 'Left today: ' + formatNumber(xpLeft) + ' XP' : 'Link your Discord account to convert into XP') + '</small><input type="number" class="lh-input" min="1" step="1" inputmode="numeric" placeholder="Research amount" required' + (conversion.discord_linked ? '' : ' disabled') + '><output class="lh-convert-preview">= 0</output><button type="submit" class="lh-btn" title="Convert research into XP"' + (conversion.discord_linked ? '' : ' disabled') + '>Convert</button></form>' +
-            '</div>', '', 'Daily limits keep the economy fair for everyone.');
+            '</div>', '', 'Daily limits keep the economy fair for everyone.') +
+            statisticsSection(lab);
         updateLabNumbers();
-        byId('lhReactor').addEventListener('click', onReactorClick);
+        var reactor = byId('lhReactor');
+        reactor.addEventListener('click', onReactorClick);
+        reactor.addEventListener('keydown', function (event) {
+            if (event.repeat) event.preventDefault();
+        });
         byId('lhLabCollect').addEventListener('click', function () { collectLab(this); });
         byId('lhUpgrades').addEventListener('click', function (event) {
             var button = event.target.closest('[data-upgrade]');
             if (button && !button.disabled) buyUpgrade(button.getAttribute('data-upgrade'), button);
         });
+        byId('lhMilestones').addEventListener('click', function (event) {
+            var button = event.target.closest('[data-milestone]');
+            if (button && !button.disabled) claimMilestone(button.getAttribute('data-milestone'), button);
+        });
+        byId('lhBreakthrough').addEventListener('click', function () { startBreakthrough(this); });
         content.querySelectorAll('.lh-convert-card').forEach(function (form) {
             var input = form.querySelector('input');
             var preview = form.querySelector('output');
@@ -837,6 +930,7 @@
         state.labTicker = setInterval(function () {
             var current = state.lab;
             if (!current || state.tab !== 'lab') return stopTickers();
+            if (labFrozen(current)) return;
             current.stored = Math.min(current.capacity, current.stored + (current.rate_per_hour || 0) / 3600);
             updateLabNumbers();
         }, 1000);
@@ -866,9 +960,19 @@
         setTimeout(function () { bubble.remove(); }, 900);
     }
 
+    function chunkSize() {
+        var configured = state.lab && state.lab.click_chunk_size;
+        return Math.max(1, Math.min(MAX_CLICK_BATCH, parseInt(configured, 10) || DEFAULT_CHUNK_SIZE));
+    }
+
+    function nowMilliseconds() {
+        return global.performance && performance.now ? performance.now() : Date.now();
+    }
+
     function onReactorClick(event) {
         var lab = state.lab;
-        if (!lab) return;
+        if (!lab || labFrozen(lab) || (event && event.isTrusted === false)) return;
+        state.clickStamps.push(nowMilliseconds());
         state.pendingClicks += 1;
         lab.research += lab.click_value || 0;
         updateLabNumbers();
@@ -879,30 +983,84 @@
             void reactor.offsetWidth;
             reactor.classList.add('pulse');
         }
-        if (state.pendingClicks >= MAX_CLICK_BATCH) flushClicks();
-        else if (!state.clickTimer) state.clickTimer = setTimeout(flushClicks, CLICK_FLUSH_MS);
+        if (state.pendingClicks >= chunkSize()) {
+            flushClicks();
+            return;
+        }
+        clearTimeout(state.clickTimer);
+        state.clickTimer = setTimeout(flushClicks, CLICK_IDLE_FLUSH_MS);
+        if (!state.clickMaxTimer) state.clickMaxTimer = setTimeout(flushClicks, CLICK_MAX_WAIT_MS);
+    }
+
+    function clickGaps(stamps) {
+        var gaps = [];
+        for (var index = 1; index < stamps.length; index++) gaps.push(Math.max(0, Math.min(60000, Math.round(stamps[index] - stamps[index - 1]))));
+        return gaps;
+    }
+
+    function resetClickTimers() {
+        clearTimeout(state.clickTimer);
+        clearTimeout(state.clickMaxTimer);
+        state.clickTimer = null;
+        state.clickMaxTimer = null;
     }
 
     async function flushClicks() {
-        clearTimeout(state.clickTimer);
-        state.clickTimer = null;
+        resetClickTimers();
         if (state.clickBusy || !state.pendingClicks) return;
         var count = Math.min(MAX_CLICK_BATCH, state.pendingClicks);
+        var stamps = state.clickStamps.splice(0, count);
         state.pendingClicks -= count;
+        state.inFlightClicks = count;
         state.clickBusy = true;
+        var retry = false;
         try {
-            var result = await api('/lab/click', { method: 'POST', body: { count: count } });
+            var result = await api('/lab/click', { method: 'POST', body: { count: count, gaps: clickGaps(stamps) } });
+            state.inFlightClicks = 0;
             applyLab(result);
             if (state.tab === 'lab') updateLabNumbers();
-            if (result.throttled) showLabNote(t('Easy there! Your lab can only handle a limited number of clicks per minute.'));
+            if (result.crits) floatText(null, t('Critical discovery!') + ' x' + result.crits);
         } catch (error) {
-            state.pendingClicks = 0;
-            failure(error, t('The experiment failed.'));
-            await refreshLab();
+            state.inFlightClicks = 0;
+            if (error && error.status === 423) {
+                state.pendingClicks = 0;
+                state.clickStamps = [];
+                await refreshLab();
+            } else if (error && error.status === 401) {
+                requireLogin();
+            } else if (!error || !error.status || error.status === 429 || error.status >= 500) {
+                state.pendingClicks += count;
+                state.clickStamps = stamps.concat(state.clickStamps);
+                retry = true;
+            } else {
+                state.pendingClicks = 0;
+                state.clickStamps = [];
+                failure(error, t('The experiment failed.'));
+                await refreshLab();
+            }
         } finally {
             state.clickBusy = false;
-            if (state.pendingClicks && !state.clickTimer) state.clickTimer = setTimeout(flushClicks, CLICK_FLUSH_MS);
+            if (state.pendingClicks >= chunkSize() && !retry) flushClicks();
+            else if (state.pendingClicks && !state.clickTimer) state.clickTimer = setTimeout(flushClicks, retry ? CLICK_RETRY_MS : CLICK_IDLE_FLUSH_MS);
         }
+    }
+
+    async function flushAll() {
+        var deadline = Date.now() + 8000;
+        while ((state.clickBusy || state.pendingClicks) && Date.now() < deadline) {
+            if (!state.clickBusy) await flushClicks();
+            else await wait(40);
+        }
+    }
+
+    function flushOnLeave() {
+        if (!state.pendingClicks || !state.lab || labFrozen(state.lab)) return;
+        var count = Math.min(MAX_CLICK_BATCH, state.pendingClicks);
+        var stamps = state.clickStamps.splice(0, count);
+        state.pendingClicks -= count;
+        try {
+            global.fetch(RWL.apiUrl('/api/growth/lab/click'), { method: 'POST', headers: RWL.authHeaders(), body: JSON.stringify({ count: count, gaps: clickGaps(stamps) }), keepalive: true }).catch(function () {});
+        } catch (error) {}
     }
 
     async function refreshLab() {
@@ -916,7 +1074,7 @@
 
     async function collectLab(button) {
         button.disabled = true;
-        await flushClicks();
+        await flushAll();
         try {
             var result = await api('/lab/collect', { method: 'POST' });
             applyLab(result);
@@ -924,13 +1082,14 @@
             toast(result.collected ? 'Collected ' + formatNumber(result.collected) + ' research.' : t('There was nothing to collect yet.'));
         } catch (error) {
             button.disabled = false;
+            if (error && error.status === 423) return refreshLab();
             failure(error, t('The research could not be collected.'));
         }
     }
 
     async function buyUpgrade(key, button) {
         button.disabled = true;
-        await flushClicks();
+        await flushAll();
         try {
             var result = await api('/lab/upgrade', { method: 'POST', body: { key: key } });
             applyLab(result);
@@ -938,7 +1097,42 @@
             toast(t('Upgrade installed!'));
         } catch (error) {
             button.disabled = false;
+            if (error && error.status === 423) return refreshLab();
             failure(error, t('The upgrade could not be bought.'));
+        }
+    }
+
+    async function claimMilestone(key, button) {
+        button.disabled = true;
+        await flushAll();
+        try {
+            var result = await api('/lab/milestone', { method: 'POST', body: { key: key } });
+            applyLab(result);
+            if (state.tab === 'lab') renderLab(byId('lhContent'));
+            var reward = result.reward || {};
+            toast(reward.amount > 0 ? 'You received ' + formatNumber(reward.amount) + ' ' + t(REWARD_LABELS[reward.type] || reward.type) + '.' : t('Milestone completed!'));
+        } catch (error) {
+            button.disabled = false;
+            if (error && error.status === 423) return refreshLab();
+            failure(error, t('The reward could not be claimed.'));
+        }
+    }
+
+    async function startBreakthrough(button) {
+        var info = (state.lab && state.lab.breakthrough) || {};
+        var confirmed = await confirmDialog(t('Start a breakthrough?'), t('Your research, stored research and all upgrades are reset. You keep your total research, milestones and daily limits and gain a permanent research bonus.'));
+        if (!confirmed) return;
+        button.disabled = true;
+        await flushAll();
+        try {
+            var result = await api('/lab/breakthrough', { method: 'POST' });
+            applyLab(result);
+            if (state.tab === 'lab') renderLab(byId('lhContent'));
+            toast(t('Breakthrough achieved!'));
+        } catch (error) {
+            button.disabled = !info.available;
+            if (error && error.status === 423) return refreshLab();
+            failure(error, t('The breakthrough failed.'));
         }
     }
 
@@ -949,7 +1143,7 @@
             return;
         }
         button.disabled = true;
-        await flushClicks();
+        await flushAll();
         try {
             var result = await api('/lab/convert', { method: 'POST', body: { target: target, research: amount } });
             applyLab(result);
@@ -958,6 +1152,7 @@
             toast('You received ' + formatNumber(converted.amount) + (target === 'lc' ? ' Lab Coins.' : ' XP.'));
         } catch (error) {
             button.disabled = false;
+            if (error && error.status === 423) return refreshLab();
             failure(error, t('The research could not be converted.'));
         }
     }
@@ -1476,6 +1671,117 @@
         });
     }
 
+    var CODE_ITEM_CATEGORIES = { name_colors: 'Name Colors', nameplates: 'Nameplates', avatar_decorations: 'Avatar Decorations', launcher_themes: 'Launcher Themes', nameplate_outlines: 'Nameplate Outlines', content_borders: 'Content Borders' };
+    var CODE_CURRENCIES = { lab_coins: ['💰', 'Lab Coins'], xp: ['⭐', 'XP'], chests: ['🎁', 'Mystery Chests'], crates: ['📦', 'Experiment Crates'], research: ['🧪', 'Research'] };
+    var REVEAL_STEP_MS = 70;
+    var REVEAL_MAX_DELAY_MS = 1400;
+
+    function mediaSource(path) {
+        if (!path) return '';
+        return /^https?:\/\//.test(path) ? path : RWL.apiUrl(path);
+    }
+
+    function revealNameStyle(item) {
+        return RWL.nameColorStyle({
+            name_color_hex: item.hex,
+            name_color_animated: item.animated,
+            name_color_gradient: item.gradient,
+            name_color_animation_seconds: item.animation_seconds,
+            name_color_speed: item.speed,
+            name_color_effect: item.effect,
+            name_color_direction: item.direction
+        }, '#ffffff');
+    }
+
+    function revealThemeColors(item) {
+        var colors = (item.preview || []).map(function (color) { return RWL.sanitizeHex(color, '#7b2cbf'); });
+        return colors.length ? colors : ['#7b2cbf', '#c97eff', '#14002a'];
+    }
+
+    function revealVisual(item) {
+        switch (item.category) {
+            case 'name_colors':
+                return '<span class="lh-reveal-name" translate="no" style="' + esc(revealNameStyle(item)) + '">' + esc(item.name || item.item_id || '') + '</span>';
+            case 'nameplates':
+                return '<video class="lh-reveal-media" muted loop playsinline preload="none" data-reveal-src="' + esc(mediaSource(item.asset_url)) + '"></video>';
+            case 'avatar_decorations':
+                return '<img class="lh-reveal-media lh-reveal-contain" alt="" decoding="async" loading="lazy" src="' + esc(mediaSource(item.thumb_url || item.asset_url)) + '">';
+            case 'launcher_themes':
+                return '<div class="lh-reveal-theme">' + revealThemeColors(item).map(function (color) { return '<span style="--rwl-keep:1;background:' + color + ';"></span>'; }).join('') + '</div>';
+            case 'nameplate_outlines':
+                return '<div class="lh-reveal-frame lh-reveal-frame-plate' + RWL.frameClasses(item) + '" style="' + esc(RWL.frameStyle(item)) + '"><span translate="no">' + esc(item.name || '') + '</span></div>';
+            case 'content_borders':
+                return '<div class="lh-reveal-frame lh-reveal-frame-box' + RWL.frameClasses(item) + '" style="' + esc(RWL.frameStyle(item)) + '"><span></span><span></span></div>';
+            default:
+                return '<span class="lh-reveal-name" translate="no">' + esc(item.name || item.item_id || '') + '</span>';
+        }
+    }
+
+    function revealDelay(index) {
+        return Math.min(index * REVEAL_STEP_MS, REVEAL_MAX_DELAY_MS);
+    }
+
+    function revealCurrencyBox(entry, index) {
+        var meta = CODE_CURRENCIES[entry.type] || ['🎉', entry.type];
+        return '<div class="lh-reveal-box lh-reveal-currency" style="--lh-reveal-delay:' + revealDelay(index) + 'ms">' +
+            '<span class="lh-reveal-icon">' + meta[0] + '</span>' +
+            '<strong class="lh-reveal-amount">+' + formatNumber(entry.amount) + '</strong>' +
+            '<span class="lh-reveal-label">' + esc(meta[1]) + '</span>' +
+        '</div>';
+    }
+
+    function revealItemBox(entry, index) {
+        var item = entry.item || {};
+        var color = RWL.sanitizeHex(RWL.rarityColor(item.rarity), '#9d4edd');
+        return '<div class="lh-reveal-box lh-reveal-item' + (entry.already_owned ? ' lh-reveal-owned' : '') + '" style="--rwl-keep:1;--lh-reveal-delay:' + revealDelay(index) + 'ms;--lh-reveal-color:' + color + ';">' +
+            '<span class="lh-reveal-rarity" style="--rwl-keep:1;background:' + color + ';">' + esc(item.rarity || 'Common') + '</span>' +
+            '<div class="lh-reveal-visual">' + revealVisual(item) + '</div>' +
+            '<span class="lh-reveal-item-name" translate="no">' + esc(item.name || item.item_id || '') + '</span>' +
+            '<small class="lh-reveal-note' + (entry.already_owned ? '' : ' lh-reveal-new') + '">' + (entry.already_owned ? 'Already in your locker' : 'Added to your locker') + '</small>' +
+        '</div>';
+    }
+
+    function revealHtml(result) {
+        var entries = result.entries || [];
+        var currencies = entries.filter(function (entry) { return entry.kind === 'currency'; });
+        var groups = {};
+        entries.forEach(function (entry) {
+            if (entry.kind !== 'item') return;
+            if (!groups[entry.category]) groups[entry.category] = [];
+            groups[entry.category].push(entry);
+        });
+        var step = 0;
+        var html = '<div class="lh-reveal-head"><span class="lh-reward-icon">🎉</span><strong>Code redeemed!</strong></div>';
+        if (currencies.length) {
+            html += '<section class="lh-reveal-group"><h4 class="lh-reveal-title">Currency And Boosts</h4><div class="lh-reveal-grid">' + currencies.map(function (entry) { return revealCurrencyBox(entry, step++); }).join('') + '</div></section>';
+        }
+        Object.keys(CODE_ITEM_CATEGORIES).filter(function (key) { return groups[key]; }).forEach(function (key) {
+            html += '<section class="lh-reveal-group"><h4 class="lh-reveal-title">' + esc(CODE_ITEM_CATEGORIES[key]) + '<span class="lh-reveal-count">' + groups[key].length + '</span></h4><div class="lh-reveal-grid">' + groups[key].map(function (entry) { return revealItemBox(entry, step++); }).join('') + '</div></section>';
+        });
+        return html;
+    }
+
+    function activateRevealMedia(root) {
+        var videos = root.querySelectorAll('video[data-reveal-src]');
+        if (!videos.length) return;
+        var start = function (video) {
+            if (!video.getAttribute('src')) video.setAttribute('src', video.getAttribute('data-reveal-src'));
+            var played = video.play();
+            if (played && played.catch) played.catch(function () {});
+        };
+        if (!global.IntersectionObserver) {
+            Array.prototype.forEach.call(videos, start);
+            return;
+        }
+        var observer = new IntersectionObserver(function (observed) {
+            observed.forEach(function (entry) {
+                if (entry.isIntersecting) start(entry.target);
+                else entry.target.pause();
+            });
+        }, { rootMargin: '120px' });
+        Array.prototype.forEach.call(videos, function (video) { observer.observe(video); });
+    }
+
     async function redeemCode(button) {
         var input = byId('lhCodeInput');
         var code = input.value.trim().toUpperCase();
@@ -1491,7 +1797,15 @@
             renderCodes(byId('lhContent'));
             var box = byId('lhCodeResult');
             box.hidden = false;
-            box.innerHTML = '<span class="lh-reward-icon">🎉</span><strong>Code redeemed!</strong><span>' + esc(result.summary || '') + '</span>';
+            if (Array.isArray(result.entries) && result.entries.length) {
+                box.classList.add('lh-reveal');
+                box.innerHTML = revealHtml(result);
+                activateRevealMedia(box);
+                box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                box.classList.remove('lh-reveal');
+                box.innerHTML = '<span class="lh-reward-icon">🎉</span><strong>Code redeemed!</strong><span>' + esc(result.summary || '') + '</span>';
+            }
         } catch (error) {
             button.disabled = false;
             markInvalid(input);
@@ -1620,9 +1934,9 @@
             if (button) selectTab(button.getAttribute('data-tab'));
         });
         document.addEventListener('visibilitychange', function () {
-            if (document.hidden) flushClicks();
+            if (document.hidden) flushOnLeave();
         });
-        global.addEventListener('pagehide', flushClicks);
+        global.addEventListener('pagehide', flushOnLeave);
         global.addEventListener('rwl-social-event', function (event) {
             var detail = (event && event.detail) || {};
             if (detail.type === 'companion_reaction' && state.hub) loadHub(true).then(function () { if (state.tab === 'companion' || state.tab === 'overview') renderTab(); });

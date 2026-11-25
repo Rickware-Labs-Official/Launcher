@@ -1736,6 +1736,87 @@ body {
     aspect-ratio: 2 / 1;
 }
 
+.inv-slot-stackable {
+    position: relative;
+}
+
+.inv-stack-count {
+    position: absolute;
+    top: 5px;
+    right: 6px;
+    z-index: 3;
+    min-width: 26px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    text-align: center;
+    color: #ffffff;
+    background: linear-gradient(135deg, #b44bff, #5a189a);
+    box-shadow: 0 0 12px rgba(180, 75, 255, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+    pointer-events: none;
+    animation: invStackGlow 2.6s ease-in-out infinite;
+}
+
+@keyframes invStackGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(180, 75, 255, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+    50% { box-shadow: 0 0 18px rgba(224, 170, 255, 0.85), inset 0 0 0 1px rgba(255, 255, 255, 0.4); }
+}
+
+.inv-stack-keys {
+    position: absolute;
+    right: 6px;
+    bottom: 5px;
+    z-index: 3;
+    padding: 1px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(224, 170, 255, 0.5);
+    background: rgba(13, 9, 20, 0.85);
+    color: #e0aaff;
+    font-size: 9px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.inv-stack-keys:hover {
+    background: rgba(157, 78, 221, 0.45);
+    transform: translateY(-1px);
+}
+
+.inv-stack-keylist {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 8px 24px;
+    overflow-y: auto;
+    border-radius: inherit;
+    background: rgba(13, 9, 20, 0.96);
+}
+
+.inv-stack-keylist[hidden] {
+    display: none;
+}
+
+.inv-stack-key {
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(157, 78, 221, 0.16);
+    color: #ffffff;
+    font-size: 9px;
+    font-family: Consolas, 'Courier New', monospace;
+    word-break: break-all;
+    cursor: pointer;
+}
+
+.inv-stack-key:hover {
+    background: rgba(157, 78, 221, 0.4);
+}
+
 .inv-slot-text {
     font-size: 10px;
     color: #e0aaff;
